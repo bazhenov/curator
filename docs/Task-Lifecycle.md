@@ -7,3 +7,5 @@ Each task can be in one of 5 states:
 * `RUNNING` - task is accepted by agent is now running;
 * `FAILED` - task was accepted by agent was running but failed to complete;
 * `COMPLETED` - task was successfully completed by agent.
+
+Following states are terminal: `REJECTED`, `FAILED`, `COMPLETED`.
