@@ -2,6 +2,12 @@ openapi: 3.0.0
 info:
   title: Curator REST API
   version: '1.0'
+  description: Ad-hoc tasks orchestration system.
+  contact:
+    name: Denis Bazhenov
+    email: dotsid@gmail.com
+    url: 'http://bazhenov.me/'
+  license: {}
 servers:
   - url: 'http://curator.local'
 paths:
@@ -36,6 +42,16 @@ paths:
           name: 'Accept: text/event-stream'
 components:
   schemas:
+    Task:
+      title: Task
+      type: object
+      properties:
+        name:
+          type: string
+          description: name of the task. Will be presented as is to operator using the system
+      required:
+        - name
+      description: Task is the unit of work which agent capable of executing
     Agent:
       title: Agent
       type: object
@@ -62,13 +78,3 @@ components:
         - application
         - instance
         - tasks
-    Task:
-      title: Task
-      type: object
-      properties:
-        name:
-          type: string
-          description: name of the task. Will be presented as is to operator using the system
-      required:
-        - name
-      description: Task is the unit of work which agent capable of executing
