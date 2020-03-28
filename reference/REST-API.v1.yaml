@@ -72,11 +72,14 @@ components:
           description: name of the task. Will be presented as is to operator using the system
       required:
         - name
-      description: Task is the unit of work which agent capable of executing
+      description: Task is the unit of work which agent capable of executing.
+      x-examples:
+        basic:
+          name: cleanup-database
     Agent:
       title: Agent
       type: object
-      description: Agent is a program capable of running tasks. Agent described by application and instance name. Instance name is the hostname in most cases. Application name is used for grouping replicated or distributed systems.
+      description: Agent is a program capable of running tasks. Agent described by application and instance name. Instance name is the hostname in most cases. Application name is used for grouping replicated or distributed instances in one logical unit for convinience purposes as well as more fine grained control over task execution.
       x-examples:
         basic:
           application: todo
