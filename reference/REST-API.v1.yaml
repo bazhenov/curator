@@ -157,11 +157,11 @@ paths:
                     - application: todo-app
                       instance: web-frontend
                       tasks:
-                        - remove-inactive-sessions
+                        - name: remove-inactive-sessions
                     - application: todo-app
                       instance: worker
                       tasks:
-                        - cleanup-database
+                        - name: cleanup-database
       operationId: get-agents
       description: List all active agents in the system and their tasks
 components:
