@@ -19,27 +19,48 @@ paths:
         '200':
           description: OK
           headers:
-            'Content-Type: text/event-stream':
+            Content-Type:
               schema:
                 type: string
-              description: ''
+                enum:
+                  - text/event-stream
               required: true
-      description: |-
+          content:
+            text/event-stream:
+              examples:
+                run-task:
+                  value: |-
+                    event: run-task
+                    data: {"name": "cleanup-database", "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003"}
+                run-and-cancel-task:
+                  value: |-
+                    event: run-task
+                    data: {"name": "cleanup-database", "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003"}
+
+                    event: stop-task
+                    data: {"execution": "596cf5b4-70ba-11ea-bc55-0242ac130003"}
+      description: |
         Registers new agent in the system. All agent tasks will be available for operators after registration.
 
-        Response of the system is a SSE stream used for sending control commands to the agent. Control commands are used for starting and stopping tasks.
+        Response of the system is a SSE stream used for sending control commands to the agent. Following commands can be issued by curator to an agent:
+
+        * `run-task`;
+        * `stop-task`.
+
+        SSE channel is used only for issuing commands to agent. Agent are report status back to Curator using REST API.
       requestBody:
         content:
           application/json:
             schema:
-              type: object
-              properties: {}
+              $ref: '#/components/schemas/Agent'
         description: Agent must provide information about itself and available tasks
       parameters:
         - schema:
             type: string
+            enum:
+              - text/event-stream
           in: header
-          name: 'Accept: text/event-stream'
+          name: Accept
 components:
   schemas:
     Task:
