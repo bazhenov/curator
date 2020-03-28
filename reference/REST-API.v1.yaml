@@ -63,7 +63,7 @@ paths:
                     - id: report-load
         description: Agent must provide information about itself and available tasks
       parameters: []
-  /report-status:
+  /task/report:
     post:
       summary: Report Execution Status
       operationId: report-status
@@ -82,6 +82,88 @@ paths:
               $ref: '#/components/schemas/ExecutionReport'
         description: Execution status
     parameters: []
+  /task/run:
+    parameters: []
+    post:
+      summary: Run a Task
+      operationId: post-task-run
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  execution:
+                    type: string
+                    format: uuid
+                    description: New execution UUID
+                required:
+                  - execution
+              examples:
+                basic:
+                  value:
+                    execution: 8ceb0d95-68c1-476c-8082-54b4a28d6df2
+      description: Creates an execution for a given task
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task:
+                  type: string
+                  description: task to execute
+                agent:
+                  type: object
+                  required:
+                    - application
+                    - instance
+                  description: agent instance to run task on
+                  properties:
+                    application:
+                      type: string
+                    instance:
+                      type: string
+              required:
+                - task
+                - agent
+            examples:
+              create new execution:
+                value:
+                  task: cleanup-database
+                  agent:
+                    application: todo-application
+                    instance: web-frontend
+        description: Run a Task and returns new execution.
+      parameters: []
+  /agents:
+    get:
+      summary: List Agents
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Agent'
+              examples:
+                basic:
+                  value:
+                    - application: todo-app
+                      instance: web-frontend
+                      tasks:
+                        - remove-inactive-sessions
+                    - application: todo-app
+                      instance: worker
+                      tasks:
+                        - cleanup-database
+      operationId: get-agents
+      description: List all active agents in the system and their tasks
 components:
   schemas:
     Task:
@@ -153,3 +235,15 @@ components:
       required:
         - id
         - status
+    Execution:
+      title: Execution
+      type: object
+      properties:
+        id:
+          type: string
+        task:
+          type: string
+        '':
+          type: string
+        agent:
+          type: string
