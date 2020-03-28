@@ -53,6 +53,14 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Agent'
+            examples:
+              example:
+                value:
+                  application: todo-application
+                  instance: web-frontend
+                  tasks:
+                    - id: cleanup-database
+                    - id: report-load
         description: Agent must provide information about itself and available tasks
       parameters: []
   /status:
