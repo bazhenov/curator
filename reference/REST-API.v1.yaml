@@ -54,13 +54,25 @@ paths:
             schema:
               $ref: '#/components/schemas/Agent'
         description: Agent must provide information about itself and available tasks
-      parameters:
-        - schema:
-            type: string
-            enum:
-              - text/event-stream
-          in: header
-          name: Accept
+      parameters: []
+  /status:
+    post:
+      summary: Update Execution Status
+      operationId: post-status
+      responses:
+        '200':
+          description: OK
+      description: |-
+        Reports back task execution status to Curator. Agent could select report interval on it's own based on event-density (stdout/stderr write rate).
+
+        When report acknowledged by Curator, agent could remove reported stdout/stderr content and must not send it with following reports. So stdout/stderr reporting is incremental.
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionReport'
+        description: Execution status
 components:
   schemas:
     Task:
@@ -102,3 +114,33 @@ components:
         - application
         - instance
         - tasks
+    ExecutionReport:
+      title: ExecutionReport
+      type: object
+      x-examples:
+        in-progress-reporting-stdout:
+          id: 8ceb0d95-68c1-476c-8082-54b4a28d6df2
+          status: running
+          stdout-append: 'Warning: Skipping zsh-completions: most recent version 0.31.0 not installed'
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: execution id given agent when `start-task` command is issued
+        status:
+          type: string
+          enum:
+            - initiated
+            - rejected
+            - running
+            - completed
+            - failed
+        stdout-append:
+          type: string
+          description: stdout new content since last report (if any)
+        stderr-append:
+          type: string
+          description: stderr new content since last report (if any)
+      required:
+        - id
+        - status
