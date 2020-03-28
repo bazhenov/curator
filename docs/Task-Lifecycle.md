@@ -9,3 +9,5 @@ Each task can be in one of 5 states:
 * `COMPLETED` - task was successfully completed by agent.
 
 Following states are terminal: `REJECTED`, `FAILED`, `COMPLETED`.
+
+[Hello](../reference/REST-API.v1.yaml)
