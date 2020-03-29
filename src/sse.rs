@@ -12,13 +12,13 @@ pub struct SseBroker {
 }
 
 impl SseBroker {
-    fn new() -> Self {
+    pub fn new() -> Self {
         SseBroker {
             clients: vec![]
         }
     }
     
-    fn new_channel(
+    pub fn new_channel(
         &mut self,
     ) -> (
         UnboundedSender<Result<Bytes>>,
@@ -27,10 +27,18 @@ impl SseBroker {
         mpsc::unbounded_channel()
     }
 
-    fn subscribe(&mut self) -> UnboundedReceiver<Result<Bytes>> {
+    pub fn subscribe(&mut self) -> UnboundedReceiver<Result<Bytes>> {
         let (tx, rx) = self.new_channel();
         self.clients.push(tx);
         rx
+    }
+
+    pub fn notify_all(&self) {
+        for client in &self.clients {
+            client.send(Ok(Bytes::from("event: ")));
+            client.send(Ok(Bytes::from("Data")));
+            client.send(Ok(Bytes::from("\n\n")));
+        }
     }
 }
 

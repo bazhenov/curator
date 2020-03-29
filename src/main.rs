@@ -4,35 +4,40 @@ use actix_web::{
     Responder,
 };
 use std::task::Poll;
+use std::sync::Mutex;
+use std::thread;
 
 mod sse;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(move || App::new().route("/events", web::get().to(new_client)))
+    let broker = Mutex::new(sse::SseBroker::new());
+    let broker_data = web::Data::new(broker);
+
+    let background_broker_ref = broker_data.clone();
+
+    thread::spawn(move || {
+        loop {
+            thread::sleep_ms(1000);
+            background_broker_ref.lock().unwrap().notify_all();
+        }
+    });
+
+    HttpServer::new(move || App::new()
+            .app_data(broker_data.clone())
+            .route("/events", web::post().to(new_client)))
         .bind("127.1:8080")?
         .run()
         .await
 }
 
-async fn new_client(r: HttpRequest) -> impl Responder {
-    use futures::stream::poll_fn;
-    let mut counter: usize = 5;
-
-    let server_events = poll_fn(move |_cx| -> Poll<Option<Result<Bytes, Error>>> {
-        if counter == 0 {
-            return Poll::Ready(None);
-        }
-        let payload = format!("data: {}\n\n", counter);
-        counter -= 1;
-        _cx.waker().wake_by_ref();
-        Poll::Ready(Some(Ok(Bytes::from(payload))))
-    });
+async fn new_client(r: HttpRequest, sse: web::Data<Mutex<sse::SseBroker>>) -> impl Responder {
+    let rx = sse.lock().unwrap().subscribe();
 
     HttpResponse::Ok()
         .header("content-type", "text/event-stream")
         .no_chunking()
-        .streaming(server_events)
+        .streaming(rx)
 }
 
 #[derive(Default)]
