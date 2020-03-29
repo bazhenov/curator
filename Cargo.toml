@@ -1,0 +1,15 @@
+[package]
+name = "curator"
+version = "0.1.0"
+authors = ["Denis Bazhenov <dotsid@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-rt = "1.0.0"
+actix-web = "2.0.0"
+actix = "0.9.0"
+futures = { version = "0.3.4", features = ["thread-pool"] }
+tokio = { version = "0.2.13", features = ["rt-threaded", "macros"] }
+bytes = "0.5.4"
