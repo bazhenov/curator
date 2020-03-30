@@ -14,8 +14,10 @@ path = "src/main.rs"
 
 [dependencies]
 actix-rt = "1.0.0"
+actix-server = "1.0.2"
 actix-web = "2.0.0"
 actix = "0.9.0"
 futures = "0.3.4"
 tokio = { version = "0.2.13", features = ["rt-threaded", "macros"] }
 bytes = "0.5.4"
+hyper = "0.13.4"
