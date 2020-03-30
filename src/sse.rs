@@ -1,9 +1,5 @@
 use bytes::Bytes;
-use std::error::Error;
 use std::io::Result;
-use std::task::Poll;
-
-use std::thread;
 
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
@@ -35,6 +31,7 @@ impl SseBroker {
 
     pub fn notify_all(&self) {
         for client in &self.clients {
+            #![allow(warnings)]
             client.send(Ok(Bytes::from("event: ")));
             client.send(Ok(Bytes::from("Data")));
             client.send(Ok(Bytes::from("\n\n")));
@@ -48,6 +45,7 @@ mod tests {
     use super::*;
     use std::str;
     use futures::stream::StreamExt;
+    use std::thread;
 
     #[tokio::test]
     async fn foo() {
