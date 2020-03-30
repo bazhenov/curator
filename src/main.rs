@@ -1,11 +1,11 @@
-use actix::prelude::*;
+extern crate curator;
 use actix_web::{
-    http::header, http::Method, web, web::Bytes, App, Error, HttpRequest, HttpResponse, HttpServer,
+    web, App, HttpResponse, HttpServer,
     Responder,
 };
 use std::task::Poll;
 use std::sync::Mutex;
-use std::thread;
+use std::{thread, time::Duration};
 
 mod sse;
 
@@ -18,7 +18,7 @@ async fn main() -> std::io::Result<()> {
 
     thread::spawn(move || {
         loop {
-            thread::sleep_ms(1000);
+            thread::sleep(Duration::from_secs(1));
             background_broker_ref.lock().unwrap().notify_all();
         }
     });
@@ -31,7 +31,7 @@ async fn main() -> std::io::Result<()> {
         .await
 }
 
-async fn new_client(r: HttpRequest, sse: web::Data<Mutex<sse::SseBroker>>) -> impl Responder {
+async fn new_client(sse: web::Data<Mutex<sse::SseBroker>>) -> impl Responder {
     let rx = sse.lock().unwrap().subscribe();
 
     HttpResponse::Ok()
