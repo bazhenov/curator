@@ -1,10 +1,7 @@
 extern crate curator;
-use actix_web::{
-    web, App, HttpResponse, HttpServer,
-    Responder,
-};
-use std::task::Poll;
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use std::sync::Mutex;
+use std::task::Poll;
 use std::{thread, time::Duration};
 
 mod sse;
@@ -16,19 +13,19 @@ async fn main() -> std::io::Result<()> {
 
     let background_broker_ref = broker_data.clone();
 
-    thread::spawn(move || {
-        loop {
-            thread::sleep(Duration::from_secs(1));
-            background_broker_ref.lock().unwrap().notify_all();
-        }
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_secs(1));
+        background_broker_ref.lock().unwrap().notify_all();
     });
 
-    HttpServer::new(move || App::new()
+    HttpServer::new(move || {
+        App::new()
             .app_data(broker_data.clone())
-            .route("/events", web::post().to(new_client)))
-        .bind("127.1:8080")?
-        .run()
-        .await
+            .route("/events", web::post().to(new_client))
+    })
+    .bind("127.1:8080")?
+    .run()
+    .await
 }
 
 async fn new_client(sse: web::Data<Mutex<sse::SseBroker>>) -> impl Responder {

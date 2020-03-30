@@ -4,16 +4,14 @@ use std::io::Result;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
 pub struct SseBroker {
-  clients: Vec<UnboundedSender<Result<Bytes>>>
+    clients: Vec<UnboundedSender<Result<Bytes>>>,
 }
 
 impl SseBroker {
     pub fn new() -> Self {
-        SseBroker {
-            clients: vec![]
-        }
+        SseBroker { clients: vec![] }
     }
-    
+
     pub fn new_channel(
         &mut self,
     ) -> (
@@ -31,7 +29,6 @@ impl SseBroker {
 
     pub fn notify_all(&self) {
         for client in &self.clients {
-            #![allow(warnings)]
             client.send(Ok(Bytes::from("event: ")));
             client.send(Ok(Bytes::from("Data")));
             client.send(Ok(Bytes::from("\n\n")));
@@ -43,8 +40,8 @@ impl SseBroker {
 mod tests {
 
     use super::*;
-    use std::str;
     use futures::stream::StreamExt;
+    use std::str;
     use std::thread;
 
     #[tokio::test]
