@@ -21,3 +21,4 @@ futures = "0.3.4"
 tokio = { version = "0.2.13", features = ["rt-threaded", "macros"] }
 bytes = "0.5.4"
 hyper = "0.13.4"
+error-chain = "0.12.2"
