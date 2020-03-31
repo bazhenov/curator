@@ -14,16 +14,14 @@ async fn curator_sse_client() -> Result<(), Box<dyn Error>> {
     let mut client = SseClient::connect("http://127.0.0.1:8080/events")
         .await
         .expect("Unable to connect");
-    println!("STARTED");
 
     let mut i = 0;
-    while let Some(chunk) = client.next().await {
-        let chunk = chunk?;
+    while let Some((name, event)) = client.next().await? {
         i += 1;
         if i >= 5 {
             break;
         }
-        println!("CHUNK: {:?}", chunk);
+        println!("{:?}: {:?}", name, event);
     }
 
     drop(client);
