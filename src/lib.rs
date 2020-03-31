@@ -2,6 +2,7 @@
 extern crate error_chain;
 
 pub mod client;
+pub mod protocol;
 pub mod server;
 mod sse;
 
@@ -13,7 +14,9 @@ mod errors {
         Utf(::std::string::FromUtf8Error);
         Io(::std::io::Error);
         Http(::actix_web::http::Error);
-        Hyper(hyper::error::Error);
+        Hyper(hyper::Error);
+        Json(::serde_json::Error);
+        Uuid(uuid::Error);
       }
 
       errors {
