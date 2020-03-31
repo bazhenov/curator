@@ -7,7 +7,11 @@ use std::io::{self, BufRead, Cursor, Seek, SeekFrom, Write};
 pub struct SseClient {
     client: Client<HttpConnector, Body>,
     response: Response<Body>,
+    lines: Lines,
 }
+
+/// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
+type SseEvent = (Option<String>, String);
 
 impl SseClient {
     pub async fn connect(host: &str) -> Result<Self> {
@@ -21,15 +25,39 @@ impl SseClient {
 
         let response = client.request(req).await?;
 
-        Ok(Self { client, response })
+        Ok(Self {
+            client,
+            response,
+            lines: Lines::new(),
+        })
     }
 
-    pub async fn next(&mut self) -> Option<Result<Bytes>> {
-        self.response
-            .body_mut()
-            .data()
-            .await
-            .map(|r| r.chain_err(|| "Unable to read from server"))
+    pub async fn next(&mut self) -> Result<Option<SseEvent>> {
+        let mut event_name = None;
+        loop {
+            let bytes = self
+                .response
+                .body_mut()
+                .data()
+                .await
+                .map(|r| r.chain_err(|| "Unable to read from server"));
+
+            if let Some(bytes) = bytes {
+                let bytes = bytes?;
+                for line in self.lines.feed(bytes)? {
+                    if line.starts_with("event:") {
+                        let name = line.chars().skip(6).collect::<String>();
+                        event_name = Some(name.trim().to_string());
+                    }
+                    if line.starts_with("data:") {
+                        let data = line.chars().skip(5).collect::<String>();
+                        return Ok(Some((event_name, data.trim().to_string())));
+                    }
+                }
+            } else {
+                return Ok(None);
+            }
+        }
     }
 }
 
@@ -44,9 +72,9 @@ impl Lines {
         Self(Cursor::new(vec![0]))
     }
 
-    fn feed(&mut self, bytes: &[u8]) -> Result<Vec<String>> {
+    fn feed(&mut self, bytes: impl AsRef<[u8]>) -> Result<Vec<String>> {
         self.0
-            .write(bytes)
+            .write(bytes.as_ref())
             .chain_err(|| "Unable to write data to in-memory cursor. Should never happen")?;
 
         let mut vec = Vec::new();

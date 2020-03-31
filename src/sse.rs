@@ -32,6 +32,9 @@ impl SseBroker {
             client.send(Ok(Bytes::from("event: ")));
             client.send(Ok(Bytes::from("Data")));
             client.send(Ok(Bytes::from("\n\n")));
+            client.send(Ok(Bytes::from("data: ")));
+            client.send(Ok(Bytes::from("{}")));
+            client.send(Ok(Bytes::from("\n\n")));
         }
     }
 }
