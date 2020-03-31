@@ -169,16 +169,16 @@ components:
     Task:
       title: Task
       type: object
-      properties:
-        name:
-          type: string
-          description: name of the task. Will be presented as is to operator using the system
-      required:
-        - name
       description: Task is the unit of work which agent capable of executing.
       x-examples:
         basic:
-          name: cleanup-database
+          id: cleanup-database
+      properties:
+        id:
+          type: string
+          description: name of the task. Will be presented as is to operator using the system
+      required:
+        - id
     Agent:
       title: Agent
       type: object
