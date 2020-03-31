@@ -17,7 +17,8 @@ impl Curator {
 
         thread::spawn(move || loop {
             thread::sleep(Duration::from_secs(1));
-            background_broker_ref.lock().unwrap().notify_all();
+            let event = (Some("start-task".to_string()), "{}".to_string());
+            background_broker_ref.lock().unwrap().notify_all(&event);
         });
         let app = move || {
             App::new()

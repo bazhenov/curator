@@ -4,10 +4,9 @@ extern crate error_chain;
 pub mod client;
 pub mod protocol;
 pub mod server;
-mod sse;
+pub mod sse;
 
 mod errors {
-
     error_chain! {
       foreign_links {
         Fmt(::std::fmt::Error);
@@ -17,6 +16,7 @@ mod errors {
         Hyper(hyper::Error);
         Json(::serde_json::Error);
         Uuid(uuid::Error);
+        Tokio(tokio::sync::mpsc::error::SendError<std::result::Result<bytes::Bytes, std::io::Error>>);
       }
 
       errors {

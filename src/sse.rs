@@ -1,10 +1,12 @@
+use crate::errors::*;
+use crate::client::SseEvent;
 use bytes::Bytes;
-use std::io::Result;
+use std::io;
 
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
 pub struct SseBroker {
-    clients: Vec<UnboundedSender<Result<Bytes>>>,
+    clients: Vec<UnboundedSender<io::Result<Bytes>>>,
 }
 
 impl SseBroker {
@@ -15,27 +17,32 @@ impl SseBroker {
     pub fn new_channel(
         &mut self,
     ) -> (
-        UnboundedSender<Result<Bytes>>,
-        UnboundedReceiver<Result<Bytes>>,
+        UnboundedSender<io::Result<Bytes>>,
+        UnboundedReceiver<io::Result<Bytes>>,
     ) {
         mpsc::unbounded_channel()
     }
 
-    pub fn subscribe(&mut self) -> UnboundedReceiver<Result<Bytes>> {
+    pub fn subscribe(&mut self) -> UnboundedReceiver<io::Result<Bytes>> {
         let (tx, rx) = self.new_channel();
         self.clients.push(tx);
         rx
     }
 
-    pub fn notify_all(&self) {
+    pub fn notify_all(&self, event: &SseEvent) -> Result<()> {
         for client in &self.clients {
-            client.send(Ok(Bytes::from("event: ")));
-            client.send(Ok(Bytes::from("Data")));
-            client.send(Ok(Bytes::from("\n\n")));
-            client.send(Ok(Bytes::from("data: ")));
-            client.send(Ok(Bytes::from("{}")));
-            client.send(Ok(Bytes::from("\n\n")));
+            let (ref name, ref data) = event;
+            if let Some(name) = name {
+                client.send(Ok(Bytes::from("event: ")))?;
+                client.send(Ok(Bytes::from(name.clone())))?;
+                client.send(Ok(Bytes::from("\n")))?;
+            }
+            
+            client.send(Ok(Bytes::from("data: ")))?;
+            client.send(Ok(Bytes::from(data.clone())))?;
+            client.send(Ok(Bytes::from("\n\n")))?;
         }
+        Ok(())
     }
 }
 
@@ -60,7 +67,7 @@ mod tests {
         });
 
         let string = rx
-            .map(Result::ok)
+            .map(io::Result::ok)
             .map(Option::unwrap)
             .map(|bytes| str::from_utf8(&bytes[..]).unwrap().to_string())
             .collect::<String>()

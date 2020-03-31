@@ -12,7 +12,7 @@ async fn curator_sse_client() -> Result<(), Box<dyn Error>> {
         .expect("Unable to connect");
 
     if let Some(event) = client.next().await? {
-        assert_eq!(event.0, Some("Data".to_string()));
+        assert_eq!(event.0, Some("start-task".to_string()));
         assert_eq!(event.1, "{}");
     } else {
         panic!("No events from server");
