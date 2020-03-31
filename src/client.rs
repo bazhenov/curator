@@ -11,7 +11,7 @@ pub struct SseClient {
 }
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
-type SseEvent = (Option<String>, String);
+pub type SseEvent = (Option<String>, String);
 
 impl SseClient {
     pub async fn connect(host: &str) -> Result<Self> {

@@ -3,8 +3,7 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use std::sync::Mutex;
 use std::task::Poll;
 use std::{thread, time::Duration};
-
-mod sse;
+use curator::sse;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -15,7 +14,8 @@ async fn main() -> std::io::Result<()> {
 
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(1));
-        background_broker_ref.lock().unwrap().notify_all();
+        let event = (Some("start-task".to_string()), "{}".to_string());
+        background_broker_ref.lock().unwrap().notify_all(&event);
     });
 
     HttpServer::new(move || {
