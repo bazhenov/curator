@@ -3,7 +3,8 @@ use curator::client::SseClient;
 use curator::errors::*;
 use std::process::Stdio;
 use tokio;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::BufReader;
+use tokio::prelude::*;
 use tokio::process::Command;
 use tokio::stream::StreamExt;
 
@@ -11,7 +12,7 @@ use tokio::stream::StreamExt;
 async fn main() -> Result<()> {
     let mut client = SseClient::connect("http://localhost:8080/events").await?;
 
-    while let Some((name, data)) = client.next().await? {
+    while let Some((name, _)) = client.next_event().await? {
         println!("TASK: {:?}", name);
         match name {
             Some(s) if s == "run-task" => {

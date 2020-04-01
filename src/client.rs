@@ -28,7 +28,7 @@ impl SseClient {
         })
     }
 
-    pub async fn next(&mut self) -> Result<Option<SseEvent>> {
+    pub async fn next_event(&mut self) -> Result<Option<SseEvent>> {
         let mut event_name = None;
         loop {
             let bytes = self

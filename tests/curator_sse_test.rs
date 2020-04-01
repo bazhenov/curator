@@ -16,7 +16,7 @@ async fn curator_sse_client() -> Result<()> {
     let expected_event = (event_name, event_content);
     server.notify_all(&expected_event)?;
 
-    if let Some(event) = client.next().await? {
+    if let Some(event) = client.next_event().await? {
         assert_eq!(event, expected_event);
     } else {
         panic!("No events from server");
