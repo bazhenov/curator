@@ -1,6 +1,7 @@
-use crate::errors::*;
 use crate::client::SseEvent;
+use crate::errors::*;
 use bytes::Bytes;
+use error_chain::ChainedError;
 use std::io;
 
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
@@ -29,27 +30,44 @@ impl SseBroker {
         rx
     }
 
-    pub fn notify_all(&self, event: &SseEvent) -> Result<()> {
-        for client in &self.clients {
-            let (ref name, ref data) = event;
-            if let Some(name) = name {
-                Self::send(client, "event: ")?;
-                Self::send(client, name.clone())?;
-                Self::send(client, "\n")?;
-            }
+    pub fn notify_all(&mut self, event: &SseEvent) -> Result<()> {
+        self.clients.retain(|client| {
+            if let Err(e) = Self::send_client(&client, &event) {
+                eprintln!("{}", e.display_chain());
 
-            Self::send(client, "data: ")?;
-            Self::send(client, data.clone())?;
-            Self::send(client, "\n\n")?;            
+                false
+            } else {
+                true
+            }
+        });
+        Ok(())
+    }
+
+    pub fn send_client(
+        client: &UnboundedSender<io::Result<Bytes>>,
+        event: &SseEvent,
+    ) -> Result<()> {
+        let (ref name, ref data) = event;
+        if let Some(name) = name {
+            Self::send(client, "event: ")?;
+            Self::send(client, name.clone())?;
+            Self::send(client, "\n")?;
         }
+
+        Self::send(client, "data: ")?;
+        Self::send(client, data.clone())?;
+        Self::send(client, "\n\n")?;
         Ok(())
     }
 
     #[inline]
-    pub fn send<T>(client: &UnboundedSender<io::Result<Bytes>>, data: T) -> Result<()> 
-        where Bytes: From<T>
-        {
-        client.send(Ok(Bytes::from(data))).chain_err(|| "Unable to send")
+    pub fn send<T>(client: &UnboundedSender<io::Result<Bytes>>, data: T) -> Result<()>
+    where
+        Bytes: From<T>,
+    {
+        client
+            .send(Ok(Bytes::from(data)))
+            .chain_err(|| "Failed while send message to SSE-channel")
     }
 }
 

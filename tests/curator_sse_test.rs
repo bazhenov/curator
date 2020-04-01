@@ -11,7 +11,7 @@ async fn curator_sse_client() -> Result<()> {
         .await
         .expect("Unable to connect");
 
-    let event_name = Some("start-task".to_string());
+    let event_name = Some("run-task".to_string());
     let event_content = "{}".to_string();
     let expected_event = (event_name, event_content);
     server.notify_all(&expected_event)?;
