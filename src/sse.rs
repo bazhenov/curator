@@ -6,13 +6,14 @@ use std::io;
 
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
+#[derive(Default)]
 pub struct SseBroker {
     clients: Vec<UnboundedSender<io::Result<Bytes>>>,
 }
 
 impl SseBroker {
     pub fn new() -> Self {
-        SseBroker { clients: vec![] }
+        Default::default()
     }
 
     pub fn new_channel(
