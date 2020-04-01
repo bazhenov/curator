@@ -15,7 +15,7 @@ async fn main() -> std::io::Result<()> {
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(1));
         let event = (Some("start-task".to_string()), "{}".to_string());
-        background_broker_ref.lock().unwrap().notify_all(&event);
+        background_broker_ref.lock().unwrap().notify_all(&event).unwrap();
     });
 
     HttpServer::new(move || {
