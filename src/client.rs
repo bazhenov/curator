@@ -1,11 +1,8 @@
 use crate::errors::*;
-use bytes::Bytes;
-use hyper::error::Error as HyperError;
-use hyper::{body::HttpBody as _, client::HttpConnector, header, Body, Client, Request, Response};
-use std::io::{self, BufRead, Cursor, Seek, SeekFrom, Write};
+use hyper::{body::HttpBody as _, header, Body, Client, Request, Response};
+use std::io::{Cursor, Seek, SeekFrom, Write};
 
 pub struct SseClient {
-    client: Client<HttpConnector, Body>,
     response: Response<Body>,
     lines: Lines,
 }
@@ -26,7 +23,6 @@ impl SseClient {
         let response = client.request(req).await?;
 
         Ok(Self {
-            client,
             response,
             lines: Lines::new(),
         })

@@ -33,16 +33,23 @@ impl SseBroker {
         for client in &self.clients {
             let (ref name, ref data) = event;
             if let Some(name) = name {
-                client.send(Ok(Bytes::from("event: ")))?;
-                client.send(Ok(Bytes::from(name.clone())))?;
-                client.send(Ok(Bytes::from("\n")))?;
+                Self::send(client, "event: ")?;
+                Self::send(client, name.clone())?;
+                Self::send(client, "\n")?;
             }
-            
-            client.send(Ok(Bytes::from("data: ")))?;
-            client.send(Ok(Bytes::from(data.clone())))?;
-            client.send(Ok(Bytes::from("\n\n")))?;
+
+            Self::send(client, "data: ")?;
+            Self::send(client, data.clone())?;
+            Self::send(client, "\n\n")?;            
         }
         Ok(())
+    }
+
+    #[inline]
+    pub fn send<T>(client: &UnboundedSender<io::Result<Bytes>>, data: T) -> Result<()> 
+        where Bytes: From<T>
+        {
+        client.send(Ok(Bytes::from(data))).chain_err(|| "Unable to send")
     }
 }
 

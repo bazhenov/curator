@@ -1,25 +1,19 @@
-use crate::sse;
+use crate::{errors::*, sse, client::SseEvent};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use std::error::Error;
 use std::sync::Mutex;
 use std::{thread, time::Duration};
 
 pub struct Curator {
     server: actix_server::Server,
+    sse: web::Data<Mutex<sse::SseBroker>>,
 }
 
 impl Curator {
-    pub fn start() -> Result<Self, Box<dyn Error>> {
+    pub fn start() -> Result<Self> {
         let broker = Mutex::new(sse::SseBroker::new());
         let broker_data = web::Data::new(broker);
+        let sse = broker_data.clone();
 
-        let background_broker_ref = broker_data.clone();
-
-        thread::spawn(move || loop {
-            thread::sleep(Duration::from_secs(1));
-            let event = (Some("start-task".to_string()), "{}".to_string());
-            background_broker_ref.lock().unwrap().notify_all(&event);
-        });
         let app = move || {
             App::new()
                 .app_data(broker_data.clone())
@@ -28,11 +22,17 @@ impl Curator {
 
         let server = HttpServer::new(app).bind("127.1:8080")?.run();
 
-        Ok(Self { server })
+        Ok(Self { server, sse })
     }
 
-    pub async fn stop(&self) {
-        self.server.stop(true).await
+    pub fn notify_all(&self, event: &SseEvent) -> Result<()> {
+        let event = (Some("start-task".to_string()), "{}".to_string());
+
+        self.sse.lock().unwrap().notify_all(&event)
+    }
+
+    pub async fn stop(&self, graceful: bool) {
+        self.server.stop(graceful).await
     }
 }
 

@@ -6,7 +6,7 @@ pub mod protocol;
 pub mod server;
 pub mod sse;
 
-mod errors {
+pub mod errors {
     error_chain! {
       foreign_links {
         Fmt(::std::fmt::Error);
