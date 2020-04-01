@@ -1,4 +1,4 @@
-use crate::{errors::*, sse, client::SseEvent};
+use crate::{client::SseEvent, errors::*, sse};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use std::sync::Mutex;
 use std::{thread, time::Duration};
@@ -26,7 +26,7 @@ impl Curator {
     }
 
     pub fn notify_all(&self, event: &SseEvent) -> Result<()> {
-        let event = (Some("start-task".to_string()), "{}".to_string());
+        let event = (Some("run-task".to_string()), "{}".to_string());
 
         self.sse.lock().unwrap().notify_all(&event)
     }

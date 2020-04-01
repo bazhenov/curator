@@ -1,9 +1,9 @@
 extern crate curator;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use curator::sse;
 use std::sync::Mutex;
 use std::task::Poll;
 use std::{thread, time::Duration};
-use curator::sse;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -14,8 +14,12 @@ async fn main() -> std::io::Result<()> {
 
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(1));
-        let event = (Some("start-task".to_string()), "{}".to_string());
-        background_broker_ref.lock().unwrap().notify_all(&event).unwrap();
+        let event = (Some("run-task".to_string()), "{}".to_string());
+        background_broker_ref
+            .lock()
+            .unwrap()
+            .notify_all(&event)
+            .unwrap();
     });
 
     HttpServer::new(move || {
