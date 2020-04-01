@@ -31,7 +31,7 @@ impl SseBroker {
         rx
     }
 
-    pub fn notify_all(&mut self, event: &SseEvent) -> Result<()> {
+    pub fn notify_all(&mut self, event: &SseEvent) {
         self.clients.retain(|client| {
             if let Err(e) = Self::send_client(&client, &event) {
                 eprintln!("{}", e.display_chain());
@@ -41,7 +41,6 @@ impl SseBroker {
                 true
             }
         });
-        Ok(())
     }
 
     pub fn send_client(

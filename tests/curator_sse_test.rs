@@ -14,7 +14,7 @@ async fn curator_sse_client() -> Result<()> {
     let event_name = Some("run-task".to_string());
     let event_content = "{}".to_string();
     let expected_event = (event_name, event_content);
-    server.notify_all(&expected_event)?;
+    server.notify_all(&expected_event);
 
     if let Some(event) = client.next_event().await? {
         assert_eq!(event, expected_event);

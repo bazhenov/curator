@@ -1,5 +1,5 @@
 use crate::{client::SseEvent, errors::*, sse};
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use std::sync::Mutex;
 
 pub struct Curator {
@@ -24,10 +24,10 @@ impl Curator {
         Ok(Self { server, sse })
     }
 
-    pub fn notify_all(&self, _event: &SseEvent) -> Result<()> {
+    pub fn notify_all(&self, _event: &SseEvent) {
         let event = (Some("run-task".to_string()), "{}".to_string());
 
-        self.sse.lock().unwrap().notify_all(&event)
+        self.sse.lock().unwrap().notify_all(&event);
     }
 
     pub async fn stop(&self, graceful: bool) {
@@ -35,8 +35,9 @@ impl Curator {
     }
 }
 
-async fn new_client(sse: web::Data<Mutex<sse::SseBroker>>) -> impl Responder {
+async fn new_client(req: HttpRequest, sse: web::Data<Mutex<sse::SseBroker>>) -> impl Responder {
     let rx = sse.lock().unwrap().subscribe();
+    println!("HOST IS: {host:?}", host = req.connection_info().remote());
 
     HttpResponse::Ok()
         .header("content-type", "text/event-stream")
