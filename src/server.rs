@@ -24,10 +24,8 @@ impl Curator {
         Ok(Self { server, sse })
     }
 
-    pub fn notify_all(&self, _event: &SseEvent) {
-        let event = (Some("run-task".to_string()), "{}".to_string());
-
-        self.sse.lock().unwrap().notify_all(&event);
+    pub fn notify_all(&self, event: &SseEvent) {
+        self.sse.lock().unwrap().notify_all(event);
     }
 
     pub async fn stop(&self, graceful: bool) {
