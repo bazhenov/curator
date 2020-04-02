@@ -1,5 +1,6 @@
 use crate::errors::*;
 use crate::protocol;
+use error_chain::bail;
 use hyper::{body::HttpBody as _, header, Body, Client, Request, Response};
 use std::collections::HashMap;
 use std::io::{Cursor, Seek, SeekFrom, Write};
@@ -9,7 +10,6 @@ use tokio::prelude::*;
 use tokio::process::{Child, Command};
 use tokio::stream::StreamExt;
 use uuid::Uuid;
-use error_chain::bail;
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
 pub type SseEvent = (Option<String>, String);
@@ -64,7 +64,10 @@ impl SseClient {
 
         let response = client.request(req).await?;
         if !response.status().is_success() {
-            bail!(ErrorKind::ClientConnectError(host.into(), response.status().as_u16()));
+            bail!(ErrorKind::ClientConnectError(
+                host.into(),
+                response.status().as_u16()
+            ));
         }
         println!("{:?}", response.status());
 
