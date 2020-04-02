@@ -25,7 +25,11 @@ pub struct StopTask {
 }
 
 pub enum ExecutionStatus {
-    INITIATED, REJECTED, RUNNING, FAILED, COMPLETED
+    INITIATED,
+    REJECTED,
+    RUNNING,
+    FAILED,
+    COMPLETED,
 }
 
 #[cfg(test)]
