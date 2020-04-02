@@ -1,14 +1,15 @@
 use crate::errors::*;
-use crate::protocol::ExecutionStatus;
+use crate::protocol;
 use hyper::{body::HttpBody as _, header, Body, Client, Request, Response};
-use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::collections::HashMap;
-use tokio::process::{Command, Child};
-use uuid::Uuid;
+use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::process::Stdio;
 use tokio::io::BufReader;
 use tokio::prelude::*;
+use tokio::process::{Child, Command};
 use tokio::stream::StreamExt;
+use uuid::Uuid;
+use error_chain::bail;
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
 pub type SseEvent = (Option<String>, String);
@@ -16,31 +17,30 @@ pub type SseEvent = (Option<String>, String);
 // Definition of a task that agent can run
 pub struct Task {
     /// Task id.
-    /// 
+    ///
     /// Uniq for an agent, but not for the system (multiple agents can have same task)
     pub id: String,
 
     /// Command factory
-    /// 
+    ///
     /// This function creates `Command` for execution
-    pub command: fn () -> Command
+    pub command: fn() -> Command,
 }
 
 pub struct Execution {
     pub id: uuid::Uuid,
     pub task: String,
-    pub status: ExecutionStatus,
-    pub stdout: Vec<String>
+    pub status: protocol::ExecutionStatus,
+    pub stdout: Vec<String>,
 }
 
 impl Execution {
-
     fn new(id: Uuid, task_id: &str) -> Self {
         Self {
             id,
             task: task_id.to_string(),
-            status: ExecutionStatus::INITIATED,
-            stdout: vec![]
+            status: protocol::ExecutionStatus::INITIATED,
+            stdout: vec![],
         }
     }
 }
@@ -51,16 +51,22 @@ pub struct SseClient {
 }
 
 impl SseClient {
-    pub async fn connect(host: &str) -> Result<Self> {
+    pub async fn connect(host: &str, agent: protocol::Agent) -> Result<Self> {
         let client = Client::new();
 
+        let json = serde_json::to_string(&agent)?;
         let req = Request::builder()
             .method("POST")
             .uri(host)
             .header(header::ACCEPT, "text/event-stream")
-            .body(Body::empty())?;
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(json))?;
 
         let response = client.request(req).await?;
+        if !response.status().is_success() {
+            bail!(ErrorKind::ClientConnectError(host.into(), response.status().as_u16()));
+        }
+        println!("{:?}", response.status());
 
         Ok(Self {
             response,
@@ -142,11 +148,10 @@ impl Lines {
 #[derive(Default)]
 pub struct Executions {
     tasks: HashMap<String, fn() -> Command>,
-    executions: HashMap<Uuid, Execution>
+    executions: HashMap<Uuid, Execution>,
 }
 
 impl Executions {
-
     pub fn new() -> Self {
         Default::default()
     }
@@ -166,7 +171,7 @@ impl Executions {
                         Self::process_child(child).await;
                     });
                     return true;
-                },
+                }
                 Err(e) => {
                     eprintln!("Unable to spawn child: {}", e);
                 }
@@ -178,7 +183,7 @@ impl Executions {
     async fn process_child(child: Child) {
         let stdout = child.stdout.unwrap();
         let mut reader = BufReader::new(stdout).lines();
-    
+
         while let Some(line) = reader.next().await {
             println!("Line: {}", line.expect("No line from process"));
         }

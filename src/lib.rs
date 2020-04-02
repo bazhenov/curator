@@ -20,7 +20,9 @@ pub mod errors {
       }
 
       errors {
-        UnknownError
+        ClientConnectError(uri: String, status_code: u16) {
+          display("Curator-server error HTTP/{} error ({})", status_code, uri)
+        }
       }
     }
 }
