@@ -1,12 +1,14 @@
 use crate::errors::*;
+use crate::protocol::ExecutionStatus;
 use hyper::{body::HttpBody as _, header, Body, Client, Request, Response};
 use std::io::{Cursor, Seek, SeekFrom, Write};
-use tokio::process::Command;
-
-pub struct SseClient {
-    response: Response<Body>,
-    lines: Lines,
-}
+use std::collections::HashMap;
+use tokio::process::{Command, Child};
+use uuid::Uuid;
+use std::process::Stdio;
+use tokio::io::BufReader;
+use tokio::prelude::*;
+use tokio::stream::StreamExt;
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
 pub type SseEvent = (Option<String>, String);
@@ -22,6 +24,30 @@ pub struct Task {
     /// 
     /// This function creates `Command` for execution
     pub command: fn () -> Command
+}
+
+pub struct Execution {
+    pub id: uuid::Uuid,
+    pub task: String,
+    pub status: ExecutionStatus,
+    pub stdout: Vec<String>
+}
+
+impl Execution {
+
+    fn new(id: Uuid, task_id: &str) -> Self {
+        Self {
+            id,
+            task: task_id.to_string(),
+            status: ExecutionStatus::INITIATED,
+            stdout: vec![]
+        }
+    }
+}
+
+pub struct SseClient {
+    response: Response<Body>,
+    lines: Lines,
 }
 
 impl SseClient {
@@ -83,8 +109,7 @@ impl Lines {
     }
 
     fn feed(&mut self, bytes: impl AsRef<[u8]>) -> Result<Vec<String>> {
-        self.0
-            .write(bytes.as_ref())
+        Write::write(&mut self.0, bytes.as_ref())
             .chain_err(|| "Unable to write data to in-memory cursor. Should never happen")?;
 
         let mut vec = Vec::new();
@@ -105,11 +130,57 @@ impl Lines {
 
             // skipping newline character and replace cursor with leftover data
             self.0 = Cursor::new(tail[1..].to_vec());
-            self.0.seek(SeekFrom::End(0))?;
+            Seek::seek(&mut self.0, SeekFrom::End(0))?;
 
             Ok(Some(line))
         } else {
             Ok(None)
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct Executions {
+    tasks: HashMap<String, fn() -> Command>,
+    executions: HashMap<Uuid, Execution>
+}
+
+impl Executions {
+
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn register_task(&mut self, task_id: &str, factory: fn() -> Command) {
+        self.tasks.insert(task_id.to_string(), factory);
+    }
+
+    pub fn run(&mut self, task_id: &str, execution_id: Uuid) -> bool {
+        if let Some(factory) = self.tasks.get(task_id) {
+            let mut task = factory();
+            match task.stdout(Stdio::piped()).spawn() {
+                Ok(child) => {
+                    let execution = Execution::new(execution_id, task_id);
+                    self.executions.insert(execution_id, execution);
+                    tokio::spawn(async move {
+                        Self::process_child(child).await;
+                    });
+                    return true;
+                },
+                Err(e) => {
+                    eprintln!("Unable to spawn child: {}", e);
+                }
+            }
+        }
+        false
+    }
+
+    async fn process_child(child: Child) {
+        let stdout = child.stdout.unwrap();
+        let mut reader = BufReader::new(stdout).lines();
+    
+        while let Some(line) = reader.next().await {
+            println!("Line: {}", line.expect("No line from process"));
         }
     }
 }

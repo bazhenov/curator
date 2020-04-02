@@ -24,6 +24,10 @@ pub struct StopTask {
     pub execution: Uuid,
 }
 
+pub enum ExecutionStatus {
+    INITIATED, REJECTED, RUNNING, FAILED, COMPLETED
+}
+
 #[cfg(test)]
 mod tests {
 
