@@ -1,6 +1,7 @@
 use crate::errors::*;
 use hyper::{body::HttpBody as _, header, Body, Client, Request, Response};
 use std::io::{Cursor, Seek, SeekFrom, Write};
+use tokio::process::Command;
 
 pub struct SseClient {
     response: Response<Body>,
@@ -9,6 +10,19 @@ pub struct SseClient {
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
 pub type SseEvent = (Option<String>, String);
+
+// Definition of a task that agent can run
+pub struct Task {
+    /// Task id.
+    /// 
+    /// Uniq for an agent, but not for the system (multiple agents can have same task)
+    pub id: String,
+
+    /// Command factory
+    /// 
+    /// This function creates `Command` for execution
+    pub command: fn () -> Command
+}
 
 impl SseClient {
     pub async fn connect(host: &str) -> Result<Self> {

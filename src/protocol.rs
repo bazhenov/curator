@@ -3,25 +3,25 @@ use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Task {
-    id: String,
+    pub id: String,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Agent {
-    application: String,
-    instance: String,
-    tasks: Vec<Task>,
+    pub application: String,
+    pub instance: String,
+    pub tasks: Vec<Task>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct RunTask {
-    task_id: String,
-    execution: Uuid,
+    pub task_id: String,
+    pub execution: Uuid,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct StopTask {
-    execution: Uuid,
+    pub execution: Uuid,
 }
 
 #[cfg(test)]
