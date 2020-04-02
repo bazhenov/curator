@@ -4,7 +4,6 @@ extern crate error_chain;
 pub mod client;
 pub mod protocol;
 pub mod server;
-pub mod sse;
 
 pub mod errors {
     error_chain! {

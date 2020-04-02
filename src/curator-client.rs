@@ -12,9 +12,13 @@ async fn main() -> Result<()> {
         application: "my".to_string(),
         instance: "single".to_string(),
         tasks: vec![
-            protocol::Task { id: "w".to_string() },
-            protocol::Task { id: "uptime".to_string() },
-        ]
+            protocol::Task {
+                id: "w".to_string(),
+            },
+            protocol::Task {
+                id: "uptime".to_string(),
+            },
+        ],
     };
 
     let mut client = SseClient::connect("http://localhost:8080/events", agent).await?;
