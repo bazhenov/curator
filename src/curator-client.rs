@@ -8,10 +8,10 @@ use tokio::process::Command;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let agent = protocol::Agent {
-        application: "my".to_string(),
-        instance: "single".to_string(),
-        tasks: vec![
+    let agent = protocol::Agent::new(
+        "my",
+        "single",
+        vec![
             protocol::Task {
                 id: "w".to_string(),
             },
@@ -19,7 +19,7 @@ async fn main() -> Result<()> {
                 id: "uptime".to_string(),
             },
         ],
-    };
+    );
 
     let mut client = SseClient::connect("http://localhost:8080/events", agent).await?;
 

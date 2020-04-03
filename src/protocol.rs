@@ -13,6 +13,22 @@ pub struct Agent {
     pub tasks: Vec<Task>,
 }
 
+impl Agent {
+    pub fn new(application: &str, instance: &str, tasks: Vec<Task>) -> Self {
+        Self {
+            application: application.to_string(),
+            instance: instance.to_string(),
+            tasks,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct AgentRef {
+    pub application: String,
+    pub instance: String,
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct RunTask {
     pub task_id: String,
@@ -85,6 +101,22 @@ mod tests {
             json!({
                 "task_id": "clean",
                 "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003"
+            }),
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn check_agent_ref() -> Result<()> {
+        assert_json_eq(
+            AgentRef {
+                instance: String::from("foo"),
+                application: String::from("app"),
+            },
+            json!({
+                "instance": "foo",
+                "application": "app"
             }),
         )?;
 
