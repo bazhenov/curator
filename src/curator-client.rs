@@ -8,7 +8,7 @@ use tokio::process::Command;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let agent = protocol::Agent::new(
+    let agent = protocol::agent::Agent::new(
         "my",
         "single",
         vec![
@@ -31,16 +31,18 @@ async fn main() -> Result<()> {
     while let Some((name, event)) = client.next_event().await? {
         println!("TASK: {:?}", name);
         match name {
-            Some(s) if s == "run-task" => match serde_json::from_str::<protocol::RunTask>(&event) {
-                Ok(event) => {
-                    if !executions.run(&event.task_id, event.execution) {
-                        eprintln!("Task {} not found", event.task_id);
+            Some(s) if s == "run-task" => {
+                match serde_json::from_str::<protocol::agent::RunTask>(&event) {
+                    Ok(event) => {
+                        if !executions.run(&event.task_id, event.execution) {
+                            eprintln!("Task {} not found", event.task_id);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Unablet to interprent {} event: {}. {}", s, event, e);
                     }
                 }
-                Err(e) => {
-                    eprintln!("Unablet to interprent {} event: {}. {}", s, event, e);
-                }
-            },
+            }
             Some(s) if s == "stop-task" => {
                 unimplemented!();
             }

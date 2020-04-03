@@ -28,5 +28,5 @@ hyper = "0.13.4"
 error-chain = "0.12.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-uuid = { version = "0.8", features = ["serde"] }
+uuid = { version = "0.8", features = ["serde", "v4"] }
 termion = "1.5.5"

@@ -1,26 +1,57 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Structs used in Curator<->agent communication protocol
+pub mod agent {
+    use super::*;
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    pub struct Agent {
+        pub application: String,
+        pub instance: String,
+        pub tasks: Vec<Task>,
+    }
+
+    impl Agent {
+        pub fn new(application: &str, instance: &str, tasks: Vec<Task>) -> Self {
+            Self {
+                application: application.to_string(),
+                instance: instance.to_string(),
+                tasks,
+            }
+        }
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    pub struct RunTask {
+        pub task_id: String,
+        pub execution: Uuid,
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    pub struct StopTask {
+        pub execution: Uuid,
+    }
+}
+
+pub mod client {
+    use super::*;
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    pub struct ExecutionRef {
+        pub execution_id: uuid::Uuid,
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    pub struct RunTask {
+        pub task_id: String,
+        pub agent: AgentRef,
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Task {
     pub id: String,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct Agent {
-    pub application: String,
-    pub instance: String,
-    pub tasks: Vec<Task>,
-}
-
-impl Agent {
-    pub fn new(application: &str, instance: &str, tasks: Vec<Task>) -> Self {
-        Self {
-            application: application.to_string(),
-            instance: instance.to_string(),
-            tasks,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -29,15 +60,13 @@ pub struct AgentRef {
     pub instance: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct RunTask {
-    pub task_id: String,
-    pub execution: Uuid,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct StopTask {
-    pub execution: Uuid,
+impl From<agent::Agent> for AgentRef {
+    fn from(agent: agent::Agent) -> Self {
+        AgentRef {
+            application: agent.application,
+            instance: agent.instance,
+        }
+    }
 }
 
 pub enum ExecutionStatus {
@@ -51,11 +80,23 @@ pub enum ExecutionStatus {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
+    use super::{agent::*, client::*, *};
     use crate::errors::*;
     use serde::de::DeserializeOwned;
     use serde_json::{json, Value};
     use std::fmt::Debug;
+
+    #[test]
+    fn check_execution_ref() -> Result<()> {
+        assert_json_eq(
+            ExecutionRef {
+                execution_id: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
+            },
+            json!({"execution_id": "596cf5b4-70ba-11ea-bc55-0242ac130003"}),
+        )?;
+
+        Ok(())
+    }
 
     #[test]
     fn check_task() -> Result<()> {
@@ -73,10 +114,10 @@ mod tests {
     fn check_agent() -> Result<()> {
         assert_json_eq(
             Agent {
-                application: String::from("my-app"),
-                instance: String::from("single"),
+                application: "my-app".into(),
+                instance: "single".into(),
                 tasks: vec![Task {
-                    id: String::from("my-task"),
+                    id: "my-task".into(),
                 }],
             },
             json!({
@@ -94,8 +135,8 @@ mod tests {
     #[test]
     fn check_run_task() -> Result<()> {
         assert_json_eq(
-            RunTask {
-                task_id: String::from("clean"),
+            agent::RunTask {
+                task_id: "clean".into(),
                 execution: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
             },
             json!({
@@ -108,11 +149,33 @@ mod tests {
     }
 
     #[test]
+    fn check_client_run_task() -> Result<()> {
+        assert_json_eq(
+            client::RunTask {
+                task_id: "clean".into(),
+                agent: AgentRef {
+                    application: "app".into(),
+                    instance: "single".into(),
+                },
+            },
+            json!({
+                "task_id": "clean",
+                "agent": {
+                    "application": "app",
+                    "instance": "single"
+                }
+            }),
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
     fn check_agent_ref() -> Result<()> {
         assert_json_eq(
             AgentRef {
-                instance: String::from("foo"),
-                application: String::from("app"),
+                instance: "foo".into(),
+                application: "app".into(),
             },
             json!({
                 "instance": "foo",

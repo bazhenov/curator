@@ -51,7 +51,7 @@ pub struct SseClient {
 }
 
 impl SseClient {
-    pub async fn connect(host: &str, agent: protocol::Agent) -> Result<Self> {
+    pub async fn connect(host: &str, agent: protocol::agent::Agent) -> Result<Self> {
         let client = Client::new();
 
         let json = serde_json::to_string(&agent)?;
