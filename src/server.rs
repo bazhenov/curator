@@ -1,18 +1,20 @@
-use crate::{client::SseEvent, errors::*, protocol};
-use actix_web::{http::header::*, web, App, HttpResponse, HttpServer, Responder};
+use std::collections::HashSet;
+use std::io;
+use std::sync::Mutex;
+
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use bytes::Bytes;
 use error_chain::ChainedError;
 use serde;
 use serde_json;
-use std::collections::HashSet;
-use std::io;
-use std::sync::Mutex;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
-use uuid;
+use uuid::Uuid;
+
+use crate::{client::SseEvent, errors::*, protocol};
 
 pub struct Agent {
     pub agent: protocol::AgentRef,
-    pub tasks: HashSet<String>,
+    pub tasks: HashSet<protocol::Task>,
     channel: UnboundedSender<io::Result<Bytes>>,
 }
 
@@ -64,6 +66,7 @@ impl Curator {
                 .app_data(agent_clone.clone())
                 .route("/events", web::post().to(new_client))
                 .route("/task/run", web::post().to(run_task))
+                .route("/agents", web::get().to(list_agents))
         };
 
         let server = HttpServer::new(app).bind("127.1:8080")?.run();
@@ -97,12 +100,12 @@ async fn new_client(
     let mut agents = agents.lock().unwrap();
 
     let new_agent = new_agent.into_inner();
-    let tasks = new_agent.tasks.iter().map(|i| i.id.clone()).collect();
+    let tasks = new_agent.tasks.iter().cloned().collect();
 
     agents.push(Agent {
         agent: new_agent.into(),
-        tasks: tasks,
         channel: tx,
+        tasks,
     });
 
     HttpResponse::Ok()
@@ -111,14 +114,34 @@ async fn new_client(
         .streaming(rx)
 }
 
+async fn list_agents(agents: web::Data<Mutex<Vec<Agent>>>) -> impl Responder {
+    let agents = agents.lock().unwrap();
+
+    let agents = agents
+        .iter()
+        .map(|a| protocol::client::Agent {
+            application: a.agent.application.clone(),
+            instance: a.agent.instance.clone(),
+            tasks: a.tasks.iter().cloned().collect(),
+        })
+        .collect::<Vec<_>>();
+
+    HttpResponse::Ok().json(agents)
+}
+
 async fn run_task(
     task: web::Json<protocol::client::RunTask>,
     agents: web::Data<Mutex<Vec<Agent>>>,
 ) -> impl Responder {
-    let agents = agents.lock().unwrap();
+    let mut agents = agents.lock().unwrap();
 
-    if let Some(agent) = agents.iter().find(|a| a.agent == task.agent) {
-        let execution_id = uuid::Uuid::new_v4();
+    let choosed_agent = agents
+        .iter()
+        .enumerate()
+        .find(|(_, a)| a.agent == task.agent);
+
+    if let Some((idx, agent)) = choosed_agent {
+        let execution_id = Uuid::new_v4();
 
         let result = agent.send_named_event(
             "run-task",
@@ -127,15 +150,13 @@ async fn run_task(
                 task_id: task.task_id.clone(),
             },
         );
-        
+
         if let Err(e) = result {
             eprintln!("{}", e);
-            HttpResponse::InternalServerError()
-                .finish()
+            agents.swap_remove(idx);
+            HttpResponse::InternalServerError().finish()
         } else {
-            HttpResponse::Ok()
-                .header(CONTENT_TYPE, "application/json")
-                .json(protocol::client::ExecutionRef { execution_id })
+            HttpResponse::Ok().json(protocol::client::ExecutionRef { execution_id })
         }
     } else {
         HttpResponse::NotAcceptable().finish()

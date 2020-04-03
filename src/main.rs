@@ -1,8 +1,11 @@
 extern crate curator;
+
+use std::{thread, time::Duration};
+
+use termion::clear;
+
 use curator::errors::*;
 use curator::server::Curator;
-use std::{thread, time::Duration};
-use termion::clear;
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
@@ -15,25 +18,11 @@ async fn main() -> Result<()> {
             for a in agents.iter() {
                 println!("{}@{}", a.agent.instance, a.agent.application);
                 for task in a.tasks.iter() {
-                    println!(" - {}", task);
+                    println!(" - {}", task.id);
                 }
             }
         }
 
         thread::sleep(Duration::from_secs(1));
-        // thread::sleep(Duration::from_secs(1));
-        // let event = (
-        //     Some("run-task".to_string()),
-        //     r#"{"task_id": "w", "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003"}"#.to_string(),
-        // );
-        // curator.notify_all(&event);
-
-        // thread::sleep(Duration::from_secs(1));
-        // let event = (
-        //     Some("run-task".to_string()),
-        //     r#"{"task_id": "uptime", "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003"}"#
-        //         .to_string(),
-        // );
-        // curator.notify_all(&event);
     }
 }

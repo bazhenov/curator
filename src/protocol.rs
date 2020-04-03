@@ -35,6 +35,7 @@ pub mod agent {
 }
 
 pub mod client {
+    pub use super::agent::Agent;
     use super::*;
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -49,7 +50,7 @@ pub mod client {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Hash, Eq)]
 pub struct Task {
     pub id: String,
 }
