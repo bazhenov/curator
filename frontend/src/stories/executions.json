@@ -1,0 +1,178 @@
+[
+  {
+    "id": "4ec1560c-431d-469d-9fa4-39fcf5b647b9",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "21:47  up 4 days, 11:40, 7 users, load averages: 2.69 3.09 2.83",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:47:47.333402Z",
+    "finished": "2020-04-04T11:47:47.347338Z"
+  },
+  {
+    "id": "bde06d8b-19e7-48c5-b850-ee203702444e",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sat Apr  4 21:45:11 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:45:11.889759Z",
+    "finished": "2020-04-04T11:45:11.902098Z"
+  },
+  {
+    "id": "1ecdd011-5243-47c6-b2bd-954b89f5fdee",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "21:47  up 4 days, 11:40, 7 users, load averages: 2.81 3.13 2.84",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:47:36.424082Z",
+    "finished": "2020-04-04T11:47:36.435646Z"
+  },
+  {
+    "id": "e5aca053-e131-4a04-8e48-cd73b8fff2d5",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "21:47  up 4 days, 11:40, 7 users, load averages: 2.75 3.11 2.83",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:47:43.552073Z",
+    "finished": "2020-04-04T11:47:43.560752Z"
+  },
+  {
+    "id": "e642ba18-9bc6-4bcb-b861-ddf3e81cc7db",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sat Apr  4 21:45:12 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:45:12.902229Z",
+    "finished": "2020-04-04T11:45:12.909420Z"
+  },
+  {
+    "id": "a2c0bc73-6bb9-4bff-a719-9747f4722548",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sun Apr  5 00:19:34 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T14:19:34.661030Z",
+    "finished": "2020-04-04T14:19:34.668601Z"
+  },
+  {
+    "id": "e4d88355-8be8-4b50-9d7b-de0ed663e4d9",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sat Apr  4 21:47:38 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:47:38.083376Z",
+    "finished": "2020-04-04T11:47:38.091753Z"
+  },
+  {
+    "id": "c5dbb4f6-18cd-4393-9edd-a4ab77710aaf",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sat Apr  4 21:47:59 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:47:59.346024Z",
+    "finished": "2020-04-04T11:47:59.354776Z"
+  },
+  {
+    "id": "9746ba5d-a544-4f46-8a4d-69e5b88a8774",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": " 0:19  up 4 days, 14:12, 7 users, load averages: 2.23 2.31 2.38\nUSER     TTY      FROM              LOGIN@  IDLE WHAT\nbazhenov console  -                Tue10   4days -\nbazhenov s008     -                Tue10    2:53 target/debug/curator\nbazhenov s009     -                Tue10       9 /usr/local/Cellar/node/12.3.1/bin/node\nbazhenov s000     -                Wed11       9 -zsh\nbazhenov s002     -                Fri12       9 -zsh\nbazhenov s004     -                Fri12    2:53 w\nbazhenov s005     -                Fri12       - /usr/local/bin/starship time",
+    "status": "COMPLETED",
+    "started": "2020-04-04T14:19:43.814209Z",
+    "finished": "2020-04-04T14:19:43.832331Z"
+  },
+  {
+    "id": "6343faa2-9cfc-4ea3-a8c9-3640205e2e4f",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sat Apr  4 21:26:58 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:26:58.160362Z",
+    "finished": "2020-04-04T11:26:58.171236Z"
+  },
+  {
+    "id": "e91cd952-d165-4114-968c-280a796b4d89",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sun Apr  5 00:19:32 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T14:19:32.974631Z",
+    "finished": "2020-04-04T14:19:32.981103Z"
+  },
+  {
+    "id": "4fe521ce-fc7e-4333-831d-7091a4f6a89a",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sat Apr  4 21:45:09 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:45:09.961567Z",
+    "finished": "2020-04-04T11:45:09.973045Z"
+  },
+  {
+    "id": "b04681c6-62a2-4207-a981-eca9e8c0fc18",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": " 0:19  up 4 days, 14:12, 7 users, load averages: 2.25 2.32 2.38\nUSER     TTY      FROM              LOGIN@  IDLE WHAT\nbazhenov console  -                Tue10   4days -\nbazhenov s008     -                Tue10    2:53 target/debug/curator\nbazhenov s009     -                Tue10       9 /usr/local/Cellar/node/12.3.1/bin/node\nbazhenov s000     -                Wed11       9 -zsh\nbazhenov s002     -                Fri12       9 -zsh\nbazhenov s004     -                Fri12    2:53 w\nbazhenov s005     -                Fri12       - /usr/local/bin/starship time",
+    "status": "COMPLETED",
+    "started": "2020-04-04T14:19:42.503141Z",
+    "finished": "2020-04-04T14:19:42.524830Z"
+  },
+  {
+    "id": "f6291b8d-2d07-4af1-8c48-c7d858876648",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sat Apr  4 21:45:10 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:45:10.909568Z",
+    "finished": "2020-04-04T11:45:10.919479Z"
+  },
+  {
+    "id": "f518c8f4-8e2c-4e2f-9729-6966a240014d",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "21:47  up 4 days, 11:40, 7 users, load averages: 2.75 3.11 2.83\nUSER     TTY      FROM              LOGIN@  IDLE WHAT\nbazhenov console  -                Tue10   4days -\nbazhenov s008     -                Tue10      21 target/debug/curator\nbazhenov s009     -                Tue10       5 -zsh\nbazhenov s000     -                Wed11       5 -zsh\nbazhenov s002     -                Fri12       5 -zsh\nbazhenov s004     -                Fri12      21 w\nbazhenov s005     -                Fri12      10 /usr/local/Cellar/node/12.3.1/bin/node",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:47:45.577497Z",
+    "finished": "2020-04-04T11:47:45.600221Z"
+  },
+  {
+    "id": "cf248665-a48e-4002-88d4-f0d1c099aaf9",
+    "agent": {
+      "application": "my",
+      "instance": "single"
+    },
+    "output": "Sat Apr  4 21:47:41 +10 2020",
+    "status": "COMPLETED",
+    "started": "2020-04-04T11:47:41.898593Z",
+    "finished": "2020-04-04T11:47:41.905580Z"
+  }
+]

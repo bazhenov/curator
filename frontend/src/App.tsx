@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from './App.module.css';
 import moment from 'moment';
+import {Agent, Execution, Task} from './models'
 
 interface AppProps {
   curator: Curator
@@ -58,30 +59,6 @@ const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
     <p>Agent: <code>{execution.agent.application}@{execution.agent.instance}</code></p>
     <pre>{execution.output}</pre>
   </div>
-}
-
-interface Agent {
-  application: String,
-  instance: String,
-  tasks: Array<Task>
-}
-
-interface AgentRef {
-  application: String,
-  instance: String
-}
-
-interface Execution {
-  id: String,
-  agent: AgentRef,
-  status: String,
-  output: String,
-  started: moment.Moment,
-  finished?: moment.Moment
-}
-
-interface Task {
-  id: String
 }
 
 type AgentChangeListener = (_: Array<Agent>) => void
