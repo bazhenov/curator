@@ -95,16 +95,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  execution:
+                  execution_id:
                     type: string
                     format: uuid
                     description: New execution UUID
                 required:
-                  - execution
+                  - execution_id
               examples:
                 basic:
                   value:
-                    execution: 8ceb0d95-68c1-476c-8082-54b4a28d6df2
+                    execution_id: 8ceb0d95-68c1-476c-8082-54b4a28d6df2
       description: Creates an execution for a given task
       requestBody:
         content:
@@ -112,27 +112,27 @@ paths:
             schema:
               type: object
               properties:
-                task:
+                task_id:
                   type: string
                   description: task to execute
                 agent:
                   type: object
+                  description: agent instance to run task on
                   required:
                     - application
                     - instance
-                  description: agent instance to run task on
                   properties:
                     application:
                       type: string
                     instance:
                       type: string
               required:
-                - task
+                - task_id
                 - agent
             examples:
               create new execution:
                 value:
-                  task: cleanup-database
+                  task_id: cleanup-database
                   agent:
                     application: todo-application
                     instance: web-frontend
