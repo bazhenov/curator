@@ -130,8 +130,13 @@ async fn report_task(
     let mut executions = executions.lock().unwrap();
 
     if let Some(execution) = executions.0.get_mut(&report.id) {
+        execution.status = report.status;
         if let Some(lines) = report.stdout_append.take() {
-            execution.output = format!("{}\n{}", execution.output, lines);
+            execution.output = if execution.output.is_empty() {
+                lines
+            } else {
+                format!("{}\n{}", execution.output, lines)
+            }
         }
     }
     HttpResponse::Ok().finish()

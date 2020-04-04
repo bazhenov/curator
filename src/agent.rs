@@ -1,15 +1,12 @@
-use crate::errors::*;
-use crate::protocol::{self, Execution, ExecutionStatus};
-use error_chain::bail;
+use crate::prelude::*;
 use hyper::{
     body::HttpBody as _,
     header::{ACCEPT, CONTENT_TYPE},
     Body, Client, Request, Response,
 };
-use std::collections::hash_map::{Values, ValuesMut};
+use serde::Serialize;
 use std::collections::HashMap;
 use std::io::{Cursor, Seek, SeekFrom, Write};
-use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tokio::io::BufReader;
 use tokio::prelude::*;
@@ -21,29 +18,16 @@ use uuid::Uuid;
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
 pub type SseEvent = (Option<String>, String);
 
-// Definition of a task that agent can run
-pub struct Task {
-    /// Task id.
-    ///
-    /// Uniq for an agent, but not for the system (multiple agents can have same task)
-    pub id: String,
-
-    /// Command factory
-    ///
-    /// This function creates `Command` for execution
-    pub command: fn() -> Command,
-}
-
 pub struct SseClient {
     response: Response<Body>,
     lines: Lines,
 }
 
 impl SseClient {
-    pub async fn connect(host: &str, agent: protocol::agent::Agent) -> Result<Self> {
+    pub async fn connect<T: Serialize>(host: &str, body: T) -> Result<Self> {
         let client = Client::new();
 
-        let json = serde_json::to_string(&agent)?;
+        let json = serde_json::to_string(&body)?;
         let req = Request::builder()
             .method("POST")
             .uri(host)
@@ -137,28 +121,81 @@ impl Lines {
     }
 }
 
-#[derive(Default)]
-pub struct Executions {
-    tasks: HashMap<String, fn() -> Command>,
-    executions: HashMap<Uuid, Arc<Mutex<Execution>>>,
+pub struct CuratorAgent {
+    agent: AgentRef,
+    tasks: Shared<HashMap<String, fn() -> Command>>,
+    executions: Shared<HashMap<Uuid, Arc<Mutex<Execution>>>>,
 }
 
-impl Executions {
-    pub fn new() -> Self {
-        Default::default()
+impl CuratorAgent {
+    pub fn new(application: &str, instance: &str) -> Self {
+        let application = application.into();
+        let instance = instance.into();
+        Self {
+            agent: AgentRef {
+                application,
+                instance,
+            },
+            tasks: shared(HashMap::new()),
+            executions: shared(HashMap::new()),
+        }
+    }
+
+    pub async fn agent_loop(&mut self) -> Result<()> {
+        let tasks = self
+            .tasks
+            .lock()
+            .unwrap()
+            .keys()
+            .map(|t| Task { id: t.into() })
+            .collect::<Vec<_>>();
+        let agent = agent::Agent {
+            application: self.agent.application.clone(),
+            instance: self.agent.instance.clone(),
+            tasks,
+        };
+        let mut client = SseClient::connect("http://localhost:8080/events", &agent).await?;
+
+        while let Some((name, event)) = client.next_event().await? {
+            match name {
+                Some(s) if s == "run-task" => {
+                    match serde_json::from_str::<agent::RunTask>(&event) {
+                        Ok(event) => {
+                            if !self.run(&event.task_id, event.execution) {
+                                eprintln!("Task {} not found", event.task_id);
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Unable to interpret {} event: {}. {}", s, event, e);
+                        }
+                    }
+                }
+                Some(s) if s == "stop-task" => {
+                    unimplemented!();
+                }
+                _ => {}
+            }
+        }
+
+        Ok(())
     }
 
     pub fn register_task(&mut self, task_id: &str, factory: fn() -> Command) {
-        self.tasks.insert(task_id.to_string(), factory);
+        self.tasks
+            .lock()
+            .unwrap()
+            .insert(task_id.to_string(), factory);
     }
 
     pub fn run(&mut self, task_id: &str, execution_id: Uuid) -> bool {
-        if let Some(factory) = self.tasks.get(task_id) {
-            let mut task = factory();
-            match task.stdout(Stdio::piped()).spawn() {
+        if let Some(factory) = self.tasks.lock().unwrap().get(task_id) {
+            match factory().spawn() {
                 Ok(child) => {
                     let execution = Execution::with_arc(execution_id);
-                    self.executions.insert(execution_id, Arc::clone(&execution));
+                    self.executions
+                        .lock()
+                        .unwrap()
+                        .insert(execution_id, Arc::clone(&execution));
 
                     let (tx, rx) = mpsc::channel(100);
                     tokio::spawn(Self::read_stdout(child, tx));
@@ -173,14 +210,6 @@ impl Executions {
         false
     }
 
-    pub fn list(&self) -> Values<Uuid, Arc<Mutex<Execution>>> {
-        self.executions.values()
-    }
-
-    pub fn list_mut(&mut self) -> ValuesMut<Uuid, Arc<Mutex<Execution>>> {
-        self.executions.values_mut()
-    }
-
     async fn report_execution_back(id: Uuid, mut rx: Receiver<ChildProgress>) {
         use ExecutionStatus::*;
         let client = Client::new();
@@ -188,14 +217,14 @@ impl Executions {
 
         while let Some(progress) = rx.recv().await {
             let report = match progress {
-                ChildProgress::Stdout(line) => protocol::agent::ExecutionReport {
+                ChildProgress::Stdout(line) => agent::ExecutionReport {
                     id,
                     status: RUNNING,
                     stdout_append: Some(line),
                 },
                 ChildProgress::Finished(status_code) => {
                     let status = if status_code == 0 { COMPLETED } else { FAILED };
-                    protocol::agent::ExecutionReport {
+                    agent::ExecutionReport {
                         id,
                         status,
                         stdout_append: None,

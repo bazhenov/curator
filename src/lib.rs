@@ -5,6 +5,23 @@ pub mod agent;
 pub mod protocol;
 pub mod server;
 
+use std::sync::Arc;
+use std::sync::Mutex;
+
+pub mod prelude {
+    pub use super::errors::*;
+    pub use super::protocol::*;
+    pub use super::shared;
+    pub use super::Shared;
+    pub use error_chain::bail;
+}
+
+pub type Shared<T> = Arc<Mutex<T>>;
+
+pub fn shared<T>(obj: T) -> Shared<T> {
+    Arc::new(Mutex::new(obj))
+}
+
 pub mod errors {
     error_chain! {
       foreign_links {
