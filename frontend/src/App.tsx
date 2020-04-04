@@ -6,9 +6,12 @@ interface AppProps {
 }
 
 export const App: React.SFC<AppProps> = (props) => {
+  let { curator } = props
+
   const [agents, setAgents] = useState<Array<Agent>>([]);
   const [executions, setExecutions] = useState<Array<Execution>>([]);
-  let { curator } = props
+  const [selectedExecution, setSelectedExecution] = useState<Execution | null>(null);
+  
   useEffect(curator.onAgentsChange(setAgents))
   useEffect(curator.onExecutionsChange(setExecutions))
 
@@ -19,7 +22,9 @@ export const App: React.SFC<AppProps> = (props) => {
     <ol>{agent.tasks.map(t => taskTemplate(agent, t))}</ol>
   </li>
 
-  let executionTemplate = (e: Execution) => <li>{e.id}</li>
+  let executionTemplate = (e: Execution) => <li>
+    <a href='#' onClick={() => setSelectedExecution(e)}>{e.id}</a>
+  </li>
   
   return (
     <div className={styles.App}>
@@ -36,8 +41,19 @@ export const App: React.SFC<AppProps> = (props) => {
           {executions.map(executionTemplate)}
         </ul>
       </div>
+
+      {selectedExecution && <ExecutionUI execution={selectedExecution} />}
     </div>
   );
+}
+
+const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
+  let { execution } = props
+  return <div>
+    <p>ExecutionID: {execution.id}</p>
+    <p>Status: {execution.status}</p>
+    <pre>{execution.stdout}</pre>
+  </div>
 }
 
 interface Agent {
