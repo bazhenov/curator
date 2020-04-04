@@ -7,24 +7,33 @@ interface AppProps {
 
 export const App: React.SFC<AppProps> = (props) => {
   const [agents, setAgents] = useState<Array<Agent>>([]);
+  const [executions, setExecutions] = useState<Array<Execution>>([]);
   let { curator } = props
-  useEffect(() => {
-    let handler = (a: any) => setAgents(a);
-    curator.subscribe(handler);
-    return () => props.curator.unsubscribe(handler)
-  })
+  useEffect(curator.onAgentsChange(setAgents))
+  useEffect(curator.onExecutionsChange(setExecutions))
 
-  let taskTemplate = (agent: Agent, task: Task) =>
-    <li><a href='#' onClick={() => curator.runTask(task.id, agent)}>{task.id}</a></li>
+  let taskTemplate = (a: Agent, t: Task) =>
+    <li><a href='#' onClick={() => curator.runTask(t.id, a)}>{t.id}</a></li>
+
   let agentTemplate = (agent: Agent) => <li>{agent.application}@{agent.instance}
     <ol>{agent.tasks.map(t => taskTemplate(agent, t))}</ol>
   </li>
+
+  let executionTemplate = (e: Execution) => <li>{e.id}</li>
   
   return (
     <div className={styles.App}>
       <div>
+        <h3>Agents</h3>
         <ul>
           {agents.map(agentTemplate)}
+        </ul>
+      </div>
+
+      <div>
+        <h3>Tasks</h3>
+        <ul>
+          {executions.map(executionTemplate)}
         </ul>
       </div>
     </div>
@@ -37,28 +46,45 @@ interface Agent {
   tasks: Array<Task>
 }
 
+interface Execution {
+  id: String,
+  status: String,
+  stdout: String
+}
+
 interface Task {
   id: String
 }
 
+type AgentChangeListener = (_: Array<Agent>) => void
+type ExecutionChangeListener = (_: Array<Execution>) => void
+
 export class Curator {
 
-  handlers: Array<any>
+  private agentChangeListeners: Array<AgentChangeListener>
+  private executionChangeListeners: Array<ExecutionChangeListener>
 
   constructor() {
-    this.handlers = []
-    this.updateLoop()
+    this.agentChangeListeners = []
+    this.executionChangeListeners = []
+    this.updateAgentsLoop()
+    this.updateExecutionsLoop()
   }
 
-  updateLoop() {
+  updateAgentsLoop() {
     fetch("/agents")
       .then(response => response.json())
-      .then(r => {
-        for (let handler of this.handlers) {
-          handler(r)
-        }
-      })
-    setTimeout(() => this.updateLoop(), 1000)
+      .then(r =>
+        this.agentChangeListeners.forEach(listener => listener(r)))
+    setTimeout(() => this.updateAgentsLoop(), 1000)
+  }
+
+  updateExecutionsLoop() {
+    fetch("/executions")
+      .then(response => response.json())
+      .then(r =>
+        this.executionChangeListeners.forEach(listener => listener(r)))
+    setTimeout(() => this.updateExecutionsLoop(), 1000)
   }
 
   runTask(task_id: String, agent: Agent) {
@@ -72,13 +98,19 @@ export class Curator {
     fetch("/task/run", params)
   }
 
-  subscribe(handler: AgentChangeListener) {
-    this.handlers.push(handler)
+  onAgentsChange(listener: AgentChangeListener): () => void {
+    this.agentChangeListeners.push(listener)
+
+    return () => {
+      this.agentChangeListeners = this.agentChangeListeners.filter(i => i !== listener);
+    }
   }
 
-  unsubscribe(handler: AgentChangeListener) {
-    this.handlers = this.handlers.filter(i => i !== handler);
+  onExecutionsChange(listener: ExecutionChangeListener): () => void {
+    this.executionChangeListeners.push(listener)
+
+    return () => {
+      this.executionChangeListeners = this.executionChangeListeners.filter(i => i !== listener);
+    }
   }
 }
-
-type AgentChangeListener = (_: Array<Agent>) => void
