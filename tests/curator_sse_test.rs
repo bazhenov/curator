@@ -1,6 +1,6 @@
 extern crate curator;
 
-use curator::client::SseClient;
+use curator::agent::SseClient;
 use curator::errors::*;
 use curator::protocol;
 use curator::server::Curator;

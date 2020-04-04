@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate error_chain;
 
-pub mod client;
+pub mod agent;
 pub mod protocol;
 pub mod server;
 

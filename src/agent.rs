@@ -184,7 +184,7 @@ impl Executions {
     async fn report_execution_back(id: Uuid, mut rx: Receiver<ChildProgress>) {
         use ExecutionStatus::*;
         let client = Client::new();
-        let uri = "http://localhost:8080/task/report";
+        let uri = "http://localhost:8080/execution/report";
 
         while let Some(progress) = rx.recv().await {
             let report = match progress {

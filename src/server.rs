@@ -10,12 +10,11 @@ use serde_json;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use uuid::Uuid;
 
-use crate::protocol::Execution;
-use crate::{client::SseEvent, errors::*, protocol};
+use crate::{agent::SseEvent, errors::*, protocol::*};
 
 pub struct Agent {
-    pub agent: protocol::AgentRef,
-    pub tasks: HashSet<protocol::Task>,
+    pub agent: AgentRef,
+    pub tasks: HashSet<Task>,
     channel: UnboundedSender<io::Result<Bytes>>,
 }
 
@@ -53,7 +52,7 @@ impl Agent {
 }
 
 #[derive(Default)]
-struct Executions(HashMap<Uuid, Execution>);
+struct Executions(HashMap<Uuid, client::Execution>);
 
 pub struct Curator {
     server: actix_server::Server,
@@ -73,7 +72,7 @@ impl Curator {
                     .app_data(executions.clone())
                     .route("/events", web::post().to(new_client))
                     .route("/task/run", web::post().to(run_task))
-                    .route("/task/report", web::post().to(report_task))
+                    .route("/execution/report", web::post().to(report_task))
                     .route("/agents", web::get().to(list_agents))
                     .route("/executions", web::get().to(list_executions))
             }
@@ -103,7 +102,7 @@ impl Curator {
 }
 
 async fn new_client(
-    new_agent: web::Json<protocol::agent::Agent>,
+    new_agent: web::Json<agent::Agent>,
     agents: web::Data<Mutex<Vec<Agent>>>,
 ) -> impl Responder {
     let (tx, rx) = unbounded_channel();
@@ -125,17 +124,15 @@ async fn new_client(
 }
 
 async fn report_task(
-    mut report: web::Json<protocol::agent::ExecutionReport>,
+    mut report: web::Json<agent::ExecutionReport>,
     executions: web::Data<Mutex<Executions>>,
 ) -> impl Responder {
     let mut executions = executions.lock().unwrap();
 
-    let entry = executions
-        .0
-        .entry(report.id)
-        .or_insert_with(|| Execution::new(report.id));
-    if let Some(lines) = report.stdout_append.take() {
-        entry.stdout = format!("{}{}", entry.stdout, lines);
+    if let Some(execution) = executions.0.get_mut(&report.id) {
+        if let Some(lines) = report.stdout_append.take() {
+            execution.output = format!("{}\n{}", execution.output, lines);
+        }
     }
     HttpResponse::Ok().finish()
 }
@@ -152,7 +149,7 @@ async fn list_agents(agents: web::Data<Mutex<Vec<Agent>>>) -> impl Responder {
 
     let agents = agents
         .iter()
-        .map(|a| protocol::client::Agent {
+        .map(|a| agent::Agent {
             application: a.agent.application.clone(),
             instance: a.agent.instance.clone(),
             tasks: a.tasks.iter().cloned().collect(),
@@ -163,8 +160,9 @@ async fn list_agents(agents: web::Data<Mutex<Vec<Agent>>>) -> impl Responder {
 }
 
 async fn run_task(
-    task: web::Json<protocol::client::RunTask>,
+    task: web::Json<client::RunTask>,
     agents: web::Data<Mutex<Vec<Agent>>>,
+    executions: web::Data<Mutex<Executions>>,
 ) -> impl Responder {
     let mut agents = agents.lock().unwrap();
 
@@ -178,7 +176,7 @@ async fn run_task(
 
         let result = agent.send_named_event(
             "run-task",
-            &protocol::agent::RunTask {
+            &agent::RunTask {
                 execution: execution_id,
                 task_id: task.task_id.clone(),
             },
@@ -189,7 +187,12 @@ async fn run_task(
             agents.swap_remove(idx);
             HttpResponse::InternalServerError().finish()
         } else {
-            HttpResponse::Ok().json(protocol::client::ExecutionRef { execution_id })
+            let mut executions = executions.lock().unwrap();
+            executions.0.insert(
+                execution_id,
+                client::Execution::new(execution_id, agent.agent.clone()),
+            );
+            HttpResponse::Ok().json(client::ExecutionRef { execution_id })
         }
     } else {
         HttpResponse::NotAcceptable().finish()

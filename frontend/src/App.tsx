@@ -52,7 +52,8 @@ const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
   return <div>
     <p>ExecutionID: {execution.id}</p>
     <p>Status: {execution.status}</p>
-    <pre>{execution.stdout}</pre>
+    <p>Agent: <code>{execution.agent.application}@{execution.agent.instance}</code></p>
+    <pre>{execution.output}</pre>
   </div>
 }
 
@@ -62,10 +63,16 @@ interface Agent {
   tasks: Array<Task>
 }
 
+interface AgentRef {
+  application: String,
+  instance: String
+}
+
 interface Execution {
   id: String,
+  agent: AgentRef,
   status: String,
-  stdout: String
+  output: String
 }
 
 interface Task {

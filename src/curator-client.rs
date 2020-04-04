@@ -1,5 +1,5 @@
 extern crate curator;
-use curator::client::{Executions, SseClient};
+use curator::agent::{Executions, SseClient};
 use curator::errors::*;
 use curator::protocol;
 use serde_json;

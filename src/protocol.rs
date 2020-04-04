@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-/// Structs used in Curator<->agent communication protocol
+/// Structs used in Curator<->Agent communication protocol
 pub mod agent {
     use super::*;
 
@@ -42,6 +42,7 @@ pub mod agent {
     }
 }
 
+/// Structs used in Curator<->Client communication protocol
 pub mod client {
     pub use super::agent::Agent;
     use super::*;
@@ -56,6 +57,25 @@ pub mod client {
         pub task_id: String,
         pub agent: AgentRef,
     }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+    pub struct Execution {
+        pub id: Uuid,
+        pub agent: AgentRef,
+        pub output: String,
+        pub status: ExecutionStatus,
+    }
+
+    impl Execution {
+        pub fn new(id: Uuid, agent: AgentRef) -> Self {
+            Self {
+                id,
+                agent,
+                output: String::new(),
+                status: ExecutionStatus::INITIATED,
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Hash, Eq)]
@@ -63,7 +83,7 @@ pub struct Task {
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct AgentRef {
     pub application: String,
     pub instance: String,
@@ -111,7 +131,7 @@ impl Execution {
 #[cfg(test)]
 mod tests {
 
-    use super::{agent::*, client::*, *};
+    use super::{agent, client, *};
     use crate::errors::*;
     use serde::de::DeserializeOwned;
     use serde_json::{json, Value};
@@ -120,7 +140,7 @@ mod tests {
     #[test]
     fn check_execution_ref() -> Result<()> {
         assert_json_eq(
-            ExecutionRef {
+            client::ExecutionRef {
                 execution_id: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
             },
             json!({"execution_id": "596cf5b4-70ba-11ea-bc55-0242ac130003"}),
@@ -144,7 +164,7 @@ mod tests {
     #[test]
     fn check_agent() -> Result<()> {
         assert_json_eq(
-            Agent {
+            agent::Agent {
                 application: "my-app".into(),
                 instance: "single".into(),
                 tasks: vec![Task {
@@ -220,7 +240,7 @@ mod tests {
     #[test]
     fn check_execution_report() -> Result<()> {
         assert_json_eq(
-            ExecutionReport {
+            agent::ExecutionReport {
                 id: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
                 status: ExecutionStatus::RUNNING,
                 stdout_append: Some("output".into()),
@@ -254,9 +274,35 @@ mod tests {
     }
 
     #[test]
+    fn check_client_execution() -> Result<()> {
+        assert_json_eq(
+            client::Execution {
+                id: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
+                status: ExecutionStatus::RUNNING,
+                output: "output".into(),
+                agent: AgentRef {
+                    application: "app".into(),
+                    instance: "single".into(),
+                },
+            },
+            json!({
+                "id": "596cf5b4-70ba-11ea-bc55-0242ac130003",
+                "status": "RUNNING",
+                "output": "output",
+                "agent": {
+                    "application": "app",
+                    "instance": "single"
+                }
+            }),
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
     fn check_stop_task() -> Result<()> {
         assert_json_eq(
-            StopTask {
+            agent::StopTask {
                 execution: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
             },
             json!({ "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003" }),
