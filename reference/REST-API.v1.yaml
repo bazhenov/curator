@@ -164,6 +164,19 @@ paths:
                         - name: cleanup-database
       operationId: get-agents
       description: List all active agents in the system and their tasks
+  /executions:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: get-executions
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Execution'
+        description: ''
 components:
   schemas:
     Task:
@@ -219,19 +232,10 @@ components:
           format: uuid
           description: execution id given agent when `start-task` command is issued
         status:
-          type: string
-          enum:
-            - initiated
-            - rejected
-            - running
-            - completed
-            - failed
-        stdout-append:
+          $ref: '#/components/schemas/ExecutionStatus'
+        stdout_append:
           type: string
           description: stdout new content since last report (if any)
-        stderr-append:
-          type: string
-          description: stderr new content since last report (if any)
       required:
         - id
         - status
@@ -247,3 +251,39 @@ components:
           type: string
         agent:
           type: string
+    ExecutionState:
+      title: ExecutionState
+      type: object
+      properties:
+        id:
+          type: string
+        agent:
+          $ref: '#/components/schemas/AgentRef'
+        stdout:
+          type: string
+        status:
+          $ref: '#/components/schemas/ExecutionStatus'
+      required:
+        - id
+        - status
+    ExecutionStatus:
+      type: string
+      title: ExecutionStatus
+      enum:
+        - INITIATED
+        - REJECTED
+        - RUNNING
+        - FAILED
+        - COMPLETED
+      x-examples: {}
+    AgentRef:
+      title: AgentRef
+      type: object
+      properties:
+        application:
+          type: string
+        instance:
+          type: string
+      required:
+        - application
+        - instance
