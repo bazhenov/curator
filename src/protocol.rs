@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
@@ -64,6 +65,8 @@ pub mod client {
         pub agent: AgentRef,
         pub output: String,
         pub status: ExecutionStatus,
+        pub started: DateTime<Utc>,
+        pub finished: Option<DateTime<Utc>>,
     }
 
     impl Execution {
@@ -73,6 +76,8 @@ pub mod client {
                 agent,
                 output: String::new(),
                 status: ExecutionStatus::INITIATED,
+                started: Utc::now(),
+                finished: None,
             }
         }
     }
@@ -105,6 +110,17 @@ pub enum ExecutionStatus {
     RUNNING,
     FAILED,
     COMPLETED,
+}
+
+impl ExecutionStatus {
+    pub fn is_terminal(self) -> bool {
+        use ExecutionStatus::*;
+
+        match self {
+            REJECTED | COMPLETED | FAILED => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -284,11 +300,15 @@ mod tests {
                     application: "app".into(),
                     instance: "single".into(),
                 },
+                started: Utc.ymd(2017, 11, 3).and_hms(9, 10, 11),
+                finished: None,
             },
             json!({
                 "id": "596cf5b4-70ba-11ea-bc55-0242ac130003",
                 "status": "RUNNING",
                 "output": "output",
+                "started": "2017-11-03T09:10:11Z",
+                "finished": null,
                 "agent": {
                     "application": "app",
                     "instance": "single"

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styles from './App.module.css';
+import moment from 'moment';
 
 interface AppProps {
   curator: Curator
@@ -16,7 +17,7 @@ export const App: React.SFC<AppProps> = (props) => {
   useEffect(curator.onExecutionsChange(setExecutions))
 
   let taskTemplate = (a: Agent, t: Task) =>
-    <li><a href='#' onClick={() => curator.runTask(t.id, a)}>{t.id}</a></li>
+<li><a href='#' onClick={() => curator.runTask(t.id, a)}>{t.id}</a></li>
 
   let agentTemplate = (agent: Agent) => <li>{agent.application}@{agent.instance}
     <ol>{agent.tasks.map(t => taskTemplate(agent, t))}</ol>
@@ -52,6 +53,8 @@ const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
   return <div>
     <p>ExecutionID: {execution.id}</p>
     <p>Status: {execution.status}</p>
+    <p>Started: {execution.started.format()}</p>
+    <p>Finished: {execution.finished?.format()}</p>
     <p>Agent: <code>{execution.agent.application}@{execution.agent.instance}</code></p>
     <pre>{execution.output}</pre>
   </div>
@@ -72,7 +75,9 @@ interface Execution {
   id: String,
   agent: AgentRef,
   status: String,
-  output: String
+  output: String,
+  started: moment.Moment,
+  finished?: moment.Moment
 }
 
 interface Task {
@@ -96,7 +101,7 @@ export class Curator {
 
   updateAgentsLoop() {
     fetch("/agents")
-      .then(response => response.json())
+      .then(r => r.json())
       .then(r =>
         this.agentChangeListeners.forEach(listener => listener(r)))
     setTimeout(() => this.updateAgentsLoop(), 1000)
@@ -104,7 +109,9 @@ export class Curator {
 
   updateExecutionsLoop() {
     fetch("/executions")
-      .then(response => response.json())
+      .then(r => r.json())
+      .then(r => r.map(processExecutionDates))
+      .then(r => r.sort((a: Execution, b: Execution) => a.started.unix() - b.started.unix()))
       .then(r =>
         this.executionChangeListeners.forEach(listener => listener(r)))
     setTimeout(() => this.updateExecutionsLoop(), 1000)
@@ -136,4 +143,12 @@ export class Curator {
       this.executionChangeListeners = this.executionChangeListeners.filter(i => i !== listener);
     }
   }
+}
+
+function processExecutionDates(execution: Execution): Execution {
+  execution.started = moment(execution.started)
+  if ( execution.finished ) {
+    execution.finished = moment(execution.finished)
+  }
+  return execution
 }

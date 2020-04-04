@@ -11,6 +11,7 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use uuid::Uuid;
 
 use crate::{agent::SseEvent, errors::*, protocol::*};
+use chrono::prelude::*;
 
 pub struct Agent {
     pub agent: AgentRef,
@@ -130,6 +131,9 @@ async fn report_task(
     let mut executions = executions.lock().unwrap();
 
     if let Some(execution) = executions.0.get_mut(&report.id) {
+        if report.status.is_terminal() && !execution.status.is_terminal() {
+            execution.finished = Some(Utc::now());
+        }
         execution.status = report.status;
         if let Some(lines) = report.stdout_append.take() {
             execution.output = if execution.output.is_empty() {

@@ -7,6 +7,7 @@ use hyper::{
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tokio::io::BufReader;
 use tokio::prelude::*;
@@ -14,7 +15,6 @@ use tokio::process::{Child, Command};
 use tokio::stream::StreamExt;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use uuid::Uuid;
-use std::process::Stdio;
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
 pub type SseEvent = (Option<String>, String);
