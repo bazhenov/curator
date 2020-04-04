@@ -63,10 +63,10 @@ paths:
                     - id: report-load
         description: Agent must provide information about itself and available tasks
       parameters: []
-  /task/report:
+  /execution/report:
     post:
       summary: Report Execution Status
-      operationId: report-status
+      operationId: report-execution-status
       responses:
         '200':
           description: OK
@@ -166,16 +166,18 @@ paths:
       description: List all active agents in the system and their tasks
   /executions:
     get:
-      summary: Your GET endpoint
+      summary: List Executions
       tags: []
       responses: {}
-      operationId: get-executions
+      operationId: list-executions
       parameters: []
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Execution'
+              type: array
+              items:
+                $ref: '#/components/schemas/Execution'
         description: ''
 components:
   schemas:
@@ -242,29 +244,19 @@ components:
     Execution:
       title: Execution
       type: object
-      x-examples:
-        example-1: {}
-      properties:
-        id:
-          type: string
-        task:
-          type: string
-        agent:
-          type: string
-    ExecutionState:
-      title: ExecutionState
-      type: object
       properties:
         id:
           type: string
         agent:
           $ref: '#/components/schemas/AgentRef'
-        stdout:
+        output:
           type: string
         status:
           $ref: '#/components/schemas/ExecutionStatus'
       required:
         - id
+        - agent
+        - output
         - status
     ExecutionStatus:
       type: string
