@@ -10,11 +10,11 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "curator"
-path = "src/main.rs"
+path = "src/server-main.rs"
 
 [[bin]]
-name = "curator-client"
-path = "src/curator-client.rs"
+name = "curator-agent"
+path = "src/agent-main.rs"
 
 [dependencies]
 actix-rt = "1.0.0"
