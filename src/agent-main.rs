@@ -10,5 +10,5 @@ async fn main() -> Result<()> {
     executions.register_task("uptime", || Command::new("uptime"));
     executions.register_task("w", || Command::new("w"));
 
-    executions.agent_loop().await
+    executions.run().await
 }

@@ -14,6 +14,7 @@ use tokio::process::{Child, Command};
 use tokio::stream::StreamExt;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use uuid::Uuid;
+use std::process::Stdio;
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
 pub type SseEvent = (Option<String>, String);
@@ -42,7 +43,6 @@ impl SseClient {
                 response.status().as_u16()
             ));
         }
-        println!("{:?}", response.status());
 
         Ok(Self {
             response,
@@ -141,7 +141,7 @@ impl CuratorAgent {
         }
     }
 
-    pub async fn agent_loop(&mut self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<()> {
         let tasks = self
             .tasks
             .lock()
@@ -161,7 +161,7 @@ impl CuratorAgent {
                 Some(s) if s == "run-task" => {
                     match serde_json::from_str::<agent::RunTask>(&event) {
                         Ok(event) => {
-                            if !self.run(&event.task_id, event.execution) {
+                            if !self.spawn_task(&event.task_id, event.execution) {
                                 eprintln!("Task {} not found", event.task_id);
                             }
                         }
@@ -187,9 +187,10 @@ impl CuratorAgent {
             .insert(task_id.to_string(), factory);
     }
 
-    pub fn run(&mut self, task_id: &str, execution_id: Uuid) -> bool {
+    fn spawn_task(&mut self, task_id: &str, execution_id: Uuid) -> bool {
         if let Some(factory) = self.tasks.lock().unwrap().get(task_id) {
-            match factory().spawn() {
+            let mut task = factory();
+            match task.stdout(Stdio::piped()).spawn() {
                 Ok(child) => {
                     let execution = Execution::with_arc(execution_id);
                     self.executions

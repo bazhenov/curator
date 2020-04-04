@@ -29,12 +29,12 @@ impl Agent {
     fn send_event(&self, event: &SseEvent) -> Result<()> {
         let (ref name, ref data) = event;
         if let Some(name) = name {
-            self.send("event: ")?;
+            self.send("event:")?;
             self.send(name.clone())?;
             self.send("\n")?;
         }
 
-        self.send("data: ")?;
+        self.send("data:")?;
         self.send(data.clone())?;
         self.send("\n\n")?;
         Ok(())
