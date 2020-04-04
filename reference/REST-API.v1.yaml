@@ -95,16 +95,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  execution:
+                  execution_id:
                     type: string
                     format: uuid
                     description: New execution UUID
                 required:
-                  - execution
+                  - execution_id
               examples:
                 basic:
                   value:
-                    execution: 8ceb0d95-68c1-476c-8082-54b4a28d6df2
+                    execution_id: 8ceb0d95-68c1-476c-8082-54b4a28d6df2
       description: Creates an execution for a given task
       requestBody:
         content:
@@ -112,27 +112,27 @@ paths:
             schema:
               type: object
               properties:
-                task:
+                task_id:
                   type: string
                   description: task to execute
                 agent:
                   type: object
+                  description: agent instance to run task on
                   required:
                     - application
                     - instance
-                  description: agent instance to run task on
                   properties:
                     application:
                       type: string
                     instance:
                       type: string
               required:
-                - task
+                - task_id
                 - agent
             examples:
               create new execution:
                 value:
-                  task: cleanup-database
+                  task_id: cleanup-database
                   agent:
                     application: todo-application
                     instance: web-frontend
@@ -164,21 +164,34 @@ paths:
                         - name: cleanup-database
       operationId: get-agents
       description: List all active agents in the system and their tasks
+  /executions:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: get-executions
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Execution'
+        description: ''
 components:
   schemas:
     Task:
       title: Task
       type: object
-      properties:
-        name:
-          type: string
-          description: name of the task. Will be presented as is to operator using the system
-      required:
-        - name
       description: Task is the unit of work which agent capable of executing.
       x-examples:
         basic:
-          name: cleanup-database
+          id: cleanup-database
+      properties:
+        id:
+          type: string
+          description: name of the task. Will be presented as is to operator using the system
+      required:
+        - id
     Agent:
       title: Agent
       type: object
@@ -219,31 +232,58 @@ components:
           format: uuid
           description: execution id given agent when `start-task` command is issued
         status:
-          type: string
-          enum:
-            - initiated
-            - rejected
-            - running
-            - completed
-            - failed
-        stdout-append:
+          $ref: '#/components/schemas/ExecutionStatus'
+        stdout_append:
           type: string
           description: stdout new content since last report (if any)
-        stderr-append:
-          type: string
-          description: stderr new content since last report (if any)
       required:
         - id
         - status
     Execution:
       title: Execution
       type: object
+      x-examples:
+        example-1: {}
       properties:
         id:
           type: string
         task:
           type: string
-        '':
-          type: string
         agent:
           type: string
+    ExecutionState:
+      title: ExecutionState
+      type: object
+      properties:
+        id:
+          type: string
+        agent:
+          $ref: '#/components/schemas/AgentRef'
+        stdout:
+          type: string
+        status:
+          $ref: '#/components/schemas/ExecutionStatus'
+      required:
+        - id
+        - status
+    ExecutionStatus:
+      type: string
+      title: ExecutionStatus
+      enum:
+        - INITIATED
+        - REJECTED
+        - RUNNING
+        - FAILED
+        - COMPLETED
+      x-examples: {}
+    AgentRef:
+      title: AgentRef
+      type: object
+      properties:
+        application:
+          type: string
+        instance:
+          type: string
+      required:
+        - application
+        - instance
