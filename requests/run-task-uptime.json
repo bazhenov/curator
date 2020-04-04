@@ -1,0 +1,7 @@
+{
+  "task_id": "uptime",
+  "agent": {
+    "instance": "single",
+    "application": "my"
+  }
+}

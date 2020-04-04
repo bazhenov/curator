@@ -1,14 +1,21 @@
 use crate::errors::*;
-use crate::protocol;
+use crate::protocol::{self, Execution, ExecutionStatus};
 use error_chain::bail;
-use hyper::{body::HttpBody as _, header, Body, Client, Request, Response};
+use hyper::{
+    body::HttpBody as _,
+    header::{ACCEPT, CONTENT_TYPE},
+    Body, Client, Request, Response,
+};
+use std::collections::hash_map::{Values, ValuesMut};
 use std::collections::HashMap;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::process::Stdio;
+use std::sync::{Arc, Mutex};
 use tokio::io::BufReader;
 use tokio::prelude::*;
 use tokio::process::{Child, Command};
 use tokio::stream::StreamExt;
+use tokio::sync::mpsc::{self, Receiver, Sender};
 use uuid::Uuid;
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
@@ -27,24 +34,6 @@ pub struct Task {
     pub command: fn() -> Command,
 }
 
-pub struct Execution {
-    pub id: uuid::Uuid,
-    pub task: String,
-    pub status: protocol::ExecutionStatus,
-    pub stdout: Vec<String>,
-}
-
-impl Execution {
-    fn new(id: Uuid, task_id: &str) -> Self {
-        Self {
-            id,
-            task: task_id.to_string(),
-            status: protocol::ExecutionStatus::INITIATED,
-            stdout: vec![],
-        }
-    }
-}
-
 pub struct SseClient {
     response: Response<Body>,
     lines: Lines,
@@ -58,8 +47,8 @@ impl SseClient {
         let req = Request::builder()
             .method("POST")
             .uri(host)
-            .header(header::ACCEPT, "text/event-stream")
-            .header(header::CONTENT_TYPE, "application/json")
+            .header(ACCEPT, "text/event-stream")
+            .header(CONTENT_TYPE, "application/json")
             .body(Body::from(json))?;
 
         let response = client.request(req).await?;
@@ -151,7 +140,7 @@ impl Lines {
 #[derive(Default)]
 pub struct Executions {
     tasks: HashMap<String, fn() -> Command>,
-    executions: HashMap<Uuid, Execution>,
+    executions: HashMap<Uuid, Arc<Mutex<Execution>>>,
 }
 
 impl Executions {
@@ -168,11 +157,12 @@ impl Executions {
             let mut task = factory();
             match task.stdout(Stdio::piped()).spawn() {
                 Ok(child) => {
-                    let execution = Execution::new(execution_id, task_id);
-                    self.executions.insert(execution_id, execution);
-                    tokio::spawn(async move {
-                        Self::process_child(child).await;
-                    });
+                    let execution = Execution::with_arc(execution_id);
+                    self.executions.insert(execution_id, Arc::clone(&execution));
+
+                    let (tx, rx) = mpsc::channel(100);
+                    tokio::spawn(Self::read_stdout(child, tx));
+                    tokio::spawn(Self::report_execution_back(execution_id, rx));
                     return true;
                 }
                 Err(e) => {
@@ -183,14 +173,81 @@ impl Executions {
         false
     }
 
-    async fn process_child(child: Child) {
-        let stdout = child.stdout.unwrap();
-        let mut reader = BufReader::new(stdout).lines();
+    pub fn list(&self) -> Values<Uuid, Arc<Mutex<Execution>>> {
+        self.executions.values()
+    }
 
-        while let Some(line) = reader.next().await {
-            println!("Line: {}", line.expect("No line from process"));
+    pub fn list_mut(&mut self) -> ValuesMut<Uuid, Arc<Mutex<Execution>>> {
+        self.executions.values_mut()
+    }
+
+    async fn report_execution_back(id: Uuid, mut rx: Receiver<ChildProgress>) {
+        use ExecutionStatus::*;
+        let client = Client::new();
+        let uri = "http://localhost:8080/task/report";
+
+        while let Some(progress) = rx.recv().await {
+            let report = match progress {
+                ChildProgress::Stdout(line) => protocol::agent::ExecutionReport {
+                    id,
+                    status: RUNNING,
+                    stdout_append: Some(line),
+                },
+                ChildProgress::Finished(status_code) => {
+                    let status = if status_code == 0 { COMPLETED } else { FAILED };
+                    protocol::agent::ExecutionReport {
+                        id,
+                        status,
+                        stdout_append: None,
+                    }
+                }
+            };
+            let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
+            let request = Request::builder()
+                .uri(uri)
+                .method("POST")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(json))
+                .expect("Unable to build request");
+
+            match client.request(request).await {
+                Err(e) => {
+                    eprintln!("Error while reporting back to Curator: {:?}", e);
+                }
+                Ok(r) if !r.status().is_success() => {
+                    eprintln!("Error while reporting back to Curator HTTP/{}", r.status());
+                }
+                Ok(_) => {}
+            }
         }
     }
+
+    async fn read_stdout(mut child: Child, mut tx: Sender<ChildProgress>) {
+        if let Some(stdout) = child.stdout.take() {
+            let mut reader = BufReader::new(stdout).lines();
+            while let Some(line) = reader.next().await {
+                match line {
+                    Ok(line) => {
+                        tx.send(ChildProgress::Stdout(line)).await.unwrap();
+                    }
+                    Err(_) => {
+                        break;
+                    }
+                }
+            }
+        }
+
+        let result = child.await.expect("Unable to read process status");
+        tx.send(ChildProgress::Finished(result.code().unwrap()))
+            .await
+            .unwrap();
+    }
+}
+
+#[derive(Debug)]
+enum ChildProgress {
+    Stdout(String),
+    Finished(i32),
 }
 
 #[cfg(test)]

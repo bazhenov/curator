@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 /// Structs used in Curator<->agent communication protocol
@@ -31,6 +32,13 @@ pub mod agent {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct StopTask {
         pub execution: Uuid,
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    pub struct ExecutionReport {
+        pub id: Uuid,
+        pub status: ExecutionStatus,
+        pub stdout_append: Option<String>,
     }
 }
 
@@ -70,12 +78,34 @@ impl From<agent::Agent> for AgentRef {
     }
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize, Copy, Clone)]
 pub enum ExecutionStatus {
     INITIATED,
     REJECTED,
     RUNNING,
     FAILED,
     COMPLETED,
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct Execution {
+    pub id: uuid::Uuid,
+    pub status: ExecutionStatus,
+    pub stdout: String,
+}
+
+impl Execution {
+    pub fn new(id: Uuid) -> Self {
+        Self {
+            id,
+            status: ExecutionStatus::INITIATED,
+            stdout: String::new(),
+        }
+    }
+
+    pub fn with_arc(id: Uuid) -> Arc<Mutex<Self>> {
+        Arc::new(Mutex::new(Self::new(id)))
+    }
 }
 
 #[cfg(test)]
@@ -181,6 +211,42 @@ mod tests {
             json!({
                 "instance": "foo",
                 "application": "app"
+            }),
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn check_execution_report() -> Result<()> {
+        assert_json_eq(
+            ExecutionReport {
+                id: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
+                status: ExecutionStatus::RUNNING,
+                stdout_append: Some("output".into()),
+            },
+            json!({
+                "id": "596cf5b4-70ba-11ea-bc55-0242ac130003",
+                "status": "RUNNING",
+                "stdout_append": "output"
+            }),
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn check_execution_status() -> Result<()> {
+        assert_json_eq(
+            Execution {
+                id: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
+                status: ExecutionStatus::RUNNING,
+                stdout: "output".into(),
+            },
+            json!({
+                "id": "596cf5b4-70ba-11ea-bc55-0242ac130003",
+                "status": "RUNNING",
+                "stdout": "output"
             }),
         )?;
 

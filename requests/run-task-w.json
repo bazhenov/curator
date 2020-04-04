@@ -1,0 +1,7 @@
+{
+  "task_id": "w",
+  "agent": {
+    "instance": "single",
+    "application": "my"
+  }
+}
