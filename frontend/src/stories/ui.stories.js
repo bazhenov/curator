@@ -1,6 +1,7 @@
 import React from 'react'
 import { Layout, ExecutionList } from '../components'
 import { executions } from './fixture'
+import { action } from '@storybook/addon-actions';
 
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
@@ -14,4 +15,4 @@ export const layout = () => <Layout
   sidebar={"sidebar"}
   content={"content"}/>
 
-export const executionList = () => <ExecutionList executions={executions} />
+export const executionList = () => <ExecutionList onSelect={action('onSelect')} executions={executions} />

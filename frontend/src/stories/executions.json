@@ -8,7 +8,7 @@
     "output": "21:47  up 4 days, 11:40, 7 users, load averages: 2.69 3.09 2.83",
     "status": "COMPLETED",
     "started": "2020-04-04T11:47:47.333402Z",
-    "finished": "2020-04-04T11:47:47.347338Z"
+    "finished": "2020-04-04T11:59:47.347338Z"
   },
   {
     "id": "bde06d8b-19e7-48c5-b850-ee203702444e",
@@ -17,9 +17,8 @@
       "instance": "single"
     },
     "output": "Sat Apr  4 21:45:11 +10 2020",
-    "status": "COMPLETED",
-    "started": "2020-04-04T11:45:11.889759Z",
-    "finished": "2020-04-04T11:45:11.902098Z"
+    "status": "RUNNING",
+    "started": "2020-04-04T11:45:11.889759Z"
   },
   {
     "id": "1ecdd011-5243-47c6-b2bd-954b89f5fdee",
@@ -28,9 +27,9 @@
       "instance": "single"
     },
     "output": "21:47  up 4 days, 11:40, 7 users, load averages: 2.81 3.13 2.84",
-    "status": "COMPLETED",
+    "status": "FAILED",
     "started": "2020-04-04T11:47:36.424082Z",
-    "finished": "2020-04-04T11:47:36.435646Z"
+    "finished": "2020-04-04T11:47:56.435646Z"
   },
   {
     "id": "e5aca053-e131-4a04-8e48-cd73b8fff2d5",
@@ -39,7 +38,7 @@
       "instance": "single"
     },
     "output": "21:47  up 4 days, 11:40, 7 users, load averages: 2.75 3.11 2.83",
-    "status": "COMPLETED",
+    "status": "INITIATED",
     "started": "2020-04-04T11:47:43.552073Z",
     "finished": "2020-04-04T11:47:43.560752Z"
   },

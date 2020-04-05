@@ -1,11 +1,12 @@
 import React from 'react'
-import { Button, Navbar, Alignment, Icon } from '@blueprintjs/core'
+import { Button, Navbar, Alignment, Intent, ProgressBar, Tag } from '@blueprintjs/core'
 
-import styles from './app.module.css'
-import { Execution } from './models'
+import './index.scss'
+import { Execution, ExecutionStatus } from './models'
+import moment from 'moment'
 
 export const B: React.FC<{}> = () => <>
-  <p className={styles.foo}>Hello</p>
+  <p>Hello</p>
   <Button intent="success" text="button content" />
 </>
 
@@ -14,26 +15,55 @@ interface LayoutProps {
   content: React.FC
 }
 
-export const Layout: React.FC<LayoutProps> = (props) => <div className={styles.layout}>
-  <div className={styles.header}>
+export const Layout: React.FC<LayoutProps> = (props) => <div className="layout">
+  <div className="header">
     <Navbar>
       <Navbar.Group align={Alignment.LEFT}>
         <Navbar.Heading>Curator</Navbar.Heading>
         <Navbar.Divider />
-        <Button className="bp3-minimal" icon="play" text="Run task..." />
+        <Button minimal={true} icon="play" text="Run task..." />
       </Navbar.Group>
     </Navbar>
   </div>
-  <div className={styles.footer}></div>
-  <div className={styles.sidebar}>{props.sidebar}</div>
-  <div className={styles.content}>{props.content}</div>
+  <div className="footer"></div>
+  <div className="sidebar">{props.sidebar}</div>
+  <div className="content">{props.content}</div>
 </div>
 
-export const ExecutionList: React.FC<{ executions: Array<Execution> }> = (props) => {
+interface ExecutionListProps {
+  executions: Array<Execution>,
+  onSelect?: (_: String) => void,
+}
+
+export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
   return <div>
-    {props.executions.map(e => <div className={styles.execution}>
-      <Icon icon="record" color="green" />
-      <code>{e.id}</code>
+    {props.executions.map(e => <div className="execution">
+      <div className="indicator">
+        {e.status === ExecutionStatus.COMPLETED && <ProgressBar intent={Intent.SUCCESS} stripes={false}/>}
+        {e.status === ExecutionStatus.RUNNING && <ProgressBar intent={Intent.SUCCESS}/>}
+        {e.status === ExecutionStatus.FAILED && <ProgressBar intent={Intent.DANGER} stripes={false}/>}
+        {e.status === ExecutionStatus.REJECTED && <ProgressBar intent={Intent.DANGER} stripes={false}/>}
+      </div>
+      <div className="time">
+        {e.status === ExecutionStatus.RUNNING
+          ? <>{moment.duration(moment().diff(e.started)).humanize()}</>
+          : <>{moment.duration(moment(e.finished).diff(e.started)).humanize()}</>}
+      </div>
+      <div className="title">
+        {props.onSelect
+          ? <a onClick={() => props?.onSelect(e.id)}><code>{e.id}</code></a>
+          : <code>{e.id}</code>}
+      </div>
+      <div className="info">
+        <Tag minimal={true}>{e.agent.application}</Tag>
+        <Tag minimal={true}>{e.agent.instance}</Tag>
+      </div>
+      <div className="operations">
+        {e.status === ExecutionStatus.COMPLETED &&
+          <Button icon="play" minimal={true}>Re run</Button>}
+        {e.status === ExecutionStatus.RUNNING &&
+          <Button icon="stop" intent={Intent.DANGER} minimal={true}>Stop</Button>}
+      </div>
     </div>)}
   </div>
 }

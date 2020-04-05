@@ -14,7 +14,7 @@ export interface AgentRef {
 export interface Execution {
   id: String,
   agent: AgentRef,
-  status: String,
+  status: ExecutionStatus,
   output: String,
   started: moment.Moment,
   finished?: moment.Moment
@@ -22,4 +22,12 @@ export interface Execution {
 
 export interface Task {
   id: String
+}
+
+export enum ExecutionStatus {
+  RUNNING = "RUNNING",
+  INITIATED = "INITIATED",
+  REJECTED = "REJECTED",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED"
 }

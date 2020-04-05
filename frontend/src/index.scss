@@ -1,0 +1,75 @@
+@import "node_modules/@blueprintjs/core/src/blueprint.scss";
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 1px 1px;
+  grid-template-areas: "header header header" "sidebar content content" "footer footer footer";
+
+  .header { grid-area: header; }
+
+  .footer { grid-area: footer; }
+
+  .sidebar { grid-area: sidebar; }
+
+  .content { grid-area: content; }
+}
+
+.execution {
+  border-bottom: 1px dashed #ddd;
+  display: grid;
+  height: 60px;
+  padding: 0 20px;
+  grid-template-columns: 1fr 150px 100px 1fr;
+  grid-template-rows: 19fr 20fr;
+  grid-template-areas: "title indicator time operations" "info indicator time operations";
+
+  .indicator {
+    grid-area: indicator;
+    margin: auto 0;
+    padding-right: 10px;
+  }
+  .time {
+    grid-area: time;
+    margin: auto 0;
+    @extend .bp3-text-muted;
+    @extend .bp3-text-small;
+  }
+
+  .operations {
+    grid-area: operations;
+    visibility: hidden;
+    margin: auto 0;
+  }
+
+  .title {
+    grid-area: title;
+    margin: auto 0 0 0;
+  }
+  .info {
+    grid-area: info;
+    
+    .bp3-tag {
+      margin-right: 5px;
+    }
+  }
+}
+
+.execution:hover .operations {
+  visibility: visible;
+}
