@@ -184,7 +184,7 @@ async fn run_task(
         let execution_id = Uuid::new_v4();
 
         let result = agent.send_named_event(
-            "run-task",
+            agent::RUN_TASK_EVENT_NAME,
             &agent::RunTask {
                 execution: execution_id,
                 task_id: task.task_id.clone(),
@@ -192,14 +192,18 @@ async fn run_task(
         );
 
         if let Err(e) = result {
+            eprintln!("Failed while sending message to an agent. Removing agent.");
             eprintln!("{}", e);
             agents.swap_remove(idx);
             HttpResponse::InternalServerError().finish()
         } else {
             let mut executions = executions.lock().unwrap();
+            let task = Task {
+                id: task.task_id.clone(),
+            };
             executions.0.insert(
                 execution_id,
-                client::Execution::new(execution_id, agent.agent.clone()),
+                client::Execution::new(execution_id, task, agent.agent.clone()),
             );
             HttpResponse::Ok().json(client::ExecutionRef { execution_id })
         }

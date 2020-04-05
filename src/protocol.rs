@@ -7,6 +7,8 @@ use uuid::Uuid;
 pub mod agent {
     use super::*;
 
+    pub const RUN_TASK_EVENT_NAME: &str = "run-task";
+
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct Agent {
         pub application: String,
@@ -64,16 +66,18 @@ pub mod client {
         pub id: Uuid,
         pub agent: AgentRef,
         pub output: String,
+        pub task: Task,
         pub status: ExecutionStatus,
         pub started: DateTime<Utc>,
         pub finished: Option<DateTime<Utc>>,
     }
 
     impl Execution {
-        pub fn new(id: Uuid, agent: AgentRef) -> Self {
+        pub fn new(id: Uuid, task: Task, agent: AgentRef) -> Self {
             Self {
                 id,
                 agent,
+                task,
                 output: String::new(),
                 status: ExecutionStatus::INITIATED,
                 started: Utc::now(),
@@ -300,6 +304,7 @@ mod tests {
                     application: "app".into(),
                     instance: "single".into(),
                 },
+                task: Task { id: "clean".into() },
                 started: Utc.ymd(2017, 11, 3).and_hms(9, 10, 11),
                 finished: None,
             },
@@ -309,6 +314,9 @@ mod tests {
                 "output": "output",
                 "started": "2017-11-03T09:10:11Z",
                 "finished": null,
+                "task": {
+                    "id": "clean"
+                },
                 "agent": {
                     "application": "app",
                     "instance": "single"

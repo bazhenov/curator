@@ -16,6 +16,7 @@ export interface Execution {
   agent: AgentRef,
   status: ExecutionStatus,
   output: String,
+  task: Task,
   started: moment.Moment,
   finished?: moment.Moment
 }
