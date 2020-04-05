@@ -3,3 +3,4 @@ windows:
   - server: cargo run --bin curator
   - agent: ./wait-for-it.sh localhost:8080 && cargo run --bin curator-agent
   - requests: cd ./requests
+  - npm: cd ./frontend && npm start
