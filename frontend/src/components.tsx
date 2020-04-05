@@ -37,11 +37,11 @@ interface ExecutionListProps {
 
 export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
   return <div>
-    {props.executions.map(e => <div className="execution">
+    {props.executions.map(e => <div key={e.id} className="execution">
       <div className="indicator">
         {e.status === ExecutionStatus.COMPLETED &&
           <ProgressBar intent={Intent.SUCCESS} stripes={false}/>}
-        {e.status === ExecutionStatus.RUNNING &&
+        {e.status === ExecutionStatus.RUNNING || e.status === ExecutionStatus.INITIATED &&
           <ProgressBar intent={Intent.SUCCESS}/>}
         {e.status === ExecutionStatus.FAILED &&
           <ProgressBar intent={Intent.DANGER} stripes={false}/>}
@@ -49,13 +49,13 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
           <ProgressBar intent={Intent.DANGER} stripes={false}/>}
       </div>
       <div className="time">
-        {e.status === ExecutionStatus.RUNNING
-          ? <>{moment.duration(moment().diff(e.started)).humanize()}</>
-          : <>{moment.duration(moment(e.finished).diff(e.started)).humanize()}</>}
+        {e.finished
+          ? <>{moment.duration(moment(e.finished).diff(e.started)).humanize()}</>
+          : <>{moment.duration(moment().diff(e.started)).humanize()}</>}
       </div>
       <div className="title">
         {props.onSelect
-          ? <a onClick={() => props?.onSelect(e.id)}><code>{e.task.id}</code></a>
+          ? <a onClick={() => props.onSelect && props?.onSelect(e.id)}><code>{e.task.id}</code></a>
           : <code>{e.task.id}</code>}
       </div>
       <div className="info">

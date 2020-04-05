@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import styles from './App.module.css';
 import moment from 'moment';
 import {Agent, Execution, Task} from './models'
+import { ExecutionList } from './components';
 
 interface AppProps {
   curator: Curator
@@ -12,7 +12,7 @@ export const App: React.SFC<AppProps> = (props) => {
 
   const [agents, setAgents] = useState<Array<Agent>>([]);
   const [executions, setExecutions] = useState<Array<Execution>>([]);
-  const [selectedExecution, setSelectedExecution] = useState<Execution | null>(null);
+  const [selectedExecutionId, setSelectedExecutionId] = useState<String | null>(null);
   
   useEffect(curator.onAgentsChange(setAgents))
   useEffect(curator.onExecutionsChange(setExecutions))
@@ -24,12 +24,12 @@ export const App: React.SFC<AppProps> = (props) => {
     <ol>{agent.tasks.map(t => taskTemplate(agent, t))}</ol>
   </li>
 
-  let executionTemplate = (e: Execution) => <li>
-    <a href='#' onClick={() => setSelectedExecution(e)}>{e.id}</a>
-  </li>
+  let selectedExecution = selectedExecutionId
+    ? executions.find(e => e.id === selectedExecutionId)
+    : null;
   
   return (
-    <div className={styles.App}>
+    <div>
       <div>
         <h3>Agents</h3>
         <ul>
@@ -38,9 +38,9 @@ export const App: React.SFC<AppProps> = (props) => {
       </div>
 
       <div>
-        <h3>Tasks</h3>
+        <h3>Executions</h3>
         <ul>
-          {executions.map(executionTemplate)}
+          <ExecutionList executions={executions} onSelect={setSelectedExecutionId}/>
         </ul>
       </div>
 

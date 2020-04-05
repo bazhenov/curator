@@ -1,28 +1,28 @@
 import moment from 'moment'
 
 export interface Agent {
-  application: String,
-  instance: String,
+  application: string,
+  instance: string,
   tasks: Array<Task>
 }
 
 export interface AgentRef {
-  application: String,
-  instance: String
+  application: string,
+  instance: string
 }
 
 export interface Execution {
-  id: String,
+  id: string,
   agent: AgentRef,
   status: ExecutionStatus,
-  output: String,
+  output: string,
   task: Task,
   started: moment.Moment,
   finished?: moment.Moment
 }
 
 export interface Task {
-  id: String
+  id: string
 }
 
 export enum ExecutionStatus {
