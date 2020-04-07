@@ -11,8 +11,8 @@ export const B: React.FC<{}> = () => <>
 </>
 
 interface LayoutProps {
-  sidebar: React.FC,
-  content: React.FC
+  sidebar: React.ReactNode,
+  content: React.ReactNode
 }
 
 export const Layout: React.FC<LayoutProps> = (props) => <div className="layout">

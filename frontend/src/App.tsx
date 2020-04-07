@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import {Agent, Execution, Task} from './models'
-import { ExecutionList } from './components';
+import { ExecutionList, Layout } from './components';
 
 interface AppProps {
   curator: Curator
@@ -27,31 +27,26 @@ export const App: React.SFC<AppProps> = (props) => {
   let selectedExecution = selectedExecutionId
     ? executions.find(e => e.id === selectedExecutionId)
     : null;
+
+  let agentsUi = <div>
+    <h2>Agents</h2>
+    <ul>
+      {agents.map(agentTemplate)}
+    </ul>
+  </div>
+
+  let executionUi = <div>
+    <h2>Executions</h2>
+    <ExecutionList executions={executions} onSelect={setSelectedExecutionId}/>
+    {selectedExecution && <ExecutionUI execution={selectedExecution} />}
+  </div>
   
-  return (
-    <div>
-      <div>
-        <h3>Agents</h3>
-        <ul>
-          {agents.map(agentTemplate)}
-        </ul>
-      </div>
-
-      <div>
-        <h3>Executions</h3>
-        <ul>
-          <ExecutionList executions={executions} onSelect={setSelectedExecutionId}/>
-        </ul>
-      </div>
-
-      {selectedExecution && <ExecutionUI execution={selectedExecution} />}
-    </div>
-  );
+  return <Layout sidebar={agentsUi} content={executionUi} />
 }
 
 const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
   let { execution } = props
-  return <div>
+  return <div className="execution-full">
     <p>ExecutionID: {execution.id}</p>
     <p>Status: {execution.status}</p>
     <p>Started: {execution.started.format()}</p>
