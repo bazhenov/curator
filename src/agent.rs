@@ -24,6 +24,36 @@ pub struct SseClient {
     lines: Lines,
 }
 
+pub struct TaskDef {
+    pub id: String,
+    pub command: String,
+    pub args: Vec<String>,
+}
+
+impl TaskDef {
+    pub fn new(id: impl AsRef<str>, command: impl AsRef<str>) -> Self {
+        Self::new_with_args(id, command, vec![])
+    }
+
+    pub fn new_with_args(id: impl AsRef<str>, command: impl AsRef<str>, args: Vec<String>) -> Self {
+        Self {
+            id: id.as_ref().to_string(),
+            command: command.as_ref().to_string(),
+            args,
+        }
+    }
+
+    fn spawn(&self) -> Result<Child> {
+        let mut cmd = Command::new(&self.command);
+        for arg in &self.args {
+            cmd.arg(arg);
+        }
+        cmd.stdout(Stdio::piped())
+            .spawn()
+            .chain_err(|| "Unable to spawn process")
+    }
+}
+
 impl SseClient {
     pub async fn connect<T: Serialize>(host: &str, body: T) -> Result<Self> {
         let client = Client::new();
@@ -123,7 +153,7 @@ impl Lines {
 
 pub struct CuratorAgent {
     agent: AgentRef,
-    tasks: Shared<HashMap<String, fn() -> Command>>,
+    tasks: Shared<HashMap<String, TaskDef>>,
     executions: Shared<HashMap<Uuid, Arc<Mutex<Execution>>>>,
 }
 
@@ -180,17 +210,13 @@ impl CuratorAgent {
         Ok(())
     }
 
-    pub fn register_task(&mut self, task_id: &str, factory: fn() -> Command) {
-        self.tasks
-            .lock()
-            .unwrap()
-            .insert(task_id.to_string(), factory);
+    pub fn register_task(&mut self, task: TaskDef) {
+        self.tasks.lock().unwrap().insert(task.id.clone(), task);
     }
 
     fn spawn_task(&mut self, task_id: &str, execution_id: Uuid) -> bool {
-        if let Some(factory) = self.tasks.lock().unwrap().get(task_id) {
-            let mut task = factory();
-            match task.stdout(Stdio::piped()).spawn() {
+        if let Some(task) = self.tasks.lock().unwrap().get(task_id) {
+            match task.spawn() {
                 Ok(child) => {
                     let execution = Execution::with_arc(execution_id);
                     self.executions
