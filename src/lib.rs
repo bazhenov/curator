@@ -13,6 +13,8 @@ pub mod prelude {
     pub use super::protocol::*;
     pub use super::shared;
     pub use super::Shared;
+
+    pub use log::{info, trace, warn, error};
 }
 
 pub type Shared<T> = Arc<Mutex<T>>;
@@ -29,9 +31,9 @@ pub mod errors {
     pub fn report_errors(e: failure::Error) {
         for cause in e.iter_chain() {
             if let Some(name) = cause.name() {
-                eprintln!("{}: {}", name, cause);
+                log::error!("{}: {}", name, cause);
             } else {
-                eprintln!("{}", cause);
+                log::error!("{}", cause);
             }
         }
     }

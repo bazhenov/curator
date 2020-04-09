@@ -257,7 +257,7 @@ impl AgentLoop {
                     }
                 },
                 _ = on_close => {
-                    println!("Stopping agent loop");
+                    trace!("Stopping agent loop");
                     break;
                 }
             }
@@ -276,11 +276,11 @@ impl AgentLoop {
             Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {
                 Ok(event) => {
                     if !self.spawn_task(&event.task_id, event.execution) {
-                        eprintln!("Task {} not found", event.task_id);
+                        warn!("Task {} not found", event.task_id);
                     }
                 }
                 Err(e) => {
-                    eprintln!("Unable to interpret {} event: {}. {}", s, event, e);
+                    warn!("Unable to interpret {} event: {}. {}", s, event, e);
                 }
             },
             Some(s) if s == "stop-task" => {
@@ -345,10 +345,10 @@ impl AgentLoop {
 
             match client.request(request).await {
                 Err(e) => {
-                    eprintln!("Error while reporting back to Curator: {:?}", e);
+                    error!("Error while reporting back to Curator: {:?}", e);
                 }
                 Ok(r) if !r.status().is_success() => {
-                    eprintln!("Error while reporting back to Curator HTTP/{}", r.status());
+                    error!("Error while reporting back to Curator HTTP/{}", r.status());
                 }
                 Ok(_) => {}
             }

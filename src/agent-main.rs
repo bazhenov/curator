@@ -9,6 +9,7 @@ use tokio::time::delay_for;
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
     match run().await {
         Err(e) => {
             report_errors(e);
@@ -29,8 +30,9 @@ async fn run() -> Result<()> {
             let mut difference = proposed_tasks.symmetric_difference(&tasks).peekable();
             difference.peek().is_some()
         };
+
         if has_changes {
-            println!("Reloading tasks..");
+            trace!("Reloading tasks..");
             tasks = proposed_tasks;
 
             if let Some(channel) = close_handle.take() {

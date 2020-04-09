@@ -12,6 +12,8 @@ use uuid::Uuid;
 use crate::{agent::SseEvent, errors::*, protocol::*};
 use chrono::prelude::*;
 
+use crate::prelude::*;
+
 pub struct Agent {
     pub agent: AgentRef,
     pub tasks: HashSet<Task>,
@@ -88,7 +90,7 @@ impl Curator {
         let mut agents = self.agents.lock().unwrap();
         agents.retain(|_, agent| {
             if let Err(e) = agent.send_event(&event) {
-                eprintln!("{}", e);
+                error!("{}", e);
 
                 false
             } else {
@@ -191,8 +193,7 @@ async fn run_task(
         );
 
         if let Err(e) = result {
-            eprintln!("Failed while sending message to an agent. Removing agent.");
-            eprintln!("{}", e);
+            error!("Failed while sending message to an agent. Removing agent. {}", e);
             agents.remove(&task.agent);
             HttpResponse::InternalServerError().finish()
         } else {
