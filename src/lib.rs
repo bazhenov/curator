@@ -25,4 +25,14 @@ pub mod errors {
     pub type Result<T> = std::result::Result<T, failure::Error>;
     pub use failure::bail;
     pub use failure::ResultExt;
+
+    pub fn report_errors(e: failure::Error) {
+        for cause in e.iter_chain() {
+            if let Some(name) = cause.name() {
+                eprintln!("{}: {}", name, cause);
+            } else {
+                eprintln!("{}", cause);
+            }
+        }
+    }
 }

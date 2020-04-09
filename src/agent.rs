@@ -12,6 +12,7 @@ use std::{
     path::PathBuf,
     process::Stdio,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 use tokio::{
     io::BufReader,
@@ -19,6 +20,7 @@ use tokio::{
     process::{Child, Command},
     stream::StreamExt,
     sync::{mpsc, oneshot},
+    time::delay_for,
 };
 use uuid::Uuid;
 
@@ -224,9 +226,22 @@ impl AgentLoop {
             instance: self.agent.instance.clone(),
             tasks,
         };
-        let mut client = SseClient::connect("http://localhost:8080/events", &agent)
-            .await
-            .context("Unable to connect to Curator server")?;
+        let mut client: Option<SseClient> = None;
+
+        while client.is_none() {
+            let connection = SseClient::connect("http://localhost:8080/events", &agent)
+                .await
+                .context("Unable to connect to Curator server");
+            client = match connection {
+                Ok(client) => Some(client),
+                Err(e) => {
+                    report_errors(e.into());
+                    delay_for(Duration::from_secs(5)).await;
+                    None
+                }
+            }
+        }
+        let mut client = client.unwrap();
 
         let mut on_close = self.close_channel.1.take().unwrap().fuse();
 
@@ -292,7 +307,7 @@ impl AgentLoop {
                     return true;
                 }
                 Err(e) => {
-                    eprintln!("Unable to spawn child: {}", e);
+                    report_errors(e);
                 }
             }
         }

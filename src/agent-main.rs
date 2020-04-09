@@ -9,17 +9,19 @@ use tokio::time::delay_for;
 
 #[tokio::main]
 async fn main() {
-    if report_errors(run().await) {
-        exit(0);
-    } else {
-        exit(1);
-    }
+    match run().await {
+        Err(e) => {
+            report_errors(e);
+            exit(1);
+        }
+        Ok(_) => exit(0),
+    };
 }
 
 async fn run() -> Result<()> {
     let mut tasks = HashSet::new();
 
-    let mut loop_close_handle: Option<oneshot::Sender<()>> = None;
+    let mut close_handle: Option<oneshot::Sender<()>> = None;
 
     loop {
         let proposed_tasks = discover().await?;
@@ -31,7 +33,7 @@ async fn run() -> Result<()> {
             println!("Reloading tasks..");
             tasks = proposed_tasks;
 
-            if let Some(channel) = loop_close_handle.take() {
+            if let Some(channel) = close_handle.take() {
                 channel.send(()).expect("Agent has been already closed");
             }
 
@@ -40,22 +42,14 @@ async fn run() -> Result<()> {
                 executions.register_task(t.clone());
             }
 
-            loop_close_handle = executions.close_channel();
+            close_handle = executions.close_channel();
 
-            tokio::spawn(async move { report_errors(executions.run().await) });
+            tokio::spawn(async move {
+                if let Err(e) = executions.run().await {
+                    report_errors(e);
+                }
+            });
         }
         delay_for(Duration::from_secs(5)).await;
-    }
-}
-
-fn report_errors<T>(result: Result<T>) -> bool {
-    match result {
-        Err(e) => {
-            for cause in e.iter_chain() {
-                eprintln!("{}", cause);
-            }
-            false
-        }
-        Ok(_) => true,
     }
 }
