@@ -14,6 +14,7 @@ pub mod prelude {
     pub use super::shared;
     pub use super::Shared;
     pub use error_chain::bail;
+    pub use error_chain::ChainedError;
 }
 
 pub type Shared<T> = Arc<Mutex<T>>;

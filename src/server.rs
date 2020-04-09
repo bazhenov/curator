@@ -71,7 +71,7 @@ impl Curator {
                 App::new()
                     .app_data(agents.clone())
                     .app_data(executions.clone())
-                    .route("/events", web::post().to(new_client))
+                    .route("/events", web::post().to(new_agent))
                     .route("/task/run", web::post().to(run_task))
                     .route("/execution/report", web::post().to(report_task))
                     .route("/agents", web::get().to(list_agents))
@@ -102,7 +102,7 @@ impl Curator {
     }
 }
 
-async fn new_client(
+async fn new_agent(
     new_agent: web::Json<agent::Agent>,
     agents: web::Data<Mutex<Vec<Agent>>>,
 ) -> impl Responder {

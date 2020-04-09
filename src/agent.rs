@@ -1,19 +1,25 @@
 use crate::prelude::*;
+use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
     header::{ACCEPT, CONTENT_TYPE},
     Body, Client, Request, Response,
 };
 use serde::Serialize;
-use std::collections::HashMap;
-use std::io::{Cursor, Seek, SeekFrom, Write};
-use std::process::Stdio;
-use std::sync::{Arc, Mutex};
-use tokio::io::BufReader;
-use tokio::prelude::*;
-use tokio::process::{Child, Command};
-use tokio::stream::StreamExt;
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use std::{
+    collections::{HashMap, HashSet},
+    io::{Cursor, Seek, SeekFrom, Write},
+    path::PathBuf,
+    process::Stdio,
+    sync::{Arc, Mutex},
+};
+use tokio::{
+    io::BufReader,
+    prelude::*,
+    process::{Child, Command},
+    stream::StreamExt,
+    sync::{mpsc, oneshot},
+};
 use uuid::Uuid;
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
@@ -24,9 +30,11 @@ pub struct SseClient {
     lines: Lines,
 }
 
+#[derive(serde::Deserialize, Hash, PartialEq, Eq, Clone, Debug)]
 pub struct TaskDef {
     pub id: String,
     pub command: String,
+    #[serde(default)]
     pub args: Vec<String>,
 }
 
@@ -83,12 +91,7 @@ impl SseClient {
     pub async fn next_event(&mut self) -> Result<Option<SseEvent>> {
         let mut event_name = None;
         loop {
-            let bytes = self
-                .response
-                .body_mut()
-                .data()
-                .await
-                .map(|r| r.chain_err(|| "Unable to read from server"));
+            let bytes = self.response.body_mut().data().await;
 
             if let Some(bytes) = bytes {
                 let bytes = bytes?;
@@ -151,31 +154,67 @@ impl Lines {
     }
 }
 
-pub struct CuratorAgent {
-    agent: AgentRef,
-    tasks: Shared<HashMap<String, TaskDef>>,
-    executions: Shared<HashMap<Uuid, Arc<Mutex<Execution>>>>,
+pub async fn discover() -> Result<HashSet<TaskDef>> {
+    use std::os::unix::fs::PermissionsExt;
+    let mut tasks = HashSet::new();
+    for entry in std::fs::read_dir("./")? {
+        let entry = entry?;
+        let metadata = entry.metadata()?;
+
+        if let Some(name) = entry.path().file_name() {
+            let is_executable = metadata.permissions().mode() & 0o111 > 0;
+            let name_match = name.to_str().and_then(|name| name.find(".discovery."));
+            if metadata.is_file() && is_executable && name_match.is_some() {
+                tasks = tasks.union(&gather_tasks(entry.path())?).cloned().collect();
+            }
+        }
+    }
+    Ok(tasks)
 }
 
-impl CuratorAgent {
+fn gather_tasks(script: PathBuf) -> Result<HashSet<TaskDef>> {
+    use std::io::{BufRead, BufReader};
+    use std::process::Command;
+
+    let child = Command::new(script).stdout(Stdio::piped()).spawn()?;
+
+    if let Some(stdout) = child.stdout {
+        let lines = BufReader::new(stdout).lines();
+        Ok(lines
+            .flatten()
+            .flat_map(|l| serde_json::from_str::<TaskDef>(&l))
+            .collect::<HashSet<_>>())
+    } else {
+        Ok(HashSet::new())
+    }
+}
+
+pub struct AgentLoop {
+    agent: AgentRef,
+    tasks: HashMap<String, TaskDef>,
+    executions: HashMap<Uuid, Arc<Mutex<Execution>>>,
+    close_channel: (Option<oneshot::Sender<()>>, Option<oneshot::Receiver<()>>),
+}
+
+impl AgentLoop {
     pub fn new(application: &str, instance: &str) -> Self {
         let application = application.into();
         let instance = instance.into();
-        Self {
+        let (tx, rx) = oneshot::channel();
+        AgentLoop {
             agent: AgentRef {
                 application,
                 instance,
             },
-            tasks: shared(HashMap::new()),
-            executions: shared(HashMap::new()),
+            tasks: HashMap::new(),
+            executions: HashMap::new(),
+            close_channel: (Some(tx), Some(rx)),
         }
     }
 
     pub async fn run(&mut self) -> Result<()> {
         let tasks = self
             .tasks
-            .lock()
-            .unwrap()
             .keys()
             .map(|t| Task { id: t.into() })
             .collect::<Vec<_>>();
@@ -184,45 +223,67 @@ impl CuratorAgent {
             instance: self.agent.instance.clone(),
             tasks,
         };
-        let mut client = SseClient::connect("http://localhost:8080/events", &agent).await?;
+        let mut client = SseClient::connect("http://localhost:8080/events", &agent)
+            .await
+            .chain_err(|| "Unable to connect to Curator server")?;
 
-        while let Some((name, event)) = client.next_event().await? {
-            match name {
-                Some(s) if s == "run-task" => {
-                    match serde_json::from_str::<agent::RunTask>(&event) {
-                        Ok(event) => {
-                            if !self.spawn_task(&event.task_id, event.execution) {
-                                eprintln!("Task {} not found", event.task_id);
-                            }
-                        }
-                        Err(e) => {
-                            eprintln!("Unable to interpret {} event: {}. {}", s, event, e);
-                        }
+        let mut on_close = self.close_channel.1.take().unwrap().fuse();
+
+        loop {
+            let mut on_message = client.next_event().boxed().fuse();
+
+            select! {
+                msg = on_message => {
+                    if let Some(msg) = msg? {
+                        self.process_message(&msg);
+                    } else {
+                        break;
                     }
+                },
+                _ = on_close => {
+                    println!("Stopping agent loop");
+                    break;
                 }
-                Some(s) if s == "stop-task" => {
-                    unimplemented!();
-                }
-                _ => {}
             }
         }
 
         Ok(())
     }
 
+    pub fn close_channel(&mut self) -> Option<oneshot::Sender<()>> {
+        self.close_channel.0.take()
+    }
+
+    fn process_message(&mut self, event: &SseEvent) {
+        let (name, event) = event;
+        match name {
+            Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {
+                Ok(event) => {
+                    if !self.spawn_task(&event.task_id, event.execution) {
+                        eprintln!("Task {} not found", event.task_id);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Unable to interpret {} event: {}. {}", s, event, e);
+                }
+            },
+            Some(s) if s == "stop-task" => {
+                unimplemented!();
+            }
+            _ => {}
+        }
+    }
+
     pub fn register_task(&mut self, task: TaskDef) {
-        self.tasks.lock().unwrap().insert(task.id.clone(), task);
+        self.tasks.insert(task.id.clone(), task);
     }
 
     fn spawn_task(&mut self, task_id: &str, execution_id: Uuid) -> bool {
-        if let Some(task) = self.tasks.lock().unwrap().get(task_id) {
+        if let Some(task) = self.tasks.get(task_id) {
             match task.spawn() {
                 Ok(child) => {
                     let execution = Execution::with_arc(execution_id);
-                    self.executions
-                        .lock()
-                        .unwrap()
-                        .insert(execution_id, Arc::clone(&execution));
+                    self.executions.insert(execution_id, Arc::clone(&execution));
 
                     let (tx, rx) = mpsc::channel(100);
                     tokio::spawn(Self::read_stdout(child, tx));
@@ -237,7 +298,7 @@ impl CuratorAgent {
         false
     }
 
-    async fn report_execution_back(id: Uuid, mut rx: Receiver<ChildProgress>) {
+    async fn report_execution_back(id: Uuid, mut rx: mpsc::Receiver<ChildProgress>) {
         use ExecutionStatus::*;
         let client = Client::new();
         let uri = "http://localhost:8080/execution/report";
@@ -278,7 +339,7 @@ impl CuratorAgent {
         }
     }
 
-    async fn read_stdout(mut child: Child, mut tx: Sender<ChildProgress>) {
+    async fn read_stdout(mut child: Child, mut tx: mpsc::Sender<ChildProgress>) {
         if let Some(stdout) = child.stdout.take() {
             let mut reader = BufReader::new(stdout).lines();
             while let Some(line) = reader.next().await {
