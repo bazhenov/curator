@@ -57,12 +57,12 @@ struct Executions(HashMap<Uuid, client::Execution>);
 
 pub struct Curator {
     server: actix_server::Server,
-    pub agents: web::Data<Mutex<Vec<Agent>>>,
+    pub agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>,
 }
 
 impl Curator {
     pub fn start() -> Result<Self> {
-        let agents = web::Data::new(Mutex::new(vec![]));
+        let agents = web::Data::new(Mutex::new(HashMap::new()));
         let executions = web::Data::new(Mutex::new(Executions::default()));
 
         let app = {
@@ -86,7 +86,7 @@ impl Curator {
 
     pub fn notify_all(&self, event: &SseEvent) {
         let mut agents = self.agents.lock().unwrap();
-        agents.retain(|agent| {
+        agents.retain(|_, agent| {
             if let Err(e) = agent.send_event(&event) {
                 eprintln!("{}", e.display_chain());
 
@@ -104,7 +104,7 @@ impl Curator {
 
 async fn new_agent(
     new_agent: web::Json<agent::Agent>,
-    agents: web::Data<Mutex<Vec<Agent>>>,
+    agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>,
 ) -> impl Responder {
     let (tx, rx) = unbounded_channel();
     let mut agents = agents.lock().unwrap();
@@ -112,11 +112,13 @@ async fn new_agent(
     let new_agent = new_agent.into_inner();
     let tasks = new_agent.tasks.iter().cloned().collect();
 
-    agents.push(Agent {
+    let agent = Agent {
         agent: new_agent.into(),
         channel: tx,
         tasks,
-    });
+    };
+
+    agents.insert(agent.agent.clone(), agent);
 
     HttpResponse::Ok()
         .header("content-type", "text/event-stream")
@@ -153,11 +155,11 @@ async fn list_executions(executions: web::Data<Mutex<Executions>>) -> impl Respo
     HttpResponse::Ok().json(body)
 }
 
-async fn list_agents(agents: web::Data<Mutex<Vec<Agent>>>) -> impl Responder {
+async fn list_agents(agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>) -> impl Responder {
     let agents = agents.lock().unwrap();
 
     let agents = agents
-        .iter()
+        .values()
         .map(|a| agent::Agent {
             application: a.agent.application.clone(),
             instance: a.agent.instance.clone(),
@@ -170,17 +172,14 @@ async fn list_agents(agents: web::Data<Mutex<Vec<Agent>>>) -> impl Responder {
 
 async fn run_task(
     task: web::Json<client::RunTask>,
-    agents: web::Data<Mutex<Vec<Agent>>>,
+    agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>,
     executions: web::Data<Mutex<Executions>>,
 ) -> impl Responder {
     let mut agents = agents.lock().unwrap();
 
-    let choosed_agent = agents
-        .iter()
-        .enumerate()
-        .find(|(_, a)| a.agent == task.agent);
+    let choosed_agent = agents.get(&task.agent);
 
-    if let Some((idx, agent)) = choosed_agent {
+    if let Some(agent) = choosed_agent {
         let execution_id = Uuid::new_v4();
 
         let result = agent.send_named_event(
@@ -194,7 +193,7 @@ async fn run_task(
         if let Err(e) = result {
             eprintln!("Failed while sending message to an agent. Removing agent.");
             eprintln!("{}", e);
-            agents.swap_remove(idx);
+            agents.remove(&task.agent);
             HttpResponse::InternalServerError().finish()
         } else {
             let mut executions = executions.lock().unwrap();

@@ -15,7 +15,7 @@ async fn main() -> Result<()> {
         {
             let agents = curator.agents.lock().unwrap();
             println!("{}", clear::All);
-            for a in agents.iter() {
+            for a in agents.values() {
                 println!("{}@{}", a.agent.instance, a.agent.application);
                 for task in a.tasks.iter() {
                     println!(" - {}", task.id);

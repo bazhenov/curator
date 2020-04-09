@@ -92,7 +92,7 @@ pub struct Task {
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq)]
 pub struct AgentRef {
     pub application: String,
     pub instance: String,
