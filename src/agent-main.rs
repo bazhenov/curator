@@ -32,9 +32,7 @@ async fn run() -> Result<()> {
             tasks = proposed_tasks;
 
             if let Some(channel) = loop_close_handle.take() {
-                channel
-                    .send(())
-                    .map_err(|_| "Agent has been already closed")?;
+                channel.send(()).expect("Agent has been already closed");
             }
 
             let mut executions = AgentLoop::new("my", "single");
@@ -53,7 +51,9 @@ async fn run() -> Result<()> {
 fn report_errors<T>(result: Result<T>) -> bool {
     match result {
         Err(e) => {
-            eprintln!("{}", e.display_chain());
+            for cause in e.iter_chain() {
+                eprintln!("{}", cause);
+            }
             false
         }
         Ok(_) => true,

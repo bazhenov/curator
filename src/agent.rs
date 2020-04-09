@@ -58,7 +58,8 @@ impl TaskDef {
         }
         cmd.stdout(Stdio::piped())
             .spawn()
-            .chain_err(|| "Unable to spawn process")
+            .context("Unable to spawn process")
+            .map_err(Into::into)
     }
 }
 
@@ -76,8 +77,9 @@ impl SseClient {
 
         let response = client.request(req).await?;
         if !response.status().is_success() {
-            bail!(ErrorKind::ClientConnectError(
-                host.into(),
+            bail!(format_err!(
+                "Client connect error: {} HTTP/{}",
+                host,
                 response.status().as_u16()
             ));
         }
@@ -125,7 +127,7 @@ impl Lines {
 
     fn feed(&mut self, bytes: impl AsRef<[u8]>) -> Result<Vec<String>> {
         Write::write(&mut self.0, bytes.as_ref())
-            .chain_err(|| "Unable to write data to in-memory cursor. Should never happen")?;
+            .context("Unable to write data to in-memory cursor. Should never happen")?;
 
         let mut vec = Vec::new();
         while let Some(line) = self.take_next_line()? {
@@ -140,8 +142,7 @@ impl Lines {
 
         if let Some(position) = newline_position {
             let (line_bytes, tail) = buffer.split_at(position);
-            let line =
-                String::from_utf8(line_bytes.to_vec()).chain_err(|| "Invalid UTF sequence")?;
+            let line = String::from_utf8(line_bytes.to_vec()).context("Invalid UTF sequence")?;
 
             // skipping newline character and replace cursor with leftover data
             self.0 = Cursor::new(tail[1..].to_vec());
@@ -225,7 +226,7 @@ impl AgentLoop {
         };
         let mut client = SseClient::connect("http://localhost:8080/events", &agent)
             .await
-            .chain_err(|| "Unable to connect to Curator server")?;
+            .context("Unable to connect to Curator server")?;
 
         let mut on_close = self.close_channel.1.take().unwrap().fuse();
 

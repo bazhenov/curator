@@ -4,7 +4,6 @@ use std::sync::Mutex;
 
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use bytes::Bytes;
-use error_chain::ChainedError;
 use serde;
 use serde_json;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
@@ -48,7 +47,8 @@ impl Agent {
     {
         self.channel
             .send(Ok(Bytes::from(data)))
-            .chain_err(|| "Failed while send message to SSE-channel")
+            .context("Failed while send message to SSE-channel")
+            .map_err(Into::into)
     }
 }
 
@@ -88,7 +88,7 @@ impl Curator {
         let mut agents = self.agents.lock().unwrap();
         agents.retain(|_, agent| {
             if let Err(e) = agent.send_event(&event) {
-                eprintln!("{}", e.display_chain());
+                eprintln!("{}", e);
 
                 false
             } else {

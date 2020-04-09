@@ -508,7 +508,7 @@ dependencies = [
  "actix-web",
  "bytes",
  "chrono",
- "error-chain",
+ "failure",
  "futures",
  "hyper",
  "serde",
@@ -560,16 +560,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "error-chain"
-version = "0.12.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d371106cc88ffdfb1eabd7111e432da544f16f3e2d7bf1dfe8bf575f1df045cd"
-dependencies = [
- "backtrace",
- "version_check",
 ]
 
 [[package]]
@@ -1598,12 +1588,6 @@ dependencies = [
  "rand",
  "serde",
 ]
-
-[[package]]
-name = "version_check"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "078775d0255232fb988e6fccf26ddc9d1ac274299aaedcedce21c6f72cc533ce"
 
 [[package]]
 name = "want"

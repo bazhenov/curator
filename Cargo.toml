@@ -25,9 +25,9 @@ futures = "0.3.4"
 tokio = { version = "0.2.13", features = ["rt-threaded", "macros", "io-util", "process"] }
 bytes = "0.5.4"
 hyper = "0.13.4"
-error-chain = "0.12.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 chrono = { version = "0.4.11", features = ["serde"] }
 uuid = { version = "0.8", features = ["serde", "v4"] }
 termion = "1.5.5"
+failure = "0.1.7"
