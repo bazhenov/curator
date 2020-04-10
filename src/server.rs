@@ -193,7 +193,10 @@ async fn run_task(
         );
 
         if let Err(e) = result {
-            error!("Failed while sending message to an agent. Removing agent. {}", e);
+            error!(
+                "Failed while sending message to an agent. Removing agent. {}",
+                e
+            );
             agents.remove(&task.agent);
             HttpResponse::InternalServerError().finish()
         } else {

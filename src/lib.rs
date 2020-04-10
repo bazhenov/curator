@@ -14,7 +14,7 @@ pub mod prelude {
     pub use super::shared;
     pub use super::Shared;
 
-    pub use log::{info, trace, warn, error};
+    pub use log::{error, info, trace, warn};
 }
 
 pub type Shared<T> = Arc<Mutex<T>>;

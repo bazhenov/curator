@@ -9,7 +9,7 @@ name = "curator"
 path = "src/lib.rs"
 
 [[bin]]
-name = "curator"
+name = "curator-server"
 path = "src/server-main.rs"
 
 [[bin]]

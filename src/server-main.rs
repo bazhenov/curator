@@ -4,8 +4,7 @@ use std::{thread, time::Duration};
 
 use termion::clear;
 
-use curator::errors::*;
-use curator::server::Curator;
+use curator::{prelude::*, server::Curator};
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
