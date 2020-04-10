@@ -1,4 +1,6 @@
+extern crate clap;
 extern crate curator;
+use clap::App;
 use curator::{
     agent::TaskDef,
     agent::{discover, AgentLoop},
@@ -10,6 +12,7 @@ use tokio::{sync::oneshot, time::delay_for};
 #[tokio::main]
 async fn main() {
     env_logger::init();
+
     match run().await {
         Err(e) => {
             report_errors(e);
@@ -20,8 +23,16 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    let mut tasks: Option<HashSet<TaskDef>> = None;
+    let matches = App::new("Curator Agent")
+        .version("0.1.0")
+        .author("Denis Bazhenov <dotsid@gmail.com>")
+        .about("Agent application for Curator server")
+        .arg_from_usage("-h, --host=<host> 'Curator server host'")
+        .get_matches();
 
+    let host = matches.value_of("host").unwrap();
+
+    let mut tasks: Option<HashSet<TaskDef>> = None;
     let mut close_handle: Option<oneshot::Sender<()>> = None;
 
     loop {
@@ -44,7 +55,7 @@ async fn run() -> Result<()> {
                 channel.send(()).expect("Agent has been already closed");
             }
 
-            let mut executions = AgentLoop::new("my", "single");
+            let mut executions = AgentLoop::new("my", "single", &host)?;
             for t in &proposed_tasks {
                 executions.register_task(t.clone());
             }

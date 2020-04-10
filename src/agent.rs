@@ -3,6 +3,7 @@ use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
     header::{ACCEPT, CONTENT_TYPE},
+    http::Uri,
     Body, Client, Request, Response,
 };
 use serde::Serialize;
@@ -66,13 +67,13 @@ impl TaskDef {
 }
 
 impl SseClient {
-    pub async fn connect<T: Serialize>(host: &str, body: T) -> Result<Self> {
+    pub async fn connect<T: Serialize>(uri: &Uri, body: T) -> Result<Self> {
         let client = Client::new();
 
         let json = serde_json::to_string(&body)?;
         let req = Request::builder()
             .method("POST")
-            .uri(host)
+            .uri(uri)
             .header(ACCEPT, "text/event-stream")
             .header(CONTENT_TYPE, "application/json")
             .body(Body::from(json))?;
@@ -81,7 +82,7 @@ impl SseClient {
         if !response.status().is_success() {
             bail!(format_err!(
                 "Client connect error: {} HTTP/{}",
-                host,
+                uri,
                 response.status().as_u16()
             ));
         }
@@ -194,25 +195,28 @@ fn gather_tasks(script: PathBuf) -> Result<HashSet<TaskDef>> {
 
 pub struct AgentLoop {
     agent: AgentRef,
+    uri: Uri,
     tasks: HashMap<String, TaskDef>,
     executions: HashMap<Uuid, Arc<Mutex<Execution>>>,
     close_channel: (Option<oneshot::Sender<()>>, Option<oneshot::Receiver<()>>),
 }
 
 impl AgentLoop {
-    pub fn new(application: &str, instance: &str) -> Self {
+    pub fn new(application: &str, instance: &str, host: &str) -> Result<Self> {
         let application = application.into();
         let instance = instance.into();
         let (tx, rx) = oneshot::channel();
-        AgentLoop {
+
+        Ok(AgentLoop {
             agent: AgentRef {
                 application,
                 instance,
             },
+            uri: format!("http://{}/events", host).parse()?,
             tasks: HashMap::new(),
             executions: HashMap::new(),
             close_channel: (Some(tx), Some(rx)),
-        }
+        })
     }
 
     pub async fn run(&mut self) -> Result<()> {
@@ -229,9 +233,9 @@ impl AgentLoop {
         let mut client: Option<SseClient> = None;
 
         while client.is_none() {
-            let connection = SseClient::connect("http://localhost:8080/events", &agent)
+            let connection = SseClient::connect(&self.uri, &agent)
                 .await
-                .context("Unable to connect to Curator server");
+                .with_context(|_| format!("Unable to connect to Curator server: {}", &self.uri));
             client = match connection {
                 Ok(client) => Some(client),
                 Err(e) => {
@@ -242,12 +246,10 @@ impl AgentLoop {
             }
         }
         let mut client = client.unwrap();
-
         let mut on_close = self.close_channel.1.take().unwrap().fuse();
 
         loop {
             let mut on_message = client.next_event().boxed().fuse();
-
             select! {
                 msg = on_message => {
                     if let Some(msg) = msg? {
