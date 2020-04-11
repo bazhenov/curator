@@ -28,7 +28,7 @@ pub mod errors {
     pub use failure::bail;
     pub use failure::ResultExt;
 
-    pub fn report_errors(e: failure::Error) {
+    pub fn log_errors(e: &failure::Error) {
         for cause in e.iter_chain() {
             if let Some(name) = cause.name() {
                 log::error!("{}: {}", name, cause);
@@ -36,5 +36,12 @@ pub mod errors {
                 log::error!("{}", cause);
             }
         }
+    }
+
+    pub fn format_error_chain(e: &failure::Error) -> String {
+        e.iter_chain()
+            .map(|e| format!("{}", e))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }

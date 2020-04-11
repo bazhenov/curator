@@ -1,9 +1,7 @@
 use crate::prelude::*;
-use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
     header::{ACCEPT, CONTENT_TYPE},
-    http::Uri,
     Body, Client, Request, Response,
 };
 use serde::Serialize;
@@ -12,7 +10,6 @@ use std::{
     io::{Cursor, Seek, SeekFrom, Write},
     path::PathBuf,
     process::Stdio,
-    sync::{Arc, Mutex},
     time::Duration,
 };
 use tokio::{
@@ -20,7 +17,7 @@ use tokio::{
     prelude::*,
     process::{Child, Command},
     stream::StreamExt,
-    sync::{mpsc, oneshot},
+    sync::mpsc,
     time::delay_for,
 };
 use uuid::Uuid;
@@ -67,7 +64,7 @@ impl TaskDef {
 }
 
 impl SseClient {
-    pub async fn connect<T: Serialize>(uri: &Uri, body: T) -> Result<Self> {
+    pub async fn connect<T: Serialize>(uri: &str, body: T) -> Result<Self> {
         let client = Client::new();
 
         let json = serde_json::to_string(&body)?;
@@ -195,28 +192,23 @@ fn gather_tasks(script: PathBuf) -> Result<HashSet<TaskDef>> {
 
 pub struct AgentLoop {
     agent: AgentRef,
-    uri: Uri,
+    uri: String,
     tasks: HashMap<String, TaskDef>,
-    executions: HashMap<Uuid, Arc<Mutex<Execution>>>,
-    close_channel: (Option<oneshot::Sender<()>>, Option<oneshot::Receiver<()>>),
 }
 
 impl AgentLoop {
-    pub fn new(application: &str, instance: &str, host: &str) -> Result<Self> {
+    pub fn new(application: &str, instance: &str, host: &str) -> Self {
         let application = application.into();
         let instance = instance.into();
-        let (tx, rx) = oneshot::channel();
 
-        Ok(AgentLoop {
+        AgentLoop {
             agent: AgentRef {
                 application,
                 instance,
             },
-            uri: format!("http://{}/events", host).parse()?,
+            uri: format!("http://{}", host),
             tasks: HashMap::new(),
-            executions: HashMap::new(),
-            close_channel: (Some(tx), Some(rx)),
-        })
+        }
     }
 
     pub async fn run(&mut self) -> Result<()> {
@@ -232,44 +224,30 @@ impl AgentLoop {
         };
         let mut client: Option<SseClient> = None;
 
+        let uri = format!("{}/events", self.uri);
         while client.is_none() {
-            let connection = SseClient::connect(&self.uri, &agent)
+            let connection = SseClient::connect(&uri, &agent)
                 .await
                 .with_context(|_| format!("Unable to connect to Curator server: {}", &self.uri));
             client = match connection {
                 Ok(client) => Some(client),
                 Err(e) => {
-                    report_errors(e.into());
+                    log_errors(&e.into());
                     delay_for(Duration::from_secs(5)).await;
                     None
                 }
             }
         }
         let mut client = client.unwrap();
-        let mut on_close = self.close_channel.1.take().unwrap().fuse();
 
-        loop {
-            let mut on_message = client.next_event().boxed().fuse();
-            select! {
-                msg = on_message => {
-                    if let Some(msg) = msg? {
-                        self.process_message(&msg);
-                    } else {
-                        break;
-                    }
-                },
-                _ = on_close => {
-                    trace!("Stopping agent loop");
-                    break;
-                }
-            }
+        while let Some(msg) = client.next_event().await? {
+            trace!("Incoming message...");
+            self.process_message(&msg);
         }
 
-        Ok(())
-    }
+        trace!("No more messages. Exiting");
 
-    pub fn close_channel(&mut self) -> Option<oneshot::Sender<()>> {
-        self.close_channel.0.take()
+        Ok(())
     }
 
     fn process_message(&mut self, event: &SseEvent) {
@@ -277,9 +255,7 @@ impl AgentLoop {
         match name {
             Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {
                 Ok(event) => {
-                    if !self.spawn_task(&event.task_id, event.execution) {
-                        warn!("Task {} not found", event.task_id);
-                    }
+                    self.spawn_and_track_task(&event.task_id, event.execution);
                 }
                 Err(e) => {
                     warn!("Unable to interpret {} event: {}. {}", s, event, e);
@@ -288,7 +264,9 @@ impl AgentLoop {
             Some(s) if s == "stop-task" => {
                 unimplemented!();
             }
-            _ => {}
+            _ => {
+                error!("Invalid event: {}", event);
+            }
         }
     }
 
@@ -296,30 +274,40 @@ impl AgentLoop {
         self.tasks.insert(task.id.clone(), task);
     }
 
-    fn spawn_task(&mut self, task_id: &str, execution_id: Uuid) -> bool {
+    fn spawn_and_track_task(&mut self, task_id: &str, execution_id: Uuid) {
+        let (mut tx, rx) = mpsc::channel(100);
+        tokio::spawn(Self::report_execution_back(
+            self.uri.clone(),
+            execution_id,
+            rx,
+        ));
+
         if let Some(task) = self.tasks.get(task_id) {
             match task.spawn() {
                 Ok(child) => {
-                    let execution = Execution::with_arc(execution_id);
-                    self.executions.insert(execution_id, Arc::clone(&execution));
-
-                    let (tx, rx) = mpsc::channel(100);
                     tokio::spawn(Self::read_stdout(child, tx));
-                    tokio::spawn(Self::report_execution_back(execution_id, rx));
-                    return true;
                 }
                 Err(e) => {
-                    report_errors(e);
+                    log_errors(&e);
+                    tokio::spawn(async move {
+                        let report = ChildProgress::FailedToStart(format_error_chain(&e));
+                        tx.send(report).await
+                    });
                 }
             }
+        } else {
+            warn!("Task {} not found", &task_id);
+            let task_id = task_id.to_string();
+            tokio::spawn(async move {
+                let report = ChildProgress::FailedToStart(format!("Task {} not found", task_id));
+                tx.send(report).await
+            });
         }
-        false
     }
 
-    async fn report_execution_back(id: Uuid, mut rx: mpsc::Receiver<ChildProgress>) {
+    async fn report_execution_back(uri: String, id: Uuid, mut rx: mpsc::Receiver<ChildProgress>) {
         use ExecutionStatus::*;
         let client = Client::new();
-        let uri = "http://localhost:8080/execution/report";
 
         while let Some(progress) = rx.recv().await {
             let report = match progress {
@@ -336,10 +324,18 @@ impl AgentLoop {
                         stdout_append: None,
                     }
                 }
+                ChildProgress::FailedToStart(reason) => agent::ExecutionReport {
+                    id,
+                    status: REJECTED,
+                    stdout_append: Some(reason),
+                },
             };
+
+            let uri = format!("{}/execution/report", uri);
+
             let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
             let request = Request::builder()
-                .uri(uri)
+                .uri(&uri)
                 .method("POST")
                 .header(CONTENT_TYPE, "application/json")
                 .body(Body::from(json))
@@ -383,6 +379,7 @@ impl AgentLoop {
 enum ChildProgress {
     Stdout(String),
     Finished(i32),
+    FailedToStart(String),
 }
 
 #[cfg(test)]

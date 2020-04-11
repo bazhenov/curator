@@ -7,7 +7,7 @@ use curator::{
     prelude::*,
 };
 use std::{collections::HashSet, process::exit, time::Duration};
-use tokio::{sync::oneshot, time::delay_for};
+use tokio::time::delay_for;
 
 #[tokio::main]
 async fn main() {
@@ -15,7 +15,7 @@ async fn main() {
 
     match run().await {
         Err(e) => {
-            report_errors(e);
+            log_errors(&e);
             exit(1);
         }
         Ok(_) => exit(0),
@@ -33,7 +33,6 @@ async fn run() -> Result<()> {
     let host = matches.value_of("host").unwrap();
 
     let mut tasks: Option<HashSet<TaskDef>> = None;
-    let mut close_handle: Option<oneshot::Sender<()>> = None;
 
     loop {
         let proposed_tasks = discover().await?;
@@ -51,21 +50,18 @@ async fn run() -> Result<()> {
                 warn!("No tasks has been discovered");
             }
 
-            if let Some(channel) = close_handle.take() {
-                channel.send(()).expect("Agent has been already closed");
-            }
-
-            let mut executions = AgentLoop::new("my", "single", &host)?;
+            let mut agent_loop = AgentLoop::new("my", "single", &host);
             for t in &proposed_tasks {
-                executions.register_task(t.clone());
+                agent_loop.register_task(t.clone());
             }
 
             tasks = Some(proposed_tasks);
 
-            close_handle = executions.close_channel();
+            // Seems like at the moment when agent is recreated old one is closed because of
+            // transport link is destroyed. It doesn't seems like graceful closing strategy.
             tokio::spawn(async move {
-                if let Err(e) = executions.run().await {
-                    report_errors(e);
+                if let Err(e) = agent_loop.run().await {
+                    log_errors(&e);
                 }
             });
         }
