@@ -28,11 +28,18 @@ async fn run() -> Result<()> {
         .author("Denis Bazhenov <dotsid@gmail.com>")
         .about("Agent application for Curator server")
         .arg_from_usage("-h, --host=<host> 'Curator server host'")
+        .arg_from_usage("-a, --application=<application> 'Application name of an agent'")
+        .arg_from_usage("-i, --instance=<instance> 'Instance name of an agent'")
         .get_matches();
 
     let host = matches.value_of("host").unwrap();
 
+    let application_name = matches.value_of("application").unwrap();
+    let instance_name = matches.value_of("instance").unwrap();
+
     let mut tasks: Option<HashSet<TaskDef>> = None;
+
+    let mut _current_loop: Option<_> = None;
 
     loop {
         let proposed_tasks = discover().await?;
@@ -50,20 +57,16 @@ async fn run() -> Result<()> {
                 warn!("No tasks has been discovered");
             }
 
-            let mut agent_loop = AgentLoop::new("my", "single", &host);
-            for t in &proposed_tasks {
-                agent_loop.register_task(t.clone());
-            }
+            let agent_tasks = proposed_tasks.iter().cloned().collect::<Vec<_>>();
+            // Need to save loop reference until tasks will be changed
+            _current_loop = Some(AgentLoop::run(
+                &host,
+                application_name,
+                instance_name,
+                agent_tasks,
+            ));
 
             tasks = Some(proposed_tasks);
-
-            // Seems like at the moment when agent is recreated old one is closed because of
-            // transport link is destroyed. It doesn't seems like graceful closing strategy.
-            tokio::spawn(async move {
-                if let Err(e) = agent_loop.run().await {
-                    log_errors(&e);
-                }
-            });
         }
         delay_for(Duration::from_secs(5)).await;
     }

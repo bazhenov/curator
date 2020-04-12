@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
     header::{ACCEPT, CONTENT_TYPE},
@@ -10,6 +11,7 @@ use std::{
     io::{Cursor, Seek, SeekFrom, Write},
     path::PathBuf,
     process::Stdio,
+    sync::Arc,
     time::Duration,
 };
 use tokio::{
@@ -17,7 +19,7 @@ use tokio::{
     prelude::*,
     process::{Child, Command},
     stream::StreamExt,
-    sync::mpsc,
+    sync::{mpsc, Notify},
     time::delay_for,
 };
 use uuid::Uuid;
@@ -190,28 +192,54 @@ fn gather_tasks(script: PathBuf) -> Result<HashSet<TaskDef>> {
     }
 }
 
+pub struct CloseHandle(Arc<Notify>);
+
+impl Drop for CloseHandle {
+    fn drop(&mut self) {
+        self.0.notify();
+    }
+}
+
+impl From<Arc<Notify>> for CloseHandle {
+    fn from(f: Arc<Notify>) -> Self {
+        Self(f)
+    }
+}
+
 pub struct AgentLoop {
     agent: AgentRef,
     uri: String,
     tasks: HashMap<String, TaskDef>,
+    close_handle: Arc<Notify>,
 }
 
 impl AgentLoop {
-    pub fn new(application: &str, instance: &str, host: &str) -> Self {
+    pub fn run(host: &str, application: &str, instance: &str, tasks: Vec<TaskDef>) -> CloseHandle {
         let application = application.into();
         let instance = instance.into();
 
-        AgentLoop {
+        let tasks = tasks.into_iter().map(|i| (i.id.clone(), i)).collect();
+        let close_handle = Arc::new(Notify::new());
+        let mut agent_loop = Self {
             agent: AgentRef {
                 application,
                 instance,
             },
             uri: format!("http://{}", host),
-            tasks: HashMap::new(),
-        }
+            tasks,
+            close_handle: close_handle.clone(),
+        };
+
+        tokio::spawn(async move {
+            if let Err(e) = agent_loop._run().await {
+                log_errors(&e);
+            }
+        });
+
+        close_handle.into()
     }
 
-    pub async fn run(&mut self) -> Result<()> {
+    async fn _run(&mut self) -> Result<()> {
         let tasks = self
             .tasks
             .keys()
@@ -222,35 +250,51 @@ impl AgentLoop {
             instance: self.agent.instance.clone(),
             tasks,
         };
-        let mut client: Option<SseClient> = None;
 
         let uri = format!("{}/events", self.uri);
-        while client.is_none() {
-            let connection = SseClient::connect(&uri, &agent)
-                .await
-                .with_context(|_| format!("Unable to connect to Curator server: {}", &self.uri));
-            client = match connection {
-                Ok(client) => Some(client),
-                Err(e) => {
-                    log_errors(&e.into());
-                    delay_for(Duration::from_secs(5)).await;
-                    None
+
+        loop {
+            let mut client: Option<SseClient> = None;
+            while client.is_none() {
+                let connection = SseClient::connect(&uri, &agent).await.with_context(|_| {
+                    format!("Unable to connect to Curator server: {}", &self.uri)
+                });
+                client = match connection {
+                    Ok(client) => Some(client),
+                    Err(e) => {
+                        log_errors(&e.into());
+                        delay_for(Duration::from_secs(5)).await;
+                        None
+                    }
+                }
+            }
+            let mut client = client.unwrap();
+            let mut on_close = self.close_handle.notified().boxed().fuse();
+
+            loop {
+                let mut on_message = client.next_event().boxed().fuse();
+
+                select! {
+                    msg = on_message => {
+                        if let Some(msg) = msg? {
+                            trace!("Incoming message...");
+                            self.process_message(&msg);
+                        } else {
+                            trace!("Stream ended. Trying to reconnect");
+                            delay_for(Duration::from_secs(1)).await;
+                            break;
+                        }
+                    },
+                    _ = on_close => {
+                        trace!("Close signal received. Exiting");
+                        return Ok(());
+                    }
                 }
             }
         }
-        let mut client = client.unwrap();
-
-        while let Some(msg) = client.next_event().await? {
-            trace!("Incoming message...");
-            self.process_message(&msg);
-        }
-
-        trace!("No more messages. Exiting");
-
-        Ok(())
     }
 
-    fn process_message(&mut self, event: &SseEvent) {
+    fn process_message(&self, event: &SseEvent) {
         let (name, event) = event;
         match name {
             Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {
@@ -274,7 +318,7 @@ impl AgentLoop {
         self.tasks.insert(task.id.clone(), task);
     }
 
-    fn spawn_and_track_task(&mut self, task_id: &str, execution_id: Uuid) {
+    fn spawn_and_track_task(&self, task_id: &str, execution_id: Uuid) {
         let (mut tx, rx) = mpsc::channel(100);
         tokio::spawn(Self::report_execution_back(
             self.uri.clone(),
