@@ -9,6 +9,7 @@ use serde::Serialize;
 use std::{
     collections::{HashMap, HashSet},
     io::{Cursor, Seek, SeekFrom, Write},
+    path::Path,
     path::PathBuf,
     process::Stdio,
     sync::Arc,
@@ -38,21 +39,11 @@ pub struct TaskDef {
     pub command: String,
     #[serde(default)]
     pub args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 impl TaskDef {
-    pub fn new(id: impl AsRef<str>, command: impl AsRef<str>) -> Self {
-        Self::new_with_args(id, command, vec![])
-    }
-
-    pub fn new_with_args(id: impl AsRef<str>, command: impl AsRef<str>, args: Vec<String>) -> Self {
-        Self {
-            id: id.as_ref().to_string(),
-            command: command.as_ref().to_string(),
-            args,
-        }
-    }
-
     fn spawn(&self) -> Result<Child> {
         let mut cmd = Command::new(&self.command);
         for arg in &self.args {
@@ -157,16 +148,18 @@ impl Lines {
     }
 }
 
-pub async fn discover() -> Result<HashSet<TaskDef>> {
+pub async fn discover(path: impl AsRef<Path>) -> Result<HashSet<TaskDef>> {
     use std::os::unix::fs::PermissionsExt;
     let mut tasks = HashSet::new();
-    for entry in std::fs::read_dir("./")? {
+
+    for entry in std::fs::read_dir(path)? {
         let entry = entry?;
         let metadata = entry.metadata()?;
 
         if let Some(name) = entry.path().file_name() {
             let is_executable = metadata.permissions().mode() & 0o111 > 0;
             let name_match = name.to_str().and_then(|name| name.find(".discovery."));
+            trace!("Checking: {:?} exec: {}", entry, is_executable);
             if metadata.is_file() && is_executable && name_match.is_some() {
                 tasks = tasks.union(&gather_tasks(entry.path())?).cloned().collect();
             }
@@ -242,8 +235,11 @@ impl AgentLoop {
     async fn _run(&mut self) -> Result<()> {
         let tasks = self
             .tasks
-            .keys()
-            .map(|t| Task { id: t.into() })
+            .values()
+            .map(|t| Task {
+                id: t.id.clone(),
+                description: t.description.clone(),
+            })
             .collect::<Vec<_>>();
         let agent = agent::Agent {
             application: self.agent.application.clone(),
@@ -430,9 +426,17 @@ enum ChildProgress {
 mod tests {
 
     use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
 
     #[test]
     fn test_read_by_lines() -> Result<()> {
+        init();
+
         let fixture = [
             ("event:", Vec::new()),
             ("data", Vec::new()),
@@ -446,6 +450,29 @@ mod tests {
             assert_eq!(lines.feed(input.as_bytes())?, *output);
         }
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn check_discovery_process() -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+        init();
+
+        let tmp = TempDir::new()?;
+        let path = tmp.path().join("test.discovery.sh");
+        let mut permissions = {
+            let mut file = fs::File::create(&path)?;
+            writeln!(file, "#!/usr/bin/env sh")?;
+            writeln!(file, r#"echo '{{"id": "date", "command": "date"}}'"#)?;
+            file.metadata()?.permissions()
+        };
+        permissions.set_mode(permissions.mode() | 0o100);
+        fs::set_permissions(&path, permissions)?;
+
+        let tasks = discover(tmp.path()).await?;
+        assert_eq!(tasks.len(), 1);
+        let first_task = tasks.iter().next().unwrap();
+        assert_eq!(first_task.id, "date");
         Ok(())
     }
 }

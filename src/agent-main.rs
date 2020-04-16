@@ -42,7 +42,7 @@ async fn run() -> Result<()> {
     let mut _current_loop: Option<_> = None;
 
     loop {
-        let proposed_tasks = discover().await?;
+        let proposed_tasks = discover("./").await?;
         let has_changes = match tasks {
             Some(ref tasks) => {
                 let mut difference = proposed_tasks.symmetric_difference(&tasks).peekable();
