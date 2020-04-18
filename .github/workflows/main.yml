@@ -11,9 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: icepuma/rust-action@1.42.0
+    - uses: actions-rs/clippy-check@v1
       with:
-        args: cargo fmt && cargo clippy
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: --all-features
 
   agent-and-server:
     runs-on: ubuntu-latest
