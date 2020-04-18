@@ -61,6 +61,7 @@ paths:
                   tasks:
                     - id: cleanup-database
                     - id: report-load
+                      description: Report overall system load
         description: Agent must provide information about itself and available tasks
       parameters: []
   /execution/report:
@@ -179,6 +180,7 @@ paths:
               items:
                 $ref: '#/components/schemas/Execution'
         description: ''
+      description: 'List all executions in the system: initiated, running, completed and failed'
 components:
   schemas:
     Task:
@@ -188,10 +190,13 @@ components:
       x-examples:
         basic:
           id: cleanup-database
+          description: Run compacting database procedure
       properties:
         id:
           type: string
           description: name of the task. Will be presented as is to operator using the system
+        description:
+          type: string
       required:
         - id
     Agent:
@@ -247,17 +252,31 @@ components:
       properties:
         id:
           type: string
+          format: uuid
         agent:
           $ref: '#/components/schemas/AgentRef'
         output:
           type: string
         status:
           $ref: '#/components/schemas/ExecutionStatus'
+        started:
+          type: string
+          format: date-time
+        finished:
+          type: string
+          format: date-time
+        task:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
       required:
         - id
         - agent
         - output
         - status
+        - started
+        - task
+      description: ''
     ExecutionStatus:
       type: string
       title: ExecutionStatus
