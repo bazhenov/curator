@@ -90,6 +90,8 @@ pub mod client {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Hash, Eq)]
 pub struct Task {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq)]
@@ -174,8 +176,9 @@ mod tests {
         assert_json_eq(
             Task {
                 id: "my-id".to_string(),
+                description: Some("some description".to_string()),
             },
-            json!({"id": "my-id"}),
+            json!({"id": "my-id", "description": "some description"}),
         )?;
 
         Ok(())
@@ -189,13 +192,14 @@ mod tests {
                 instance: "single".into(),
                 tasks: vec![Task {
                     id: "my-task".into(),
+                    description: Some("some description".to_string()),
                 }],
             },
             json!({
                 "application": "my-app",
                 "instance": "single",
                 "tasks": [
-                    { "id": "my-task" }
+                    { "id": "my-task", "description": "some description" }
                 ]
             }),
         )?;
@@ -304,7 +308,10 @@ mod tests {
                     application: "app".into(),
                     instance: "single".into(),
                 },
-                task: Task { id: "clean".into() },
+                task: Task {
+                    id: "clean".into(),
+                    description: None,
+                },
                 started: Utc.ymd(2017, 11, 3).and_hms(9, 10, 11),
                 finished: None,
             },

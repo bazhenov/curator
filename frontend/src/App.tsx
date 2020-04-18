@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import {Agent, Execution, Task} from './models'
-import { ExecutionList, Layout } from './components';
+import { ExecutionList, Layout, TaskSuggest } from './components';
+import { Navbar, Alignment, Button } from '@blueprintjs/core';
 
 interface AppProps {
   curator: Curator
@@ -14,13 +15,15 @@ export const App: React.SFC<AppProps> = (props) => {
   const [executions, setExecutions] = useState<Array<Execution>>([]);
   const [selectedExecutionId, setSelectedExecutionId] = useState<String | null>(null);
   
-  useEffect(curator.onAgentsChange(setAgents))
-  useEffect(curator.onExecutionsChange(setExecutions))
+  useEffect(() => curator.onAgentsChange(setAgents))
+  useEffect(() => curator.onExecutionsChange(setExecutions))
+  let [isOmnibarOpen, setOmnibarOpen] = useState(false);
 
   let taskTemplate = (a: Agent, t: Task) =>
-<li><a href='#' onClick={() => curator.runTask(t.id, a)}>{t.id}</a></li>
+    <li key={t.id}><a href='#' onClick={() => curator.runTask(a, t)}>{t.id}</a></li>
 
-  let agentTemplate = (agent: Agent) => <li>{agent.application}@{agent.instance}
+  let agentTemplate = (agent: Agent) => <li key={agent.application + "@" + agent.instance}>
+    {agent.application}@{agent.instance}
     <ol>{agent.tasks.map(t => taskTemplate(agent, t))}</ol>
   </li>
 
@@ -40,8 +43,24 @@ export const App: React.SFC<AppProps> = (props) => {
     <ExecutionList executions={executions} onSelect={setSelectedExecutionId}/>
     {selectedExecution && <ExecutionUI execution={selectedExecution} />}
   </div>
+
+  let header = <Navbar>
+    <Navbar.Group align={Alignment.LEFT}>
+      <Navbar.Heading>Curator</Navbar.Heading>
+      <Navbar.Divider />
+      <TaskSuggest
+        isOpen={isOmnibarOpen}
+        agents={agents}
+        onClose={() => setOmnibarOpen(false)}
+        onSelect={(a, t) => {
+          curator.runTask(a, t)
+          setOmnibarOpen(false)
+        }} />
+      <Button minimal={true} icon="play" text="Run task..." onClick={() => setOmnibarOpen(true)} />
+    </Navbar.Group>
+  </Navbar>
   
-  return <Layout sidebar={agentsUi} content={executionUi} />
+  return <Layout header={header} sidebar={agentsUi} content={executionUi} />
 }
 
 const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
@@ -63,10 +82,14 @@ export class Curator {
 
   private agentChangeListeners: Array<AgentChangeListener>
   private executionChangeListeners: Array<ExecutionChangeListener>
+  private agents: Agent[]
+  private executions: Execution[]
 
   constructor() {
     this.agentChangeListeners = []
     this.executionChangeListeners = []
+    this.agents = []
+    this.executions = []
     this.updateAgentsLoop()
     this.updateExecutionsLoop()
   }
@@ -74,8 +97,13 @@ export class Curator {
   updateAgentsLoop() {
     fetch("/agents")
       .then(r => r.json())
-      .then(r =>
-        this.agentChangeListeners.forEach(listener => listener(r)))
+      .then(r => {
+        // Replace with Conditional GET on backend side
+        if (JSON.stringify(this.agents) != JSON.stringify(r)) {
+          this.agents = r;
+          this.agentChangeListeners.forEach(listener => listener(r))
+        }
+      })
     setTimeout(() => this.updateAgentsLoop(), 1000)
   }
 
@@ -84,15 +112,20 @@ export class Curator {
       .then(r => r.json())
       .then(r => r.map(processExecutionDates))
       .then(r => r.sort((a: Execution, b: Execution) => a.started.unix() - b.started.unix()))
-      .then(r =>
-        this.executionChangeListeners.forEach(listener => listener(r)))
+      .then(r => {
+        // Replace with Conditional GET on backend side
+        if (JSON.stringify(this.executions) != JSON.stringify(r)) {
+          this.executions = r
+          this.executionChangeListeners.forEach(listener => listener(r))
+        }
+      })
     setTimeout(() => this.updateExecutionsLoop(), 1000)
   }
 
-  runTask(task_id: String, agent: Agent) {
+  runTask(agent: Agent, task: Task) {
     let params = {
       method: "POST",
-      body: JSON.stringify({ task_id, agent }),
+      body: JSON.stringify({ task_id: task.id, agent }),
       headers: {
         'Content-Type': 'application/json'
       }

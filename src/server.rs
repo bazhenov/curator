@@ -173,42 +173,42 @@ async fn list_agents(agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>) -> impl
 }
 
 async fn run_task(
-    task: web::Json<client::RunTask>,
+    run_task: web::Json<client::RunTask>,
     agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>,
     executions: web::Data<Mutex<Executions>>,
 ) -> impl Responder {
     let mut agents = agents.lock().unwrap();
 
-    let choosed_agent = agents.get(&task.agent);
+    if let Some(agent) = agents.get(&run_task.agent) {
+        let chosen_task = agent.tasks.iter().find(|t| t.id == run_task.task_id);
 
-    if let Some(agent) = choosed_agent {
-        let execution_id = Uuid::new_v4();
-
-        let result = agent.send_named_event(
-            agent::RUN_TASK_EVENT_NAME,
-            &agent::RunTask {
-                execution: execution_id,
-                task_id: task.task_id.clone(),
-            },
-        );
-
-        if let Err(e) = result {
-            error!(
-                "Failed while sending message to an agent. Removing agent. {}",
-                e
+        if let Some(task) = chosen_task {
+            let execution_id = Uuid::new_v4();
+            let result = agent.send_named_event(
+                agent::RUN_TASK_EVENT_NAME,
+                &agent::RunTask {
+                    execution: execution_id,
+                    task_id: run_task.task_id.clone(),
+                },
             );
-            agents.remove(&task.agent);
-            HttpResponse::InternalServerError().finish()
+
+            if let Err(e) = result {
+                error!(
+                    "Failed while sending message to an agent. Removing agent. {}",
+                    e
+                );
+                agents.remove(&run_task.agent);
+                HttpResponse::InternalServerError().finish()
+            } else {
+                let mut executions = executions.lock().unwrap();
+                executions.0.insert(
+                    execution_id,
+                    client::Execution::new(execution_id, task.clone(), agent.agent.clone()),
+                );
+                HttpResponse::Ok().json(client::ExecutionRef { execution_id })
+            }
         } else {
-            let mut executions = executions.lock().unwrap();
-            let task = Task {
-                id: task.task_id.clone(),
-            };
-            executions.0.insert(
-                execution_id,
-                client::Execution::new(execution_id, task, agent.agent.clone()),
-            );
-            HttpResponse::Ok().json(client::ExecutionRef { execution_id })
+            HttpResponse::NotAcceptable().finish()
         }
     } else {
         HttpResponse::NotAcceptable().finish()

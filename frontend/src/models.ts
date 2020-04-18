@@ -22,7 +22,8 @@ export interface Execution {
 }
 
 export interface Task {
-  id: string
+  id: string,
+  description?: string
 }
 
 export enum ExecutionStatus {

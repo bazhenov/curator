@@ -1,4 +1,5 @@
 @import "node_modules/@blueprintjs/core/src/blueprint.scss";
+@import "node_modules/@blueprintjs/select/src/blueprint-select.scss";
 
 body {
   margin: 0;
@@ -87,5 +88,16 @@ code {
     color: white;
     padding: 10px;
     border-radius: 3px;
+  }
+}
+
+.bp3-omnibar {
+  .bp3-active {
+    .bp3-text-muted {
+      color: hsla(0,0%,100%,.7);
+    }
+    .bp3-tag {
+      background-color: hsla(0,0%,100%,.7);
+    }
   }
 }
