@@ -62,10 +62,11 @@ jobs:
         path: ./target
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}
 
+    - name: Install latest nightly
+      uses: actions-rs/toolchain@v1
+
     - name: Build Server and Agent
-      uses: icepuma/rust-action@1.42.0
-      with:
-        args: cargo build --release --bin curator-server --bin curator-agent
+      run: cargo build --release --bin curator-server --bin curator-agent
 
     - name: Publish server
       uses: actions/upload-artifact@v1
