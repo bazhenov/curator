@@ -11,6 +11,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+
+    - name: Fix ~/.cache permissions
+      run: sudo chown -R $(whoami):$(id -ng) ~/.cargo/
+      
+    - name: Establish cargo cache
+      uses: actions/cache@v1
+      env:
+        cache-name: cargo-cache
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-build-${{ env.cache-name }}
+
+    - name: Establish build cache
+      uses: actions/cache@v1
+      env:
+        cache-name: build-cache
+      with:
+        path: ./target
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}
+
     - uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
