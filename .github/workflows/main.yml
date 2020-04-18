@@ -25,9 +25,9 @@ jobs:
         args: cargo build --release --bin curator-server --bin curator-agent
     - uses: actions/upload-artifact@v1
       with:
-        name: target/release/curator-server
-        path: curator-server
+        name: curator-server
+        path: target/release/curator-server
     - uses: actions/upload-artifact@v1
       with:
-        name: target/release/curator-agent
-        path: curator-agent
+        name: curator-agent
+        path: target/release/curator-agent
