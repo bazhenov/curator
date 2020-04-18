@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  code-inspect:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: icepuma/rust-action@1.42.0
+      with:
+        args: cargo fmt && cargo clippy
+
+  agent-and-server:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: icepuma/rust-action@1.42.0
+      with:
+        args: cargo build --release --bin curator-server --bin curator-agent
+    - uses: actions/upload-artifact@v1
+      with:
+        name: target/release/curator-server
+        path: curator-server
+    - uses: actions/upload-artifact@v1
+      with:
+        name: target/release/curator-agent
+        path: curator-agent
