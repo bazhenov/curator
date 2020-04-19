@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  code-inspect:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Fix ~/.cache permissions
+      run: sudo chown -R $(whoami):$(id -ng) ~/.cargo/
+
+    - name: Establish cargo cache
+      uses: actions/cache@v1
+      with:
+        path: /usr/share/rust/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-cache
+
+    - name: Establish build cache
+      uses: actions/cache@v1
+      with:
+        path: ./target
+        key: ${{ runner.os }}-build-cache-${{ hashFiles('./Cargo.lock') }}
+
+    - uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: --all-features
+
+  agent-and-server:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Fix ~/.cache permissions
+      run: sudo chown -R $(whoami):$(id -ng) ~/.cargo/
+
+    - name: Establish cargo cache
+      uses: actions/cache@v1
+      with:
+        path: /usr/share/rust/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-cache
+
+    - name: Establish build cache
+      uses: actions/cache@v1
+      with:
+        path: ./target
+        key: ${{ runner.os }}-build-cache-${{ hashFiles('./Cargo.lock') }}
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+
+    - name: Build Server and Agent
+      run: cargo build -vvvv --release --bin curator-server --bin curator-agent
+
+    - name: Publish server
+      uses: actions/upload-artifact@v1
+      with:
+        name: curator-server
+        path: target/release/curator-server
+
+    - name: Publish agent
+      uses: actions/upload-artifact@v1
+      with:
+        name: curator-agent
+        path: target/release/curator-agent
