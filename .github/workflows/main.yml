@@ -11,7 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-      
+
+    - name: Fix ~/.cache permissions
+      run: sudo chown -R $(whoami):$(id -ng) ~/.cargo/
+
     - name: Establish cargo cache
       uses: actions/cache@v1
       with:
@@ -58,7 +61,7 @@ jobs:
         profile: minimal
 
     - name: Build Server and Agent
-      run: cargo build --release --bin curator-server --bin curator-agent
+      run: cargo build -vvvv --release --bin curator-server --bin curator-agent
 
     - name: Publish server
       uses: actions/upload-artifact@v1
