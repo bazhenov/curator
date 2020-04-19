@@ -17,19 +17,15 @@ jobs:
       
     - name: Establish cargo cache
       uses: actions/cache@v1
-      env:
-        cache-name: cargo-cache
       with:
         path: ~/.cargo
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
+        key: ${{ runner.os }}-cargo-cache
 
     - name: Establish build cache
       uses: actions/cache@v1
-      env:
-        cache-name: build-cache
       with:
         path: ./target
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}
+        key: ${{ runner.os }}-build-cache-${{ hashFiles('./Cargo.lock') }}
 
     - uses: actions-rs/clippy-check@v1
       with:
@@ -48,19 +44,15 @@ jobs:
       
     - name: Establish cargo cache
       uses: actions/cache@v1
-      env:
-        cache-name: cargo-cache
       with:
         path: ~/.cargo
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
+        key: ${{ runner.os }}-cargo-cache
 
     - name: Establish build cache
       uses: actions/cache@v1
-      env:
-        cache-name: build-cache
       with:
         path: ./target
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}
+        key: ${{ runner.os }}-build-cache-${{ hashFiles('./Cargo.lock') }}
 
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
