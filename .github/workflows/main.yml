@@ -11,15 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
-    - name: Fix ~/.cache permissions
-      run: sudo chown -R $(whoami):$(id -ng) ~/.cargo/
       
     - name: Establish cargo cache
       uses: actions/cache@v1
       with:
-        path: ~/.cargo
-        key: ${{ runner.os }}-cargo-cache
+        path: /usr/share/rust/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-cache
 
     - name: Establish build cache
       uses: actions/cache@v1
@@ -41,12 +38,12 @@ jobs:
 
     - name: Fix ~/.cache permissions
       run: sudo chown -R $(whoami):$(id -ng) ~/.cargo/
-      
+
     - name: Establish cargo cache
       uses: actions/cache@v1
       with:
-        path: ~/.cargo
-        key: ${{ runner.os }}-cargo-cache
+        path: /usr/share/rust/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-cache
 
     - name: Establish build cache
       uses: actions/cache@v1
