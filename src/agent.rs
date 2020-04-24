@@ -247,7 +247,7 @@ impl AgentLoop {
             tasks,
         };
 
-        let uri = format!("{}/events", self.uri);
+        let uri = format!("{}/backend/events", self.uri);
 
         loop {
             let mut client: Option<SseClient> = None;
@@ -272,13 +272,22 @@ impl AgentLoop {
 
                 select! {
                     msg = on_message => {
-                        if let Some(msg) = msg? {
-                            trace!("Incoming message...");
-                            self.process_message(&msg);
-                        } else {
-                            trace!("Stream ended. Trying to reconnect");
-                            delay_for(Duration::from_secs(1)).await;
-                            break;
+                        match msg {
+                            Ok(msg) => {
+                                if let Some(msg) = msg {
+                                    trace!("Incoming message...");
+                                    self.process_message(&msg);
+                                } else {
+                                    trace!("Stream ended. Trying to reconnect");
+                                    delay_for(Duration::from_secs(1)).await;
+                                    break;
+                                }
+                            },
+                            Err(e) => {
+                                trace!("Error from the upstream: {}", e);
+                                delay_for(Duration::from_secs(1)).await;
+                                break;
+                            }
                         }
                     },
                     _ = on_close => {
@@ -371,7 +380,7 @@ impl AgentLoop {
                 },
             };
 
-            let uri = format!("{}/execution/report", uri);
+            let uri = format!("{}/backend/execution/report", uri);
 
             let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
             let request = Request::builder()

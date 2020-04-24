@@ -1,10 +1,12 @@
-.PHONY: clean curator-frontend.iid
+.PHONY: clean curator-frontend.iid agent
 
-%.iid: src/** Cargo.toml Cargo.toml
+PROJECT_FILES := src/** Cargo.toml Cargo.toml
+
+%.iid: $(PROJECT_FILES)
 	docker build --target=$(basename $@) --iidfile $@ -t $(basename $@):dev .
 
 curator-frontend.iid:
-	docker build --target=frontend --iidfile=curator-frontend.iid -t curator-frontend:dev frontend
+	docker build --target=frontend --iidfile=$@ -t $(basename $@):dev frontend
 
 clean:
 	rm -f *.iid

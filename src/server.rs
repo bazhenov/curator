@@ -123,7 +123,9 @@ async fn new_agent(
     agents.insert(agent.agent.clone(), agent);
 
     HttpResponse::Ok()
-        .header("content-type", "text/event-stream")
+        .header("Content-Type", "text/event-stream")
+        .header("Cache-Control", "no-cache")
+        .header("X-Accel-Buffering", "no")
         .no_chunking()
         .streaming(rx)
 }

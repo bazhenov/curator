@@ -1,0 +1,9 @@
+{
+  "application": "my",
+  "instance": "single",
+  "tasks": [
+    {
+      "id": "date"
+    }
+  ]
+}
