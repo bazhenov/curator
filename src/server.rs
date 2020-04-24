@@ -81,7 +81,7 @@ impl Curator {
             }
         };
 
-        let server = HttpServer::new(app).bind("127.1:8080")?.run();
+        let server = HttpServer::new(app).bind("0.0.0.0:8080")?.run();
 
         Ok(Self { server, agents })
     }

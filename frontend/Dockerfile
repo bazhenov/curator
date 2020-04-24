@@ -17,5 +17,5 @@ FROM nginx:stable AS frontend
 COPY --from=build /root/build /var/www
 COPY ./docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+EXPOSE 8080
 ENTRYPOINT  ["nginx", "-g", "daemon off;"]
