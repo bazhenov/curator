@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  server:
+    network_mode: bridge
+    image: curator-server:dev
+  frontend:
+    network_mode: bridge
+    image: curator-frontend:dev
+    ports:
+      - "8080:80"

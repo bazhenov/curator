@@ -3,6 +3,9 @@
 %.iid: src/*
 	docker build --target=$(basename $@) --iidfile $@ -t $(basename $@):dev .
 
+make curator-frontend.iid: frontend/*
+	docker build --target=frontend --iidfile=curator-frontend.iid -t curator-frontend:dev frontend
+
 clean:
 	rm -f *.iid
 
