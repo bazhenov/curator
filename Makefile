@@ -1,7 +1,7 @@
 .PHONY: clean
 
 %.iid: src/*
-	docker build --target=$(basename $@) --iidfile $@ -t $(basename $@) .
+	docker build --target=$(basename $@) --iidfile $@ -t $(basename $@):dev .
 
 clean:
 	rm -f *.iid

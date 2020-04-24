@@ -2,14 +2,16 @@
 FROM rust:1.42.0-stretch AS builder
 WORKDIR /opt
 
-ADD src /opt/src
-ADD Cargo.toml /opt/Cargo.toml
-ADD Cargo.lock /opt/Cargo.lock
+ADD src ./src
+ADD Cargo.toml ./Cargo.toml
+ADD Cargo.lock ./Cargo.lock
 
-RUN --mount=type=cache,target=./target cargo build --release
+RUN --mount=type=cache,target=./target \
+    --mount=type=cache,target=~/.cargo/registry \
+  cargo build --release
 
-RUN --mount=type=cache,target=./target cp /opt/target/release/curator-server /opt/curator-server
-RUN --mount=type=cache,target=./target cp /opt/target/release/curator-agent /opt/curator-agent
+RUN --mount=type=cache,target=./target cp ./target/release/curator-server /opt
+RUN --mount=type=cache,target=./target cp ./target/release/curator-agent /opt
 
 FROM centos:centos8 AS curator-server
 COPY --from=builder /opt/curator-server /opt/curator-server
