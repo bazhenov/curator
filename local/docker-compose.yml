@@ -1,0 +1,7 @@
+version: '3.8'
+services:
+  server:
+    network_mode: bridge
+    ports:
+      - "3031:80"
+    image: curator-server:dev
