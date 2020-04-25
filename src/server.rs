@@ -120,11 +120,16 @@ async fn new_agent(
         tasks,
     };
 
+    info!(
+        "New agent connected: {}@{}",
+        agent.agent.instance, agent.agent.application
+    );
     agents.insert(agent.agent.clone(), agent);
 
     HttpResponse::Ok()
         .header("Content-Type", "text/event-stream")
         .header("Cache-Control", "no-cache")
+        // X-Accel-Buffering required for disable buffering on a nginx reverse proxy
         .header("X-Accel-Buffering", "no")
         .no_chunking()
         .streaming(rx)
