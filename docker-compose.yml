@@ -2,6 +2,8 @@ version: '3.8'
 services:
   backend:
     image: curator-server:dev
+    environment:
+      - RUST_LOG=curator=info
   frontend:
     image: curator-frontend:dev
     depends_on:
