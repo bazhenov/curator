@@ -1,11 +1,14 @@
 version: '3.8'
 services:
   backend:
-    image: curator-server:dev
+    build:
+      context: .
+      target: curator-server
     environment:
       - RUST_LOG=curator=info
   frontend:
-    image: curator-frontend:dev
+    build:
+      context: ./frontend
     depends_on:
       - backend
     ports:
