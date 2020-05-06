@@ -6,6 +6,15 @@ services:
       target: curator-server
     environment:
       - RUST_LOG=curator=info
+  agent:
+    build:
+      context: .
+      target: curator-agent-dev
+    environment:
+      - RUST_LOG=curator=info
+    command: --application test --instance single --host frontend:8080
+    depends_on:
+      - frontend
   frontend:
     build:
       context: ./frontend

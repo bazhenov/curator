@@ -20,3 +20,14 @@ ENTRYPOINT ["/opt/curator-server"]
 FROM centos:centos8 AS curator-agent
 COPY --from=builder /opt/curator-agent /opt/curator-agent
 ENTRYPOINT ["/opt/curator-agent"]
+
+# Version of curator-agent for local development only
+FROM centos:centos8 AS curator-agent-dev
+
+RUN --mount=type=cache,target=/var/cache/dnf yum -y update
+RUN --mount=type=cache,target=/var/cache/dnf yum -y install jq lsof
+
+COPY local/lsof.discovery.sh /opt/lsof.discovery.sh
+COPY --from=builder /opt/curator-agent /opt/curator-agent
+WORKDIR /opt
+ENTRYPOINT ["/opt/curator-agent"]
