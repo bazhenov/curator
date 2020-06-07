@@ -12,13 +12,21 @@ services:
       target: curator-agent-dev
     environment:
       - RUST_LOG=curator=info
-    command: --application test --instance single --host frontend:8080
+      - CURATOR_HOST=backend:8080
+      - CURATOR_APP_NAME=test
+      - CURATOR_INSTANCE_NAME=single
     depends_on:
-      - frontend
+      - backend
   frontend:
     build:
       context: ./frontend
+      target: frontend
+  router:
+    build:
+      context: ./frontend
+      target: router
     depends_on:
       - backend
+      - frontend
     ports:
       - "8080:8080"
