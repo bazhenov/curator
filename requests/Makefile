@@ -3,10 +3,13 @@
 URL = http://localhost:8080
 
 agents.curl:
-	curl -fs ${URL}/agents | jq .
+	curl -fs ${URL}/backend/agents | jq .
 
 executions.curl:
-	curl -fs ${URL}/executions | jq .
+	curl -fs ${URL}/backend/executions | jq .
 
-%.curl: %.json
-	curl -iXPOST -H "Content-Type: application/json" --data "@$<" "${URL}/task/run"
+run-%.curl: run-%.json
+	curl -iXPOST -H "Content-Type: application/json" --data "@$<" "${URL}/backend/task/run"
+
+new-agent.curl:
+	curl -i -XPOST -H "Content-Type: application/json"  --data "@$(basename $@).json" "${URL}/backend/events"

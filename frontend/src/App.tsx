@@ -95,7 +95,7 @@ export class Curator {
   }
 
   updateAgentsLoop() {
-    fetch("/agents")
+    fetch("/backend/agents")
       .then(r => r.json())
       .then(r => {
         // Replace with Conditional GET on backend side
@@ -108,7 +108,7 @@ export class Curator {
   }
 
   updateExecutionsLoop() {
-    fetch("/executions")
+    fetch("/backend/executions")
       .then(r => r.json())
       .then(r => r.map(processExecutionDates))
       .then(r => r.sort((a: Execution, b: Execution) => a.started.unix() - b.started.unix()))
@@ -130,7 +130,7 @@ export class Curator {
         'Content-Type': 'application/json'
       }
     }
-    fetch("/task/run", params)
+    fetch("/backend/task/run", params)
   }
 
   onAgentsChange(listener: AgentChangeListener): () => void {

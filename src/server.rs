@@ -81,7 +81,7 @@ impl Curator {
             }
         };
 
-        let server = HttpServer::new(app).bind("127.1:8080")?.run();
+        let server = HttpServer::new(app).bind("0.0.0.0:8080")?.run();
 
         Ok(Self { server, agents })
     }
@@ -120,10 +120,17 @@ async fn new_agent(
         tasks,
     };
 
+    info!(
+        "New agent connected: {}@{}",
+        agent.agent.instance, agent.agent.application
+    );
     agents.insert(agent.agent.clone(), agent);
 
     HttpResponse::Ok()
-        .header("content-type", "text/event-stream")
+        .header("Content-Type", "text/event-stream")
+        .header("Cache-Control", "no-cache")
+        // X-Accel-Buffering required for disable buffering on a nginx reverse proxy
+        .header("X-Accel-Buffering", "no")
         .no_chunking()
         .streaming(rx)
 }

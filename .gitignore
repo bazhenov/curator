@@ -3,3 +3,4 @@
 /frontend/node_modules
 *.iid
 /.cargo
+/frontend/.env
