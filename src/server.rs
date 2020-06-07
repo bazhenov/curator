@@ -73,11 +73,11 @@ impl Curator {
                 App::new()
                     .app_data(agents.clone())
                     .app_data(executions.clone())
-                    .route("/events", web::post().to(new_agent))
-                    .route("/task/run", web::post().to(run_task))
-                    .route("/execution/report", web::post().to(report_task))
-                    .route("/agents", web::get().to(list_agents))
-                    .route("/executions", web::get().to(list_executions))
+                    .route("/backend/events", web::post().to(new_agent))
+                    .route("/backend/task/run", web::post().to(run_task))
+                    .route("/backend/execution/report", web::post().to(report_task))
+                    .route("/backend/agents", web::get().to(list_agents))
+                    .route("/backend/executions", web::get().to(list_executions))
             }
         };
 
