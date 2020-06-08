@@ -9,7 +9,7 @@ use curator::server::Curator;
 async fn curator_sse_client() -> Result<()> {
     let server = Curator::start()?;
     let agent = protocol::agent::Agent::new("app", "instance", vec![]);
-    let mut client = SseClient::connect("http://127.0.0.1:8080/events", agent)
+    let mut client = SseClient::connect("http://127.0.0.1:8080/backend/events", agent)
         .await
         .expect("Unable to connect");
 
