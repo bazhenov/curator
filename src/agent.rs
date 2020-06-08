@@ -169,20 +169,17 @@ pub async fn discover(path: impl AsRef<Path>) -> Result<HashSet<TaskDef>> {
 }
 
 fn gather_tasks(script: PathBuf) -> Result<HashSet<TaskDef>> {
-    use std::io::{BufRead, BufReader};
     use std::process::Command;
 
-    let child = Command::new(script).stdout(Stdio::piped()).spawn()?;
-
-    if let Some(stdout) = child.stdout {
-        let lines = BufReader::new(stdout).lines();
-        Ok(lines
-            .flatten()
-            .flat_map(|l| serde_json::from_str::<TaskDef>(&l))
-            .collect::<HashSet<_>>())
-    } else {
-        Ok(HashSet::new())
-    }
+    let output = Command::new(script)
+        .stdout(Stdio::piped())
+        .spawn()?
+        .wait_with_output()?;
+    let stdout = String::from_utf8(output.stdout)?;
+    Ok(stdout
+        .lines()
+        .flat_map(|l| serde_json::from_str::<TaskDef>(&l))
+        .collect::<HashSet<_>>())
 }
 
 pub struct CloseHandle(Arc<Notify>);
