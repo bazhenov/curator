@@ -4,8 +4,6 @@ use std::sync::Mutex;
 
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use bytes::Bytes;
-use serde;
-use serde_json;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use uuid::Uuid;
 
