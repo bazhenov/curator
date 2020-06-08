@@ -1,10 +1,10 @@
-Building:
+Building images:
 
 ```
-COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build
+make images
 ```
 
-Running:
+Running the system (server, test agent and frontend):
 
 ```
 docker-compose up
