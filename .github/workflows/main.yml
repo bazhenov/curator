@@ -63,6 +63,9 @@ jobs:
     - name: Build Server and Agent
       run: cargo build -vvvv --release --bin curator-server --bin curator-agent
 
+    - name: Build Server and Agent
+      run: cargo test
+
     - name: Publish server
       uses: actions/upload-artifact@v1
       with:
