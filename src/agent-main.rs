@@ -2,11 +2,15 @@ extern crate clap;
 extern crate curator;
 use clap::App;
 use curator::{
-    agent::TaskDef,
     agent::{discover, AgentLoop},
     prelude::*,
 };
-use std::{collections::HashSet, process::exit, time::Duration};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    process::exit,
+    time::Duration,
+};
 use tokio::time::delay_for;
 
 #[tokio::main]
@@ -37,37 +41,38 @@ async fn run() -> Result<()> {
     let application_name = matches.value_of("application").unwrap();
     let instance_name = matches.value_of("instance").unwrap();
 
-    let mut tasks: Option<HashSet<TaskDef>> = None;
-
-    let mut _current_loop: Option<_> = None;
+    let mut tasks_hash: Option<_> = None;
+    let mut _agent_loop: Option<_> = None;
 
     loop {
-        let proposed_tasks = discover("./").await?;
-        let has_changes = match tasks {
-            Some(ref tasks) => {
-                let mut difference = proposed_tasks.symmetric_difference(&tasks).peekable();
-                difference.peek().is_some()
-            }
-            None => true,
-        };
+        let tasks = discover("./").await?;
+
+        let hash = hash_values(&tasks);
+
+        let has_changes = tasks_hash.map_or(true, |h| h != hash);
+        tasks_hash = Some(hash);
 
         if has_changes {
             trace!("Reloading tasks..");
-            if proposed_tasks.is_empty() {
+            if tasks.is_empty() {
                 warn!("No tasks has been discovered");
             }
 
-            let agent_tasks = proposed_tasks.iter().cloned().collect::<Vec<_>>();
-            // Need to save loop reference until tasks will be changed
-            _current_loop = Some(AgentLoop::run(
+            // Need to save loop reference until tasks will be changed, otherwise
+            // loop will be closed immediately
+            _agent_loop = Some(AgentLoop::run(
                 &host,
                 application_name,
                 instance_name,
-                agent_tasks,
+                tasks,
             ));
-
-            tasks = Some(proposed_tasks);
         }
         delay_for(Duration::from_secs(5)).await;
     }
+}
+
+fn hash_values<T: Hash>(values: &[T]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    values.iter().for_each(|t| t.hash(&mut hasher));
+    hasher.finish()
 }

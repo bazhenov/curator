@@ -7,7 +7,7 @@ use hyper::{
 };
 use serde::Serialize;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     io::{Cursor, Seek, SeekFrom, Write},
     path::Path,
     path::PathBuf,
@@ -148,9 +148,9 @@ impl Lines {
     }
 }
 
-pub async fn discover(path: impl AsRef<Path>) -> Result<HashSet<TaskDef>> {
+pub async fn discover(path: impl AsRef<Path>) -> Result<Vec<TaskDef>> {
     use std::os::unix::fs::PermissionsExt;
-    let mut tasks = HashSet::new();
+    let mut tasks = vec![];
 
     for entry in std::fs::read_dir(path)? {
         let entry = entry?;
@@ -161,14 +161,14 @@ pub async fn discover(path: impl AsRef<Path>) -> Result<HashSet<TaskDef>> {
             let name_match = name.to_str().and_then(|name| name.find(".discovery."));
             trace!("Checking: {:?} exec: {}", entry, is_executable);
             if metadata.is_file() && is_executable && name_match.is_some() {
-                tasks = tasks.union(&gather_tasks(entry.path())?).cloned().collect();
+                tasks.append(&mut gather_tasks(entry.path())?);
             }
         }
     }
     Ok(tasks)
 }
 
-fn gather_tasks(script: PathBuf) -> Result<HashSet<TaskDef>> {
+fn gather_tasks(script: PathBuf) -> Result<Vec<TaskDef>> {
     use std::process::Command;
 
     let output = Command::new(script)
@@ -179,7 +179,7 @@ fn gather_tasks(script: PathBuf) -> Result<HashSet<TaskDef>> {
     Ok(stdout
         .lines()
         .flat_map(|l| serde_json::from_str::<TaskDef>(&l))
-        .collect::<HashSet<_>>())
+        .collect())
 }
 
 pub struct CloseHandle(Arc<Notify>);
@@ -316,10 +316,6 @@ impl AgentLoop {
         }
     }
 
-    pub fn register_task(&mut self, task: TaskDef) {
-        self.tasks.insert(task.id.clone(), task);
-    }
-
     fn spawn_and_track_task(&self, task_id: &str, execution_id: Uuid) {
         let (mut tx, rx) = mpsc::channel(100);
         tokio::spawn(Self::report_execution_back(
@@ -444,8 +440,8 @@ mod tests {
         init();
 
         let fixture = [
-            ("event:", Vec::new()),
-            ("data", Vec::new()),
+            ("event:", vec![]),
+            ("data", vec![]),
             ("\nevent:", vec!["event:data"]),
             ("\n", vec!["event:"]),
             ("\n1\n2\n", vec!["", "1", "2"]),
@@ -461,13 +457,14 @@ mod tests {
 
     #[tokio::test]
     async fn check_discovery_process() -> Result<()> {
+        use fs::File;
         use std::os::unix::fs::PermissionsExt;
         init();
 
         let tmp = TempDir::new()?;
         let path = tmp.path().join("test.discovery.sh");
         let mut permissions = {
-            let mut file = fs::File::create(&path)?;
+            let mut file = File::create(&path)?;
             writeln!(file, "#!/usr/bin/env sh")?;
             writeln!(file, r#"echo '{{"id": "date", "command": "date"}}'"#)?;
             file.metadata()?.permissions()
