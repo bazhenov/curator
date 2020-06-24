@@ -168,7 +168,7 @@ pub async fn discover(path: impl AsRef<Path>) -> Result<Vec<TaskDef>> {
     Ok(tasks)
 }
 
-fn gather_tasks(script: PathBuf) -> Result<Vec<TaskDef>> {
+fn gather_tasks<T: serde::de::DeserializeOwned>(script: PathBuf) -> Result<Vec<T>> {
     use std::process::Command;
 
     let output = Command::new(script)
@@ -178,7 +178,7 @@ fn gather_tasks(script: PathBuf) -> Result<Vec<TaskDef>> {
     let stdout = String::from_utf8(output.stdout)?;
     Ok(stdout
         .lines()
-        .flat_map(|l| serde_json::from_str::<TaskDef>(&l))
+        .flat_map(|l| serde_json::from_str::<T>(&l))
         .collect())
 }
 
@@ -325,18 +325,7 @@ impl AgentLoop {
         ));
 
         if let Some(task) = self.tasks.get(task_id) {
-            match task.spawn() {
-                Ok(child) => {
-                    tokio::spawn(Self::read_stdout(child, tx));
-                }
-                Err(e) => {
-                    log_errors(&e);
-                    tokio::spawn(async move {
-                        let report = ChildProgress::FailedToStart(format_error_chain(&e));
-                        tx.send(report).await
-                    });
-                }
-            }
+            tokio::spawn(Self::run_and_report_task(task.clone(), tx));
         } else {
             warn!("Task {} not found", &task_id);
             let task_id = task_id.to_string();
@@ -395,25 +384,35 @@ impl AgentLoop {
         }
     }
 
-    async fn read_stdout(mut child: Child, mut tx: mpsc::Sender<ChildProgress>) {
-        if let Some(stdout) = child.stdout.take() {
-            let mut reader = BufReader::new(stdout).lines();
-            while let Some(line) = reader.next().await {
-                match line {
-                    Ok(line) => {
-                        tx.send(ChildProgress::Stdout(line)).await.unwrap();
-                    }
-                    Err(_) => {
-                        break;
+    async fn run_and_report_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) {
+        match task.spawn() {
+            Ok(mut child) => {
+                if let Some(stdout) = child.stdout.take() {
+                    let mut reader = BufReader::new(stdout).lines();
+                    while let Some(line) = reader.next().await {
+                        match line {
+                            Ok(line) => {
+                                let _ = tx.send(ChildProgress::Stdout(line)).await;
+                            }
+                            Err(_) => {
+                                break;
+                            }
+                        }
                     }
                 }
+        
+                let result = child.await.expect("Unable to read process status");
+                tx.send(ChildProgress::Finished(result.code().unwrap()))
+                    .await
+                    .unwrap();
+            }
+            Err(e) => {
+                log_errors(&e);
+                let report = ChildProgress::FailedToStart(format_error_chain(&e));
+                
+                let _ = tx.send(report).await;
             }
         }
-
-        let result = child.await.expect("Unable to read process status");
-        tx.send(ChildProgress::Finished(result.code().unwrap()))
-            .await
-            .unwrap();
     }
 }
 
@@ -476,6 +475,11 @@ mod tests {
         assert_eq!(tasks.len(), 1);
         let first_task = tasks.iter().next().unwrap();
         assert_eq!(first_task.id, "date");
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn check_run_command_has_isolated_directory() -> Result<()> {
         Ok(())
     }
 }
