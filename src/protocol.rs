@@ -127,6 +127,14 @@ impl ExecutionStatus {
             _ => false,
         }
     }
+
+    pub fn from_unix_exit_code(exit_code: i32) -> Self {
+        if exit_code == 0 {
+            Self::COMPLETED
+        } else {
+            Self::FAILED
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

@@ -8,6 +8,7 @@ use hyper::{
 use serde::Serialize;
 use std::{
     collections::HashMap,
+    fs::File,
     io::{Cursor, Seek, SeekFrom, Write},
     path::Path,
     path::PathBuf,
@@ -19,7 +20,7 @@ use tempdir::TempDir;
 use tokio::{
     io::BufReader,
     prelude::*,
-    process::{Child, Command},
+    process::{Child, ChildStderr, ChildStdout, Command},
     stream::StreamExt,
     sync::{mpsc, Notify},
     time::delay_for,
@@ -49,16 +50,25 @@ impl TaskDef {
      * Returns child process and it's working directory.
      * All content of working directory is dropped when `TempDir` is destroyed
      */
-    fn spawn(&self) -> Result<(Child, TempDir)> {
+    fn spawn(&self) -> Result<(Child, ChildStdout, ChildStderr, TempDir)> {
         let work_dir = TempDir::new("curator_agent")?;
         let mut cmd = Command::new(&self.command);
-        let child = cmd
+        let mut child = cmd
             .args(&self.args)
             .current_dir(&work_dir)
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .context("Unable to spawn process")?;
-        Ok((child, work_dir))
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| format_err!("Unable to get stdout"))?;
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| format_err!("Unable to get stderr"))?;
+        Ok((child, stdout, stderr, work_dir))
     }
 }
 
@@ -135,6 +145,7 @@ impl Lines {
 
         Ok(vec)
     }
+
     fn take_next_line(&mut self) -> Result<Option<String>> {
         let buffer = self.0.get_ref();
         let newline_position = buffer.iter().position(|x| *x == b'\n');
@@ -323,52 +334,54 @@ impl AgentLoop {
     }
 
     fn spawn_and_track_task(&self, task_id: &str, execution_id: Uuid) {
+        use ChildProgress::*;
+
         let (mut tx, rx) = mpsc::channel(100);
         tokio::spawn(Self::report_execution_back(
-            self.uri.clone(),
+            format!("{}/backend/execution/report", &self.uri),
             execution_id,
             rx,
         ));
 
         if let Some(task) = self.tasks.get(task_id) {
-            tokio::spawn(Self::run_and_report_task(task.clone(), tx));
+            if let Err(e) = Self::run_task(task.clone(), tx.clone()) {
+                let reason = format!(
+                    "Task {} failed to start: {}",
+                    task_id,
+                    format_error_chain(&e)
+                );
+                tokio::spawn(async move { tx.send(FailedToStart(reason)).await.unwrap() });
+            }
         } else {
             warn!("Task {} not found", &task_id);
-            let task_id = task_id.to_string();
-            tokio::spawn(async move {
-                let report = ChildProgress::FailedToStart(format!("Task {} not found", task_id));
-                tx.send(report).await
-            });
+            let reason = format!("Task {} not found", task_id);
+            tokio::spawn(async move { tx.send(FailedToStart(reason)).await.unwrap() });
         }
     }
 
     async fn report_execution_back(uri: String, id: Uuid, mut rx: mpsc::Receiver<ChildProgress>) {
+        use ChildProgress::*;
         use ExecutionStatus::*;
         let client = Client::new();
 
         while let Some(progress) = rx.recv().await {
             let report = match progress {
-                ChildProgress::Stdout(line) => agent::ExecutionReport {
+                Stdout(line) => agent::ExecutionReport {
                     id,
                     status: RUNNING,
                     stdout_append: Some(line),
                 },
-                ChildProgress::Finished(status_code) => {
-                    let status = if status_code == 0 { COMPLETED } else { FAILED };
-                    agent::ExecutionReport {
-                        id,
-                        status,
-                        stdout_append: None,
-                    }
-                }
-                ChildProgress::FailedToStart(reason) => agent::ExecutionReport {
+                Finished(exit_code) => agent::ExecutionReport {
+                    id,
+                    status: ExecutionStatus::from_unix_exit_code(exit_code),
+                    stdout_append: None,
+                },
+                FailedToStart(reason) => agent::ExecutionReport {
                     id,
                     status: REJECTED,
                     stdout_append: Some(reason),
                 },
             };
-
-            let uri = format!("{}/backend/execution/report", uri);
 
             let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
             let request = Request::builder()
@@ -390,35 +403,55 @@ impl AgentLoop {
         }
     }
 
-    async fn run_and_report_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) {
-        match task.spawn() {
-            Ok((mut child, _work_dir)) => {
-                if let Some(stdout) = child.stdout.take() {
-                    let mut reader = BufReader::new(stdout).lines();
-                    while let Some(line) = reader.next().await {
-                        match line {
-                            Ok(line) => {
-                                tx.send(ChildProgress::Stdout(line)).await.unwrap();
-                            }
-                            Err(_) => {
-                                break;
-                            }
-                        }
-                    }
+    async fn mirror_stream<R: AsyncRead + Unpin, N: std::fmt::Debug>(
+        r: R,
+        mut file: File,
+        mut channel: mpsc::Sender<N>,
+        f: impl Fn(String) -> N,
+    ) {
+        let mut reader = BufReader::new(r).lines();
+        while let Some(line) = reader.next().await {
+            match line {
+                Ok(line) => {
+                    file.write_all(line.as_bytes()).unwrap();
+                    channel.send(f(line)).await.unwrap();
                 }
-
-                let result = child.await.expect("Unable to read process status");
-                tx.send(ChildProgress::Finished(result.code().unwrap()))
-                    .await
-                    .unwrap();
-            }
-            Err(e) => {
-                log_errors(&e);
-                let report = ChildProgress::FailedToStart(format_error_chain(&e));
-
-                tx.send(report).await.unwrap();
+                Err(_) => {
+                    break;
+                }
             }
         }
+    }
+
+    fn run_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) -> Result<()> {
+        use ChildProgress::*;
+
+        let (child, stdout, stderr, work_dir) = task.spawn()?;
+        // work_dir should live till child completion, otherwise temporary directory will be removed
+        let path = work_dir.path();
+
+        let stdout_handle = tokio::spawn(Self::mirror_stream(
+            stdout,
+            File::create(path.join("stdout"))?,
+            tx.clone(),
+            |line| Stdout(line),
+        ));
+
+        let stderr_handle = tokio::spawn(Self::mirror_stream(
+            stderr,
+            File::create(path.join("stderr"))?,
+            tx.clone(),
+            |line| Stdout(line),
+        ));
+
+        tokio::spawn(async move {
+            stdout_handle.await.unwrap();
+            stderr_handle.await.unwrap();
+            let _w = work_dir;
+            let result = child.await.expect("Unable to read process status");
+            tx.send(Finished(result.code().unwrap())).await.unwrap();
+        });
+        Ok(())
     }
 }
 
@@ -496,7 +529,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn check_run_command_has_isolated_directory() -> Result<()> {
+    async fn check_run_command_has_isolated_directory() {
         let task = create_task("pwd", vec![]);
         let (stdout1, _) = execute(task).await;
 
@@ -507,7 +540,6 @@ mod tests {
             stdout1, stdout2,
             "Each execution should have each own private working directory"
         );
-        Ok(())
     }
 
     async fn execute(task: TaskDef) -> (String, i32) {
@@ -515,7 +547,7 @@ mod tests {
 
         let (tx, mut rx) = mpsc::channel(1);
 
-        tokio::spawn(AgentLoop::run_and_report_task(task, tx));
+        AgentLoop::run_task(task, tx).expect("Unable to run task");
 
         let mut stdout = String::new();
 
