@@ -389,7 +389,7 @@ impl AgentLoop {
                 Interrupted => agent::ExecutionReport {
                     id,
                     status: FAILED,
-                    stdout_append: Some(format!("Interrupted by signal")),
+                    stdout_append: Some("Interrupted by signal".to_owned()),
                 },
             };
 
@@ -437,31 +437,30 @@ impl AgentLoop {
         use ChildProgress::*;
 
         let (child, stdout, stderr, work_dir) = task.spawn()?;
-        // work_dir should live until child completion, otherwise temporary directory will be removed
         let path = work_dir.path();
 
         let stdout_handle = tokio::spawn(Self::mirror_stream(
             stdout,
             File::create(path.join("stdout"))?,
             tx.clone(),
-            |line| Stdout(line),
+            Stdout,
         ));
 
         let stderr_handle = tokio::spawn(Self::mirror_stream(
             stderr,
             File::create(path.join("stderr"))?,
             tx.clone(),
-            |line| Stdout(line),
+            Stdout,
         ));
 
         tokio::spawn(async move {
-            let exit = stdout_handle
-                .await
-                .context("Stdout failed")
-                .and(stderr_handle.await.context("Stderr failed"))
-                .and(child.await.context("Unable to read process status"));
+            let stdout_fully_read = stdout_handle.await.context("Stdout reading failed");
+            let stderr_fully_read = stderr_handle.await.context("Stderr reading failed");
+            let process_exited = child.await.context("Unable to read process status");
+            let status = stdout_fully_read.and(stderr_fully_read).and(process_exited);
+            // work_dir should live until child completion, otherwise temporary directory will be removed
             let _w = work_dir;
-            match exit {
+            match status {
                 Ok(status) => {
                     if let Some(code) = status.code() {
                         tx.send(Finished(code)).await
