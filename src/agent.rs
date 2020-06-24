@@ -15,6 +15,7 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+use tempdir::TempDir;
 use tokio::{
     io::BufReader,
     prelude::*,
@@ -44,15 +45,20 @@ pub struct TaskDef {
 }
 
 impl TaskDef {
-    fn spawn(&self) -> Result<Child> {
+    /**
+     * Returns child process and it's working directory.
+     * All content of working directory is dropped when `TempDir` is destroyed
+     */
+    fn spawn(&self) -> Result<(Child, TempDir)> {
+        let work_dir = TempDir::new("curator_agent")?;
         let mut cmd = Command::new(&self.command);
-        for arg in &self.args {
-            cmd.arg(arg);
-        }
-        cmd.stdout(Stdio::piped())
+        let child = cmd
+            .args(&self.args)
+            .current_dir(&work_dir)
+            .stdout(Stdio::piped())
             .spawn()
-            .context("Unable to spawn process")
-            .map_err(Into::into)
+            .context("Unable to spawn process")?;
+        Ok((child, work_dir))
     }
 }
 
@@ -386,13 +392,13 @@ impl AgentLoop {
 
     async fn run_and_report_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) {
         match task.spawn() {
-            Ok(mut child) => {
+            Ok((mut child, _work_dir)) => {
                 if let Some(stdout) = child.stdout.take() {
                     let mut reader = BufReader::new(stdout).lines();
                     while let Some(line) = reader.next().await {
                         match line {
                             Ok(line) => {
-                                let _ = tx.send(ChildProgress::Stdout(line)).await;
+                                tx.send(ChildProgress::Stdout(line)).await.unwrap();
                             }
                             Err(_) => {
                                 break;
@@ -400,7 +406,7 @@ impl AgentLoop {
                         }
                     }
                 }
-        
+
                 let result = child.await.expect("Unable to read process status");
                 tx.send(ChildProgress::Finished(result.code().unwrap()))
                     .await
@@ -409,8 +415,8 @@ impl AgentLoop {
             Err(e) => {
                 log_errors(&e);
                 let report = ChildProgress::FailedToStart(format_error_chain(&e));
-                
-                let _ = tx.send(report).await;
+
+                tx.send(report).await.unwrap();
             }
         }
     }
@@ -478,8 +484,48 @@ mod tests {
         Ok(())
     }
 
+    fn create_task(command: &str, args: Vec<String>) -> TaskDef {
+        let command = command.to_string();
+
+        TaskDef {
+            id: "id".to_string(),
+            command,
+            args,
+            description: None,
+        }
+    }
+
     #[tokio::test]
     async fn check_run_command_has_isolated_directory() -> Result<()> {
+        let task = create_task("pwd", vec![]);
+        let (stdout1, _) = execute(task).await;
+
+        let task = create_task("pwd", vec![]);
+        let (stdout2, _) = execute(task).await;
+
+        assert_ne!(
+            stdout1, stdout2,
+            "Each execution should have each own private working directory"
+        );
         Ok(())
+    }
+
+    async fn execute(task: TaskDef) -> (String, i32) {
+        use ChildProgress::*;
+
+        let (tx, mut rx) = mpsc::channel(1);
+
+        tokio::spawn(AgentLoop::run_and_report_task(task, tx));
+
+        let mut stdout = String::new();
+
+        while let Some(msg) = rx.recv().await {
+            match msg {
+                Stdout(ref s) => stdout.push_str(s),
+                Finished(exit_code) => return (stdout, exit_code),
+                FailedToStart(reason) => panic!("Unable to start process: {}", reason),
+            }
+        }
+        panic!("No finished message was found in stream");
     }
 }
