@@ -381,6 +381,16 @@ impl AgentLoop {
                     status: REJECTED,
                     stdout_append: Some(reason),
                 },
+                Failed(reason) => agent::ExecutionReport {
+                    id,
+                    status: FAILED,
+                    stdout_append: Some(reason),
+                },
+                Interrupted => agent::ExecutionReport {
+                    id,
+                    status: FAILED,
+                    stdout_append: Some(format!("Interrupted by signal")),
+                },
             };
 
             let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
@@ -427,7 +437,7 @@ impl AgentLoop {
         use ChildProgress::*;
 
         let (child, stdout, stderr, work_dir) = task.spawn()?;
-        // work_dir should live till child completion, otherwise temporary directory will be removed
+        // work_dir should live until child completion, otherwise temporary directory will be removed
         let path = work_dir.path();
 
         let stdout_handle = tokio::spawn(Self::mirror_stream(
@@ -445,11 +455,22 @@ impl AgentLoop {
         ));
 
         tokio::spawn(async move {
-            stdout_handle.await.unwrap();
-            stderr_handle.await.unwrap();
+            let exit = stdout_handle
+                .await
+                .context("Stdout failed")
+                .and(stderr_handle.await.context("Stderr failed"))
+                .and(child.await.context("Unable to read process status"));
             let _w = work_dir;
-            let result = child.await.expect("Unable to read process status");
-            tx.send(Finished(result.code().unwrap())).await.unwrap();
+            match exit {
+                Ok(status) => {
+                    if let Some(code) = status.code() {
+                        tx.send(Finished(code)).await
+                    } else {
+                        tx.send(Interrupted).await
+                    }
+                }
+                Err(e) => tx.send(Failed(format!("{}", e))).await,
+            }
         });
         Ok(())
     }
@@ -459,6 +480,8 @@ impl AgentLoop {
 enum ChildProgress {
     Stdout(String),
     Finished(i32),
+    Failed(String),
+    Interrupted,
     FailedToStart(String),
 }
 
@@ -556,6 +579,8 @@ mod tests {
                 Stdout(ref s) => stdout.push_str(s),
                 Finished(exit_code) => return (stdout, exit_code),
                 FailedToStart(reason) => panic!("Unable to start process: {}", reason),
+                Failed(reason) => panic!("Unable to start process: {}", reason),
+                Interrupted => panic!("Interrupted"),
             }
         }
         panic!("No finished message was found in stream");
