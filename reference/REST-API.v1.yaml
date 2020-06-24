@@ -7,11 +7,12 @@ info:
     name: Denis Bazhenov
     email: dotsid@gmail.com
     url: 'http://bazhenov.me/'
-  license: {}
+  license:
+    name: MIT
 servers:
   - url: 'http://curator.local'
 paths:
-  /register-agent:
+  /backend/events:
     post:
       summary: Register new agent
       operationId: register-agent
@@ -64,7 +65,8 @@ paths:
                       description: Report overall system load
         description: Agent must provide information about itself and available tasks
       parameters: []
-  /execution/report:
+    parameters: []
+  /backend/execution/report:
     post:
       summary: Report Execution Status
       operationId: report-execution-status
@@ -83,7 +85,7 @@ paths:
               $ref: '#/components/schemas/ExecutionReport'
         description: Execution status
     parameters: []
-  /task/run:
+  /backend/task/run:
     parameters: []
     post:
       summary: Run a Task
@@ -139,7 +141,7 @@ paths:
                     instance: web-frontend
         description: Run a Task and returns new execution.
       parameters: []
-  /agents:
+  /backend/agents:
     get:
       summary: List Agents
       tags: []
@@ -165,22 +167,24 @@ paths:
                         - name: cleanup-database
       operationId: get-agents
       description: List all active agents in the system and their tasks
-  /executions:
+    parameters: []
+  /backend/executions:
     get:
       summary: List Executions
       tags: []
-      responses: {}
       operationId: list-executions
       parameters: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Execution'
-        description: ''
       description: 'List all executions in the system: initiated, running, completed and failed'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Execution'
+    parameters: []
 components:
   schemas:
     Task:
