@@ -1,16 +1,28 @@
-use std::collections::{HashMap, HashSet};
-use std::io;
-use std::sync::Mutex;
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::{self, Write},
+    path::Path,
+    sync::Mutex,
+};
 
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    error::PayloadError, http::header::*, web, App, HttpResponse, HttpServer, Responder,
+};
 use bytes::Bytes;
+use futures::StreamExt;
+use serde::Deserialize;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use uuid::Uuid;
 
-use crate::{agent::SseEvent, errors::*, protocol::*};
+use crate::{agent::SseEvent, errors::*, prelude::*, protocol::*};
 use chrono::prelude::*;
 
-use crate::prelude::*;
+#[derive(Fail, Debug)]
+enum ServerError {
+    #[fail(display = "Can't read payload from HTTP request")]
+    Payload(PayloadError),
+}
 
 pub struct Agent {
     pub agent: AgentRef,
@@ -74,6 +86,10 @@ impl Curator {
                     .route("/backend/events", web::post().to(new_agent))
                     .route("/backend/task/run", web::post().to(run_task))
                     .route("/backend/execution/report", web::post().to(report_task))
+                    .route(
+                        "/backend/execution/attach",
+                        web::post().to(attach_artifacts),
+                    )
                     .route("/backend/agents", web::get().to(list_agents))
                     .route("/backend/executions", web::get().to(list_executions))
             }
@@ -153,6 +169,42 @@ async fn report_task(
         }
     }
     HttpResponse::Ok().finish()
+}
+
+#[derive(Deserialize)]
+struct ArtifactParams {
+    id: Uuid,
+}
+
+async fn attach_artifacts(
+    payload: web::Payload,
+    query: web::Query<ArtifactParams>,
+    request: web::HttpRequest,
+) -> impl Responder {
+    let content_type = request.headers().get(CONTENT_TYPE).map(HeaderValue::to_str);
+    match content_type {
+        Some(Ok("application/x-tgz")) => {
+            let file_name = format!("./{}.tar.gz", query.id);
+            if let Ok(_) = write_artifact_to_file(payload, file_name).await {
+                return HttpResponse::Ok().finish();
+            } else {
+                return HttpResponse::InternalServerError().finish();
+            }
+        }
+        _ => HttpResponse::NotAcceptable().finish(),
+    }
+}
+
+async fn write_artifact_to_file(
+    mut payload: web::Payload,
+    file_name: impl AsRef<Path>,
+) -> Result<()> {
+    let mut file = File::create(file_name)?;
+    while let Some(chunk) = payload.next().await {
+        let bytes: Bytes = chunk.map_err(ServerError::Payload)?;
+        file.write_all(&bytes)?;
+    }
+    Ok(())
 }
 
 async fn list_executions(executions: web::Data<Mutex<Executions>>) -> impl Responder {
