@@ -3,12 +3,12 @@ use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
     header::{ACCEPT, CONTENT_TYPE},
-    Body, Client, Request, Response,
+    http, Body, Client, Request, Response,
 };
 use serde::Serialize;
 use std::{
     collections::HashMap,
-    fs::File,
+    fs::{read, File},
     io::{Cursor, Seek, SeekFrom, Write},
     path::Path,
     path::PathBuf,
@@ -33,6 +33,12 @@ pub type SseEvent = (Option<String>, String);
 pub struct SseClient {
     response: Response<Body>,
     lines: Lines,
+}
+
+#[derive(Fail, Debug)]
+enum Errors {
+    #[fail(display = "Error performing HTTP request to a Curator server")]
+    HttpClient(http::Error),
 }
 
 #[derive(serde::Deserialize, Hash, PartialEq, Eq, Clone, Debug)]
@@ -338,7 +344,7 @@ impl AgentLoop {
 
         let (mut tx, rx) = mpsc::channel(100);
         tokio::spawn(Self::report_execution_back(
-            format!("{}/backend/execution/report", &self.uri),
+            self.uri.to_owned(),
             execution_id,
             rx,
         ));
@@ -359,49 +365,67 @@ impl AgentLoop {
         }
     }
 
-    async fn report_execution_back(uri: String, id: Uuid, mut rx: mpsc::Receiver<ChildProgress>) {
+    async fn report_execution_back(uri: String, id: Uuid, rx: mpsc::Receiver<ChildProgress>) {
+        if let Err(e) = Self::do_report_execution_back(uri, id, rx).await {
+            error!("Reporting task failed: {}", e);
+        }
+    }
+
+    async fn do_report_execution_back(
+        uri: String,
+        id: Uuid,
+        mut rx: mpsc::Receiver<ChildProgress>,
+    ) -> Result<()> {
         use ChildProgress::*;
         use ExecutionStatus::*;
         let client = Client::new();
 
         while let Some(progress) = rx.recv().await {
             let report = match progress {
-                Stdout(line) => agent::ExecutionReport {
-                    id,
-                    status: RUNNING,
-                    stdout_append: Some(line),
-                },
-                Finished(exit_code) => agent::ExecutionReport {
-                    id,
-                    status: ExecutionStatus::from_unix_exit_code(exit_code),
-                    stdout_append: None,
-                },
-                FailedToStart(reason) => agent::ExecutionReport {
-                    id,
-                    status: REJECTED,
-                    stdout_append: Some(reason),
-                },
-                Failed(reason) => agent::ExecutionReport {
-                    id,
-                    status: FAILED,
-                    stdout_append: Some(reason),
-                },
-                Interrupted => agent::ExecutionReport {
-                    id,
-                    status: FAILED,
-                    stdout_append: Some("Interrupted by signal".to_owned()),
-                },
+                Stdout(line) => report_request(
+                    &uri,
+                    agent::ExecutionReport {
+                        id,
+                        status: RUNNING,
+                        stdout_append: Some(line),
+                    },
+                ),
+                Finished(exit_code) => report_request(
+                    &uri,
+                    agent::ExecutionReport {
+                        id,
+                        status: ExecutionStatus::from_unix_exit_code(exit_code),
+                        stdout_append: None,
+                    },
+                ),
+                FailedToStart(reason) => report_request(
+                    &uri,
+                    agent::ExecutionReport {
+                        id,
+                        status: REJECTED,
+                        stdout_append: Some(reason),
+                    },
+                ),
+                Failed(reason) => report_request(
+                    &uri,
+                    agent::ExecutionReport {
+                        id,
+                        status: FAILED,
+                        stdout_append: Some(reason),
+                    },
+                ),
+                Interrupted => report_request(
+                    &uri,
+                    agent::ExecutionReport {
+                        id,
+                        status: FAILED,
+                        stdout_append: Some("Interrupted by signal".to_owned()),
+                    },
+                ),
+                ArtifactsReady(path) => attach_artifacts_request(&uri, id, path),
             };
 
-            let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
-            let request = Request::builder()
-                .uri(&uri)
-                .method("POST")
-                .header(CONTENT_TYPE, "application/json")
-                .body(Body::from(json))
-                .expect("Unable to build request");
-
-            match client.request(request).await {
+            match client.request(report?).await {
                 Err(e) => {
                     error!("Error while reporting back to Curator: {:?}", e);
                 }
@@ -411,26 +435,8 @@ impl AgentLoop {
                 Ok(_) => {}
             }
         }
-    }
 
-    async fn mirror_stream<R: AsyncRead + Unpin, N: std::fmt::Debug>(
-        r: R,
-        mut file: File,
-        mut channel: mpsc::Sender<N>,
-        f: impl Fn(String) -> N,
-    ) {
-        let mut reader = BufReader::new(r).lines();
-        while let Some(line) = reader.next().await {
-            match line {
-                Ok(line) => {
-                    file.write_all(line.as_bytes()).unwrap();
-                    channel.send(f(line)).await.unwrap();
-                }
-                Err(_) => {
-                    break;
-                }
-            }
-        }
+        Ok(())
     }
 
     fn run_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) -> Result<()> {
@@ -439,14 +445,14 @@ impl AgentLoop {
         let (child, stdout, stderr, work_dir) = task.spawn()?;
         let path = work_dir.path();
 
-        let stdout_handle = tokio::spawn(Self::mirror_stream(
+        let stdout_handle = tokio::spawn(write_stream_to_file(
             stdout,
             File::create(path.join("stdout"))?,
             tx.clone(),
             Stdout,
         ));
 
-        let stderr_handle = tokio::spawn(Self::mirror_stream(
+        let stderr_handle = tokio::spawn(write_stream_to_file(
             stderr,
             File::create(path.join("stderr"))?,
             tx.clone(),
@@ -463,16 +469,62 @@ impl AgentLoop {
             match status {
                 Ok(status) => {
                     if let Some(code) = status.code() {
-                        tx.send(Finished(code)).await
+                        tx.send(Finished(code)).await;
                     } else {
-                        tx.send(Interrupted).await
+                        tx.send(Interrupted).await;
                     }
+                    let path = "./result.tar.gz";
+                    let result = Command::new("tar")
+                        .args(&["czf", &path, "."])
+                        .spawn()
+                        .expect("Unable to spawn")
+                        .wait_with_output()
+                        .await
+                        .expect("Unable to get output");
+                    tx.send(ArtifactsReady(PathBuf::from(path))).await;
                 }
-                Err(e) => tx.send(Failed(format!("{}", e))).await,
+                Err(e) => {
+                    tx.send(Failed(format!("{}", e))).await;
+                }
             }
         });
         Ok(())
     }
+}
+
+async fn write_stream_to_file<R: AsyncRead + Unpin, N: std::fmt::Debug>(
+    r: R,
+    mut file: File,
+    mut channel: mpsc::Sender<N>,
+    f: impl Fn(String) -> N,
+) {
+    let mut reader = BufReader::new(r).lines();
+    while let Some(line) = reader.next().await {
+        match line {
+            Ok(line) => {
+                file.write_all(line.as_bytes()).unwrap();
+                channel.send(f(line)).await.unwrap();
+            }
+            Err(_) => {
+                break;
+            }
+        }
+    }
+}
+
+fn report_request(uri: &str, report: agent::ExecutionReport) -> Result<Request<Body>> {
+    let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
+    Request::post(format!("{}/backend/execution/report", uri))
+        .header(CONTENT_TYPE, "application/json")
+        .body(Body::from(json))
+        .map_err(|e| Errors::HttpClient(e).into())
+}
+
+fn attach_artifacts_request(uri: &str, id: Uuid, path: impl AsRef<Path>) -> Result<Request<Body>> {
+    Request::post(format!("{}/backend/execution/attach?id={}", uri, id))
+        .header(CONTENT_TYPE, "application/x-tgz")
+        .body(Body::from(read(path)?))
+        .map_err(|e| Errors::HttpClient(e).into())
 }
 
 #[derive(Debug)]
@@ -482,6 +534,7 @@ enum ChildProgress {
     Failed(String),
     Interrupted,
     FailedToStart(String),
+    ArtifactsReady(PathBuf),
 }
 
 #[cfg(test)]
@@ -580,6 +633,7 @@ mod tests {
                 FailedToStart(reason) => panic!("Unable to start process: {}", reason),
                 Failed(reason) => panic!("Unable to start process: {}", reason),
                 Interrupted => panic!("Interrupted"),
+                ArtifactsReady(_) => {}
             }
         }
         panic!("No finished message was found in stream");
