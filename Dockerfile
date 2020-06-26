@@ -29,10 +29,16 @@ ENTRYPOINT /opt/curator-agent \
 	--application $CURATOR_APP_NAME
 
 # Version of curator-agent for local development only
-FROM curator-agent AS curator-agent-dev
+FROM centos:centos8 AS curator-agent-dev
 
 RUN --mount=type=cache,target=/var/cache/dnf yum -y update
 RUN --mount=type=cache,target=/var/cache/dnf yum -y install jq lsof
 
 COPY local/lsof.discovery.sh /opt/lsof.discovery.sh
 COPY --from=builder /opt/curator-agent /opt/curator-agent
+
+WORKDIR /opt
+ENTRYPOINT /opt/curator-agent \
+	--host $CURATOR_HOST \
+	--instance $CURATOR_INSTANCE_NAME \
+	--application $CURATOR_APP_NAME

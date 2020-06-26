@@ -70,7 +70,7 @@ export const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
     <p>Started: {moment(execution.started).format()}</p>
     <p>Finished: {execution.finished && moment(execution.finished).format()}</p>
     <p>Agent: <code>{execution.agent.application}@{execution.agent.instance}</code></p>
-    <p><a href={"/artifacts/" + execution.id + ".tar.gz"} role="button" className="bp3-button bp3-icon-database bp3-minimal">Artifacts</a></p>
+    <p><a href={"/backend/artifacts/" + execution.id + ".tar.gz"} role="button" className="bp3-button bp3-icon-database bp3-minimal">Artifacts</a></p>
     <pre>{execution.output}</pre>
   </div>
 }

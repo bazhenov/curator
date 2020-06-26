@@ -6,6 +6,8 @@ use std::{
     sync::Mutex,
 };
 
+use actix_files::NamedFile;
+
 use actix_web::{
     error::PayloadError, http::header::*, web, App, HttpResponse, HttpServer, Responder,
 };
@@ -92,6 +94,7 @@ impl Curator {
                     )
                     .route("/backend/agents", web::get().to(list_agents))
                     .route("/backend/executions", web::get().to(list_executions))
+                    .route("/backend/artifacts/{id}.tar.gz", web::get().to(download_artifact))
             }
         };
 
@@ -193,6 +196,13 @@ async fn attach_artifacts(
         }
         _ => HttpResponse::NotAcceptable().finish(),
     }
+}
+
+async fn download_artifact(query: web::Path<ArtifactParams>) -> Result<NamedFile> {
+    let file_name = format!("./{}.tar.gz", query.id);
+    let path = Path::new(&file_name);
+
+    Ok(NamedFile::open(path)?)
 }
 
 async fn write_artifact_to_file(
