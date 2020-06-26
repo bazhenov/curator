@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Intent, ProgressBar, Tag, MenuItem, Toaster, Position, NonIdealState } from '@blueprintjs/core'
+import { Button, Intent, ProgressBar, Tag, MenuItem, Toaster, Position, NonIdealState, Icon } from '@blueprintjs/core'
 import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select"
 
 import './index.scss'
@@ -59,6 +59,19 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
       <div className="operations">
       </div>
     </div>)}
+  </div>
+}
+
+export const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
+  let { execution } = props
+  return <div className="execution-full">
+    <p>ExecutionID: {execution.id}</p>
+    <p>Status: {execution.status}</p>
+    <p>Started: {moment(execution.started).format()}</p>
+    <p>Finished: {execution.finished && moment(execution.finished).format()}</p>
+    <p>Agent: <code>{execution.agent.application}@{execution.agent.instance}</code></p>
+    <p><a href={"/artifacts/" + execution.id + ".tar.gz"} role="button" className="bp3-button bp3-icon-database bp3-minimal">Artifacts</a></p>
+    <pre>{execution.output}</pre>
   </div>
 }
 

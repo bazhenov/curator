@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import moment from 'moment';
 import {Agent, Execution, Task} from './models'
-import { ExecutionList, Layout, TaskSuggest } from './components';
+import { ExecutionList, Layout, TaskSuggest, ExecutionUI } from './components';
 import { Navbar, Alignment, Button } from '@blueprintjs/core';
 
 interface AppProps {
@@ -63,18 +62,6 @@ export const App: React.SFC<AppProps> = (props) => {
   return <Layout header={header} sidebar={agentsUi} content={executionUi} />
 }
 
-const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
-  let { execution } = props
-  return <div className="execution-full">
-    <p>ExecutionID: {execution.id}</p>
-    <p>Status: {execution.status}</p>
-    <p>Started: {execution.started.format()}</p>
-    <p>Finished: {execution.finished?.format()}</p>
-    <p>Agent: <code>{execution.agent.application}@{execution.agent.instance}</code></p>
-    <pre>{execution.output}</pre>
-  </div>
-}
-
 type AgentChangeListener = (_: Array<Agent>) => void
 type ExecutionChangeListener = (_: Array<Execution>) => void
 
@@ -110,8 +97,7 @@ export class Curator {
   updateExecutionsLoop() {
     fetch("/backend/executions")
       .then(r => r.json())
-      .then(r => r.map(processExecutionDates))
-      .then(r => r.sort((a: Execution, b: Execution) => a.started.unix() - b.started.unix()))
+      .then(r => r.sort((a: Execution, b: Execution) => a.started < b.started))
       .then(r => {
         // Replace with Conditional GET on backend side
         if (JSON.stringify(this.executions) != JSON.stringify(r)) {
@@ -148,12 +134,4 @@ export class Curator {
       this.executionChangeListeners = this.executionChangeListeners.filter(i => i !== listener);
     }
   }
-}
-
-function processExecutionDates(execution: Execution): Execution {
-  execution.started = moment(execution.started)
-  if ( execution.finished ) {
-    execution.finished = moment(execution.finished)
-  }
-  return execution
 }

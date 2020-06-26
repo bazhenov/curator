@@ -17,8 +17,8 @@ export interface Execution {
   status: ExecutionStatus,
   output: string,
   task: Task,
-  started: moment.Moment,
-  finished?: moment.Moment
+  started: string,
+  finished?: string
 }
 
 export interface Task {
