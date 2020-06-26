@@ -37,9 +37,9 @@ pub struct SseClient {
     lines: Lines,
 }
 
-#[derive(Fail, Debug)]
+#[derive(Error, Debug)]
 enum Errors {
-    #[fail(display = "Error performing HTTP request to a Curator server")]
+    #[error("Error performing HTTP request to a Curator server")]
     HttpClient(http::Error),
 }
 
@@ -274,9 +274,9 @@ impl AgentLoop {
         loop {
             let mut client: Option<SseClient> = None;
             while client.is_none() {
-                let connection = SseClient::connect(&uri, &agent).await.with_context(|_| {
-                    format!("Unable to connect to Curator server: {}", &self.uri)
-                });
+                let connection = SseClient::connect(&uri, &agent)
+                    .await
+                    .with_context(|| format!("Unable to connect to Curator server: {}", &self.uri));
                 client = match connection {
                     Ok(client) => Some(client),
                     Err(e) => {
@@ -620,7 +620,6 @@ mod tests {
                 Stdout(ref s) => stdout.push_str(s),
                 Finished(exit_code) => return (stdout, exit_code),
                 FailedToStart(reason) => panic!("Unable to start process: {}", reason),
-                Failed(reason) => panic!("Unable to start process: {}", reason),
                 Interrupted => panic!("Interrupted"),
                 ArtifactsReady(_) => {}
             }

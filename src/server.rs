@@ -17,12 +17,12 @@ use serde::Deserialize;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use uuid::Uuid;
 
-use crate::{agent::SseEvent, errors::*, prelude::*, protocol::*};
+use crate::{agent::SseEvent, prelude::*, protocol::*};
 use chrono::prelude::*;
 
-#[derive(Fail, Debug)]
+#[derive(Error, Debug)]
 enum ServerError {
-    #[fail(display = "Can't read payload from HTTP request")]
+    #[error("Can't read payload from HTTP request")]
     Payload(PayloadError),
 }
 
@@ -201,11 +201,11 @@ async fn attach_artifacts(
     }
 }
 
-async fn download_artifact(query: web::Path<ArtifactParams>) -> Result<NamedFile> {
+async fn download_artifact(query: web::Path<ArtifactParams>) -> IoResult<NamedFile> {
     let file_name = format!("./{}.tar.gz", query.id);
     let path = Path::new(&file_name);
 
-    Ok(NamedFile::open(path)?)
+    NamedFile::open(path)
 }
 
 async fn write_artifact_to_file(
