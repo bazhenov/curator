@@ -8,6 +8,7 @@ use hyper::{
 use serde::Serialize;
 use std::{
     collections::HashMap,
+    ffi::OsStr,
     fs::{read, File},
     io::{Cursor, Seek, SeekFrom, Write},
     path::Path,
@@ -24,6 +25,7 @@ use tokio::{
     stream::StreamExt,
     sync::{mpsc, Notify},
     time::delay_for,
+    try_join,
 };
 use uuid::Uuid;
 
@@ -324,7 +326,7 @@ impl AgentLoop {
         match name {
             Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {
                 Ok(event) => {
-                    self.spawn_and_track_task(&event.task_id, event.execution);
+                    self.spawn_and_track_task(event.task_id, event.execution);
                 }
                 Err(e) => {
                     warn!("Unable to interpret {} event: {}. {}", s, event, e);
@@ -339,7 +341,7 @@ impl AgentLoop {
         }
     }
 
-    fn spawn_and_track_task(&self, task_id: &str, execution_id: Uuid) {
+    fn spawn_and_track_task(&self, task_id: String, execution_id: Uuid) {
         use ChildProgress::*;
 
         let (mut tx, rx) = mpsc::channel(100);
@@ -349,18 +351,21 @@ impl AgentLoop {
             rx,
         ));
 
-        if let Some(task) = self.tasks.get(task_id) {
-            if let Err(e) = Self::run_task(task.clone(), tx.clone()) {
-                let reason = format!(
-                    "Task {} failed to start: {}",
-                    task_id,
-                    format_error_chain(&e)
-                );
-                tokio::spawn(async move { tx.send(FailedToStart(reason)).await.unwrap() });
-            }
+        if let Some(task) = self.tasks.get(&task_id) {
+            let task = task.clone();
+            tokio::spawn(async move {
+                if let Err(e) = Self::run_task(task, tx.clone()).await {
+                    let reason = format!(
+                        "Task {} failed to start: {}",
+                        &task_id,
+                        format_error_chain(&e)
+                    );
+                    tx.send(FailedToStart(reason)).await.unwrap();
+                }
+            });
         } else {
             warn!("Task {} not found", &task_id);
-            let reason = format!("Task {} not found", task_id);
+            let reason = format!("Task {} not found", &task_id);
             tokio::spawn(async move { tx.send(FailedToStart(reason)).await.unwrap() });
         }
     }
@@ -406,14 +411,6 @@ impl AgentLoop {
                         stdout_append: Some(reason),
                     },
                 ),
-                Failed(reason) => report_request(
-                    &uri,
-                    agent::ExecutionReport {
-                        id,
-                        status: FAILED,
-                        stdout_append: Some(reason),
-                    },
-                ),
                 Interrupted => report_request(
                     &uri,
                     agent::ExecutionReport {
@@ -439,55 +436,51 @@ impl AgentLoop {
         Ok(())
     }
 
-    fn run_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) -> Result<()> {
+    async fn run_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) -> Result<()> {
         use ChildProgress::*;
 
         let (child, stdout, stderr, work_dir) = task.spawn()?;
+        // work_dir should live until child completion, otherwise temporary directory will be removed
         let path = work_dir.path();
 
-        let stdout_handle = tokio::spawn(write_stream_to_file(
+        let stdout_handle = write_stream_to_file(
             stdout,
             File::create(path.join("stdout"))?,
             tx.clone(),
             Stdout,
-        ));
+        );
 
-        let stderr_handle = tokio::spawn(write_stream_to_file(
+        let stderr_handle = write_stream_to_file(
             stderr,
             File::create(path.join("stderr"))?,
             tx.clone(),
             Stdout,
-        ));
+        );
 
-        tokio::spawn(async move {
-            let stdout_fully_read = stdout_handle.await.context("Stdout reading failed");
-            let stderr_fully_read = stderr_handle.await.context("Stderr reading failed");
-            let process_exited = child.await.context("Unable to read process status");
-            let status = stdout_fully_read.and(stderr_fully_read).and(process_exited);
-            // work_dir should live until child completion, otherwise temporary directory will be removed
-            let _w = work_dir;
-            match status {
-                Ok(status) => {
-                    if let Some(code) = status.code() {
-                        tx.send(Finished(code)).await;
-                    } else {
-                        tx.send(Interrupted).await;
-                    }
-                    let path = "./result.tar.gz";
-                    let result = Command::new("tar")
-                        .args(&["czf", &path, "."])
-                        .spawn()
-                        .expect("Unable to spawn")
-                        .wait_with_output()
-                        .await
-                        .expect("Unable to get output");
-                    tx.send(ArtifactsReady(PathBuf::from(path))).await;
-                }
-                Err(e) => {
-                    tx.send(Failed(format!("{}", e))).await;
-                }
-            }
-        });
+        try_join!(stdout_handle, stderr_handle)
+            .context("Unable to process process stdin/stderr")?;
+        let status = child.await.context("Unable to read process status")?;
+
+        let progress_report = if let Some(code) = status.code() {
+            Finished(code)
+        } else {
+            Interrupted
+        };
+        tx.send(progress_report).await?;
+
+        let path = "./result.tar.gz";
+        Command::new("tar")
+            .args(&[
+                OsStr::new("-C"),
+                work_dir.path().as_os_str(),
+                OsStr::new("-czf"),
+                OsStr::new(path),
+                OsStr::new("."),
+            ])
+            .spawn()?
+            .wait_with_output()
+            .await?;
+        tx.send(ArtifactsReady(PathBuf::from(path))).await?;
         Ok(())
     }
 }
@@ -497,19 +490,14 @@ async fn write_stream_to_file<R: AsyncRead + Unpin, N: std::fmt::Debug>(
     mut file: File,
     mut channel: mpsc::Sender<N>,
     f: impl Fn(String) -> N,
-) {
+) -> Result<()> {
     let mut reader = BufReader::new(r).lines();
     while let Some(line) = reader.next().await {
-        match line {
-            Ok(line) => {
-                file.write_all(line.as_bytes()).unwrap();
-                channel.send(f(line)).await.unwrap();
-            }
-            Err(_) => {
-                break;
-            }
-        }
+        let line = line?;
+        file.write_all(line.as_bytes()).unwrap();
+        channel.send(f(line)).await.unwrap();
     }
+    Ok(())
 }
 
 fn report_request(uri: &str, report: agent::ExecutionReport) -> Result<Request<Body>> {
@@ -531,7 +519,6 @@ fn attach_artifacts_request(uri: &str, id: Uuid, path: impl AsRef<Path>) -> Resu
 enum ChildProgress {
     Stdout(String),
     Finished(i32),
-    Failed(String),
     Interrupted,
     FailedToStart(String),
     ArtifactsReady(PathBuf),
@@ -622,7 +609,9 @@ mod tests {
 
         let (tx, mut rx) = mpsc::channel(1);
 
-        AgentLoop::run_task(task, tx).expect("Unable to run task");
+        AgentLoop::run_task(task, tx)
+            .await
+            .expect("Unable to run task");
 
         let mut stdout = String::new();
 

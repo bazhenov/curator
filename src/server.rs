@@ -94,7 +94,10 @@ impl Curator {
                     )
                     .route("/backend/agents", web::get().to(list_agents))
                     .route("/backend/executions", web::get().to(list_executions))
-                    .route("/backend/artifacts/{id}.tar.gz", web::get().to(download_artifact))
+                    .route(
+                        "/backend/artifacts/{id}.tar.gz",
+                        web::get().to(download_artifact),
+                    )
             }
         };
 
