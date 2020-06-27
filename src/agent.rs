@@ -280,7 +280,7 @@ impl AgentLoop {
                 client = match connection {
                     Ok(client) => Some(client),
                     Err(e) => {
-                        log_errors(&e.into());
+                        log_errors(&e);
                         delay_for(Duration::from_secs(5)).await;
                         None
                     }

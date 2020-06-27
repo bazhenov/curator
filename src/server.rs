@@ -191,10 +191,10 @@ async fn attach_artifacts(
     match content_type {
         Some(Ok("application/x-tgz")) => {
             let file_name = format!("./{}.tar.gz", query.id);
-            if let Ok(_) = write_artifact_to_file(payload, file_name).await {
-                return HttpResponse::Ok().finish();
+            if write_artifact_to_file(payload, file_name).await.is_ok() {
+                HttpResponse::Ok().finish()
             } else {
-                return HttpResponse::InternalServerError().finish();
+                HttpResponse::InternalServerError().finish()
             }
         }
         _ => HttpResponse::NotAcceptable().finish(),

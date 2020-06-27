@@ -162,7 +162,7 @@ impl Execution {
 mod tests {
 
     use super::{agent, client, *};
-    use crate::errors::*;
+    use crate::prelude::*;
     use serde::de::DeserializeOwned;
     use serde_json::{json, Value};
     use std::fmt::Debug;
