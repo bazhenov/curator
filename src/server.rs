@@ -101,7 +101,10 @@ impl Curator {
             }
         };
 
-        let server = HttpServer::new(app).bind("0.0.0.0:8080")?.run();
+        let server = HttpServer::new(app)
+            .shutdown_timeout(1)
+            .bind("0.0.0.0:8080")?
+            .run();
 
         Ok(Self { server, agents })
     }

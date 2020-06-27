@@ -450,14 +450,14 @@ impl AgentLoop {
 
         let stdout_handle = write_stream_to_file(
             stdout,
-            File::create(path.join("stdout"))?,
+            File::create(path.join("stdout.log"))?,
             tx.clone(),
             Stdout,
         );
 
         let stderr_handle = write_stream_to_file(
             stderr,
-            File::create(path.join("stderr"))?,
+            File::create(path.join("stderr.log"))?,
             tx.clone(),
             Stdout,
         );
@@ -505,7 +505,8 @@ async fn write_stream_to_file<R: AsyncRead + Unpin, N: std::fmt::Debug>(
 ) -> Result<()> {
     let mut reader = BufReader::new(r).lines();
     while let Some(line) = reader.next().await {
-        let line = line?;
+        let mut line = line?;
+        line.push('\n');
         file.write_all(line.as_bytes()).unwrap();
         channel.send(f(line)).await.unwrap();
     }
@@ -591,9 +592,10 @@ mod tests {
         Ok(())
     }
 
-    fn create_task(command: &str, args: Vec<String>) -> TaskDef {
+    fn create_task(command: &str, args: &[&str]) -> TaskDef {
         let command = command.to_string();
 
+        let args = args.iter().map(|s| String::from(*s)).collect::<Vec<_>>();
         TaskDef {
             id: "id".to_string(),
             command,
@@ -606,16 +608,22 @@ mod tests {
     async fn check_run_command_has_isolated_directory() {
         init();
 
-        let task = create_task("pwd", vec![]);
+        let task = create_task("pwd", &[]);
         let (stdout1, _) = execute(task).await;
 
-        let task = create_task("pwd", vec![]);
+        let task = create_task("pwd", &[]);
         let (stdout2, _) = execute(task).await;
 
         assert_ne!(
             stdout1, stdout2,
             "Each execution should have each own private working directory"
         );
+    }
+
+    #[tokio::test]
+    async fn check_stdout_works_correctly() {
+        let (stdout, _) = execute(create_task("sh", &["-c", "echo 1; echo 2"])).await;
+        assert_eq!("1\n2\n", stdout);
     }
 
     async fn execute(task: TaskDef) -> (String, i32) {

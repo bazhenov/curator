@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:experimental
-FROM rust:1.42.0-stretch AS builder
+FROM rust:1.44.1-slim AS builder
 WORKDIR /opt
 
 ADD src ./src
