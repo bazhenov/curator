@@ -626,7 +626,6 @@ mod tests {
         tokio::spawn(AgentLoop::run_task(task, tx));
 
         let mut stdout = String::new();
-˝
         while let Some(msg) = rx.recv().await {
             match msg {
                 Stdout(ref s) => stdout.push_str(s),
