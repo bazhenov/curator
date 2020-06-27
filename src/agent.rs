@@ -61,6 +61,11 @@ impl TaskDef {
     fn spawn(&self) -> Result<(Child, ChildStdout, ChildStderr, TempDir)> {
         let work_dir = TempDir::new("curator_agent")?;
         let mut cmd = Command::new(&self.command);
+        trace!(
+            "Spawning command: {} with args {:?}",
+            &self.command,
+            &self.args
+        );
         let mut child = cmd
             .args(&self.args)
             .current_dir(&work_dir)
@@ -462,13 +467,19 @@ impl AgentLoop {
         let status = child.await.context("Unable to read process status")?;
 
         let progress_report = if let Some(code) = status.code() {
+            trace!("Process exited with code {}", code);
             Finished(code)
         } else {
+            warn!("Process interripted");
             Interrupted
         };
         tx.send(progress_report).await?;
 
         let path = "./result.tar.gz";
+        trace!(
+            "Gathering artifacts for directory: {}",
+            work_dir.path().display()
+        );
         Command::new("tar")
             .args(&[
                 OsStr::new("-C"),
@@ -480,6 +491,7 @@ impl AgentLoop {
             .spawn()?
             .wait_with_output()
             .await?;
+        drop(work_dir);
         tx.send(ArtifactsReady(PathBuf::from(path))).await?;
         Ok(())
     }
@@ -592,6 +604,8 @@ mod tests {
 
     #[tokio::test]
     async fn check_run_command_has_isolated_directory() {
+        init();
+
         let task = create_task("pwd", vec![]);
         let (stdout1, _) = execute(task).await;
 
@@ -609,12 +623,10 @@ mod tests {
 
         let (tx, mut rx) = mpsc::channel(1);
 
-        AgentLoop::run_task(task, tx)
-            .await
-            .expect("Unable to run task");
+        tokio::spawn(AgentLoop::run_task(task, tx));
 
         let mut stdout = String::new();
-
+˝
         while let Some(msg) = rx.recv().await {
             match msg {
                 Stdout(ref s) => stdout.push_str(s),

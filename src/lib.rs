@@ -53,8 +53,12 @@ mod tests {
     #[test]
     fn logging() {
         match outer() {
-            Ok(_) => { println!("Ok"); },
-            Err(e) => { eprintln!("{}", format_error_chain(&e)); }
+            Ok(_) => {
+                println!("Ok");
+            }
+            Err(e) => {
+                eprintln!("{}", format_error_chain(&e));
+            }
         }
     }
 
