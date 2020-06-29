@@ -3,11 +3,13 @@ use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
     header::{ACCEPT, CONTENT_TYPE},
-    Body, Client, Request, Response,
+    http, Body, Client, Request, Response,
 };
 use serde::Serialize;
 use std::{
     collections::HashMap,
+    ffi::OsStr,
+    fs::{read, File},
     io::{Cursor, Seek, SeekFrom, Write},
     path::Path,
     path::PathBuf,
@@ -15,13 +17,15 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+use tempdir::TempDir;
 use tokio::{
     io::BufReader,
     prelude::*,
-    process::{Child, Command},
+    process::{Child, ChildStderr, ChildStdout, Command},
     stream::StreamExt,
     sync::{mpsc, Notify},
     time::delay_for,
+    try_join,
 };
 use uuid::Uuid;
 
@@ -31,6 +35,12 @@ pub type SseEvent = (Option<String>, String);
 pub struct SseClient {
     response: Response<Body>,
     lines: Lines,
+}
+
+#[derive(Error, Debug)]
+enum Errors {
+    #[error("Error performing HTTP request to a Curator server")]
+    HttpClient(http::Error),
 }
 
 #[derive(serde::Deserialize, Hash, PartialEq, Eq, Clone, Debug)]
@@ -44,15 +54,34 @@ pub struct TaskDef {
 }
 
 impl TaskDef {
-    fn spawn(&self) -> Result<Child> {
+    /**
+     * Returns child process and it's working directory.
+     * All content of working directory is dropped when `TempDir` is destroyed
+     */
+    fn spawn(&self) -> Result<(Child, ChildStdout, ChildStderr, TempDir)> {
+        let work_dir = TempDir::new("curator_agent")?;
         let mut cmd = Command::new(&self.command);
-        for arg in &self.args {
-            cmd.arg(arg);
-        }
-        cmd.stdout(Stdio::piped())
+        trace!(
+            "Spawning command: {} with args {:?}",
+            &self.command,
+            &self.args
+        );
+        let mut child = cmd
+            .args(&self.args)
+            .current_dir(&work_dir)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
-            .context("Unable to spawn process")
-            .map_err(Into::into)
+            .context("Unable to spawn process")?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| format_err!("Unable to get stdout"))?;
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| format_err!("Unable to get stderr"))?;
+        Ok((child, stdout, stderr, work_dir))
     }
 }
 
@@ -129,6 +158,7 @@ impl Lines {
 
         Ok(vec)
     }
+
     fn take_next_line(&mut self) -> Result<Option<String>> {
         let buffer = self.0.get_ref();
         let newline_position = buffer.iter().position(|x| *x == b'\n');
@@ -168,7 +198,7 @@ pub async fn discover(path: impl AsRef<Path>) -> Result<Vec<TaskDef>> {
     Ok(tasks)
 }
 
-fn gather_tasks(script: PathBuf) -> Result<Vec<TaskDef>> {
+fn gather_tasks<T: serde::de::DeserializeOwned>(script: PathBuf) -> Result<Vec<T>> {
     use std::process::Command;
 
     let output = Command::new(script)
@@ -178,7 +208,7 @@ fn gather_tasks(script: PathBuf) -> Result<Vec<TaskDef>> {
     let stdout = String::from_utf8(output.stdout)?;
     Ok(stdout
         .lines()
-        .flat_map(|l| serde_json::from_str::<TaskDef>(&l))
+        .flat_map(|l| serde_json::from_str::<T>(&l))
         .collect())
 }
 
@@ -249,13 +279,13 @@ impl AgentLoop {
         loop {
             let mut client: Option<SseClient> = None;
             while client.is_none() {
-                let connection = SseClient::connect(&uri, &agent).await.with_context(|_| {
-                    format!("Unable to connect to Curator server: {}", &self.uri)
-                });
+                let connection = SseClient::connect(&uri, &agent)
+                    .await
+                    .with_context(|| format!("Unable to connect to Curator server: {}", &self.uri));
                 client = match connection {
                     Ok(client) => Some(client),
                     Err(e) => {
-                        log_errors(&e.into());
+                        log_errors(&e);
                         delay_for(Duration::from_secs(5)).await;
                         None
                     }
@@ -301,7 +331,7 @@ impl AgentLoop {
         match name {
             Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {
                 Ok(event) => {
-                    self.spawn_and_track_task(&event.task_id, event.execution);
+                    self.spawn_and_track_task(event.task_id, event.execution);
                 }
                 Err(e) => {
                     warn!("Unable to interpret {} event: {}. {}", s, event, e);
@@ -316,74 +346,88 @@ impl AgentLoop {
         }
     }
 
-    fn spawn_and_track_task(&self, task_id: &str, execution_id: Uuid) {
+    fn spawn_and_track_task(&self, task_id: String, execution_id: Uuid) {
+        use ChildProgress::*;
+
         let (mut tx, rx) = mpsc::channel(100);
         tokio::spawn(Self::report_execution_back(
-            self.uri.clone(),
+            self.uri.to_owned(),
             execution_id,
             rx,
         ));
 
-        if let Some(task) = self.tasks.get(task_id) {
-            match task.spawn() {
-                Ok(child) => {
-                    tokio::spawn(Self::read_stdout(child, tx));
+        if let Some(task) = self.tasks.get(&task_id) {
+            let task = task.clone();
+            tokio::spawn(async move {
+                if let Err(e) = Self::run_task(task, tx.clone()).await {
+                    let reason = format!(
+                        "Task {} failed to start: {}",
+                        &task_id,
+                        format_error_chain(&e)
+                    );
+                    tx.send(FailedToStart(reason)).await.unwrap();
                 }
-                Err(e) => {
-                    log_errors(&e);
-                    tokio::spawn(async move {
-                        let report = ChildProgress::FailedToStart(format_error_chain(&e));
-                        tx.send(report).await
-                    });
-                }
-            }
+            });
         } else {
             warn!("Task {} not found", &task_id);
-            let task_id = task_id.to_string();
-            tokio::spawn(async move {
-                let report = ChildProgress::FailedToStart(format!("Task {} not found", task_id));
-                tx.send(report).await
-            });
+            let reason = format!("Task {} not found", &task_id);
+            tokio::spawn(async move { tx.send(FailedToStart(reason)).await.unwrap() });
         }
     }
 
-    async fn report_execution_back(uri: String, id: Uuid, mut rx: mpsc::Receiver<ChildProgress>) {
+    async fn report_execution_back(uri: String, id: Uuid, rx: mpsc::Receiver<ChildProgress>) {
+        if let Err(e) = Self::do_report_execution_back(uri, id, rx).await {
+            error!("Reporting task failed: {}", e);
+        }
+    }
+
+    async fn do_report_execution_back(
+        uri: String,
+        id: Uuid,
+        mut rx: mpsc::Receiver<ChildProgress>,
+    ) -> Result<()> {
+        use ChildProgress::*;
         use ExecutionStatus::*;
         let client = Client::new();
 
         while let Some(progress) = rx.recv().await {
             let report = match progress {
-                ChildProgress::Stdout(line) => agent::ExecutionReport {
-                    id,
-                    status: RUNNING,
-                    stdout_append: Some(line),
-                },
-                ChildProgress::Finished(status_code) => {
-                    let status = if status_code == 0 { COMPLETED } else { FAILED };
+                Stdout(line) => report_request(
+                    &uri,
                     agent::ExecutionReport {
                         id,
-                        status,
+                        status: RUNNING,
+                        stdout_append: Some(line),
+                    },
+                ),
+                Finished(exit_code) => report_request(
+                    &uri,
+                    agent::ExecutionReport {
+                        id,
+                        status: ExecutionStatus::from_unix_exit_code(exit_code),
                         stdout_append: None,
-                    }
-                }
-                ChildProgress::FailedToStart(reason) => agent::ExecutionReport {
-                    id,
-                    status: REJECTED,
-                    stdout_append: Some(reason),
-                },
+                    },
+                ),
+                FailedToStart(reason) => report_request(
+                    &uri,
+                    agent::ExecutionReport {
+                        id,
+                        status: REJECTED,
+                        stdout_append: Some(reason),
+                    },
+                ),
+                Interrupted => report_request(
+                    &uri,
+                    agent::ExecutionReport {
+                        id,
+                        status: FAILED,
+                        stdout_append: Some("Interrupted by signal".to_owned()),
+                    },
+                ),
+                ArtifactsReady(path) => attach_artifacts_request(&uri, id, path),
             };
 
-            let uri = format!("{}/backend/execution/report", uri);
-
-            let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
-            let request = Request::builder()
-                .uri(&uri)
-                .method("POST")
-                .header(CONTENT_TYPE, "application/json")
-                .body(Body::from(json))
-                .expect("Unable to build request");
-
-            match client.request(request).await {
+            match client.request(report?).await {
                 Err(e) => {
                     error!("Error while reporting back to Curator: {:?}", e);
                 }
@@ -393,35 +437,104 @@ impl AgentLoop {
                 Ok(_) => {}
             }
         }
+
+        Ok(())
     }
 
-    async fn read_stdout(mut child: Child, mut tx: mpsc::Sender<ChildProgress>) {
-        if let Some(stdout) = child.stdout.take() {
-            let mut reader = BufReader::new(stdout).lines();
-            while let Some(line) = reader.next().await {
-                match line {
-                    Ok(line) => {
-                        tx.send(ChildProgress::Stdout(line)).await.unwrap();
-                    }
-                    Err(_) => {
-                        break;
-                    }
-                }
-            }
-        }
+    async fn run_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) -> Result<()> {
+        use ChildProgress::*;
 
-        let result = child.await.expect("Unable to read process status");
-        tx.send(ChildProgress::Finished(result.code().unwrap()))
-            .await
-            .unwrap();
+        let (child, stdout, stderr, work_dir) = task.spawn()?;
+        // work_dir should live until child completion, otherwise temporary directory will be removed
+        let path = work_dir.path();
+
+        let stdout_handle = write_stream_to_file(
+            stdout,
+            File::create(path.join("stdout.log"))?,
+            tx.clone(),
+            Stdout,
+        );
+
+        let stderr_handle = write_stream_to_file(
+            stderr,
+            File::create(path.join("stderr.log"))?,
+            tx.clone(),
+            Stdout,
+        );
+
+        try_join!(stdout_handle, stderr_handle)
+            .context("Unable to process process stdin/stderr")?;
+        let status = child.await.context("Unable to read process status")?;
+
+        let progress_report = if let Some(code) = status.code() {
+            trace!("Process exited with code {}", code);
+            Finished(code)
+        } else {
+            warn!("Process interripted");
+            Interrupted
+        };
+        tx.send(progress_report).await?;
+
+        let path = "./result.tar.gz";
+        trace!(
+            "Gathering artifacts for directory: {}",
+            work_dir.path().display()
+        );
+        Command::new("tar")
+            .args(&[
+                OsStr::new("-C"),
+                work_dir.path().as_os_str(),
+                OsStr::new("-czf"),
+                OsStr::new(path),
+                OsStr::new("."),
+            ])
+            .spawn()?
+            .wait_with_output()
+            .await?;
+        drop(work_dir);
+        tx.send(ArtifactsReady(PathBuf::from(path))).await?;
+        Ok(())
     }
+}
+
+async fn write_stream_to_file<R: AsyncRead + Unpin, N: std::fmt::Debug>(
+    r: R,
+    mut file: File,
+    mut channel: mpsc::Sender<N>,
+    f: impl Fn(String) -> N,
+) -> Result<()> {
+    let mut reader = BufReader::new(r).lines();
+    while let Some(line) = reader.next().await {
+        let mut line = line?;
+        line.push('\n');
+        file.write_all(line.as_bytes()).unwrap();
+        channel.send(f(line)).await.unwrap();
+    }
+    Ok(())
+}
+
+fn report_request(uri: &str, report: agent::ExecutionReport) -> Result<Request<Body>> {
+    let json = serde_json::to_string(&report).expect("Unable to serialize JSON");
+    Request::post(format!("{}/backend/execution/report", uri))
+        .header(CONTENT_TYPE, "application/json")
+        .body(Body::from(json))
+        .map_err(|e| Errors::HttpClient(e).into())
+}
+
+fn attach_artifacts_request(uri: &str, id: Uuid, path: impl AsRef<Path>) -> Result<Request<Body>> {
+    Request::post(format!("{}/backend/execution/attach?id={}", uri, id))
+        .header(CONTENT_TYPE, "application/x-tgz")
+        .body(Body::from(read(path)?))
+        .map_err(|e| Errors::HttpClient(e).into())
 }
 
 #[derive(Debug)]
 enum ChildProgress {
     Stdout(String),
     Finished(i32),
+    Interrupted,
     FailedToStart(String),
+    ArtifactsReady(PathBuf),
 }
 
 #[cfg(test)]
@@ -477,5 +590,59 @@ mod tests {
         let first_task = tasks.iter().next().unwrap();
         assert_eq!(first_task.id, "date");
         Ok(())
+    }
+
+    fn create_task(command: &str, args: &[&str]) -> TaskDef {
+        let command = command.to_string();
+
+        let args = args.iter().map(|s| String::from(*s)).collect::<Vec<_>>();
+        TaskDef {
+            id: "id".to_string(),
+            command,
+            args,
+            description: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn check_run_command_has_isolated_directory() {
+        init();
+
+        let task = create_task("pwd", &[]);
+        let (stdout1, _) = execute(task).await;
+
+        let task = create_task("pwd", &[]);
+        let (stdout2, _) = execute(task).await;
+
+        assert_ne!(
+            stdout1, stdout2,
+            "Each execution should have each own private working directory"
+        );
+    }
+
+    #[tokio::test]
+    async fn check_stdout_works_correctly() {
+        let (stdout, _) = execute(create_task("sh", &["-c", "echo 1; echo 2"])).await;
+        assert_eq!("1\n2\n", stdout);
+    }
+
+    async fn execute(task: TaskDef) -> (String, i32) {
+        use ChildProgress::*;
+
+        let (tx, mut rx) = mpsc::channel(1);
+
+        tokio::spawn(AgentLoop::run_task(task, tx));
+
+        let mut stdout = String::new();
+        while let Some(msg) = rx.recv().await {
+            match msg {
+                Stdout(ref s) => stdout.push_str(s),
+                Finished(exit_code) => return (stdout, exit_code),
+                FailedToStart(reason) => panic!("Unable to start process: {}", reason),
+                Interrupted => panic!("Interrupted"),
+                ArtifactsReady(_) => {}
+            }
+        }
+        panic!("No finished message was found in stream");
     }
 }

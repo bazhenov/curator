@@ -1,5 +1,3 @@
-import moment from 'moment'
-
 export interface Agent {
   application: string,
   instance: string,
@@ -17,8 +15,8 @@ export interface Execution {
   status: ExecutionStatus,
   output: string,
   task: Task,
-  started: moment.Moment,
-  finished?: moment.Moment
+  started: string,
+  finished?: string
 }
 
 export interface Task {

@@ -1,5 +1,5 @@
 #[macro_use]
-extern crate failure;
+extern crate anyhow;
 
 pub mod agent;
 pub mod protocol;
@@ -13,6 +13,9 @@ pub mod prelude {
     pub use super::protocol::*;
     pub use super::shared;
     pub use super::Shared;
+    pub use anyhow::{Context, Result};
+    pub use thiserror::Error;
+    pub type IoResult<T> = std::result::Result<T, std::io::Error>;
 
     pub use log::{error, info, trace, warn};
 }
@@ -24,24 +27,48 @@ pub fn shared<T>(obj: T) -> Shared<T> {
 }
 
 pub mod errors {
-    pub type Result<T> = std::result::Result<T, failure::Error>;
-    pub use failure::bail;
-    pub use failure::ResultExt;
+    use anyhow::Error;
 
-    pub fn log_errors(e: &failure::Error) {
-        for cause in e.iter_chain() {
-            if let Some(name) = cause.name() {
-                log::error!("{}: {}", name, cause);
+    pub fn log_errors(e: &Error) {
+        log::error!("{}", format_error_chain(e));
+    }
+
+    pub fn format_error_chain(error: &Error) -> String {
+        let mut description = String::new();
+        for (i, e) in error.chain().enumerate() {
+            if i == 0 {
+                description.push_str(&format!("{}\n", e));
             } else {
-                log::error!("{}", cause);
+                description.push_str(&format!("Caused by: {}\n", e));
+            }
+        }
+        description
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::prelude::*;
+
+    #[test]
+    fn logging() {
+        match outer() {
+            Ok(_) => {
+                println!("Ok");
+            }
+            Err(e) => {
+                eprintln!("{}", format_error_chain(&e));
             }
         }
     }
 
-    pub fn format_error_chain(e: &failure::Error) -> String {
-        e.iter_chain()
-            .map(|e| format!("{}", e))
-            .collect::<Vec<_>>()
-            .join("\n")
+    fn outer() -> Result<()> {
+        Ok(inner().context("Failed while inner")?)
+    }
+
+    fn inner() -> Result<()> {
+        use std::fs::File;
+        File::open("./not-found")?;
+        Ok(())
     }
 }
