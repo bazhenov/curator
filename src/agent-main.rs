@@ -32,14 +32,12 @@ async fn run() -> Result<()> {
         .author("Denis Bazhenov <dotsid@gmail.com>")
         .about("Agent application for Curator server")
         .arg_from_usage("-h, --host=<host> 'Curator server host'")
-        .arg_from_usage("-a, --application=<application> 'Application name of an agent'")
-        .arg_from_usage("-i, --instance=<instance> 'Instance name of an agent'")
+        .arg_from_usage("-n, --name=<name> 'Agent name'")
         .get_matches();
 
     let host = matches.value_of("host").unwrap();
 
-    let application_name = matches.value_of("application").unwrap();
-    let instance_name = matches.value_of("instance").unwrap();
+    let agent_name = matches.value_of("name").unwrap();
 
     let mut tasks_hash: Option<_> = None;
     let mut _agent_loop: Option<_> = None;
@@ -60,12 +58,7 @@ async fn run() -> Result<()> {
 
             // Need to save loop reference until tasks will be changed, otherwise
             // loop will be closed immediately
-            _agent_loop = Some(AgentLoop::run(
-                &host,
-                application_name,
-                instance_name,
-                tasks,
-            ));
+            _agent_loop = Some(AgentLoop::run(&host, agent_name, tasks));
         }
         delay_for(Duration::from_secs(5)).await;
     }

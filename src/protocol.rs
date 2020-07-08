@@ -11,16 +11,14 @@ pub mod agent {
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct Agent {
-        pub application: String,
-        pub instance: String,
+        pub name: String,
         pub tasks: Vec<Task>,
     }
 
     impl Agent {
-        pub fn new(application: &str, instance: &str, tasks: Vec<Task>) -> Self {
+        pub fn new(name: &str, tasks: Vec<Task>) -> Self {
             Self {
-                application: application.to_string(),
-                instance: instance.to_string(),
+                name: name.to_string(),
                 tasks,
             }
         }
@@ -58,13 +56,13 @@ pub mod client {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct RunTask {
         pub task_id: String,
-        pub agent: AgentRef,
+        pub agent: String,
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     pub struct Execution {
         pub id: Uuid,
-        pub agent: AgentRef,
+        pub agent: String,
         pub output: String,
         pub task: Task,
         pub status: ExecutionStatus,
@@ -76,7 +74,7 @@ pub mod client {
         pub fn new(id: Uuid, task: Task, agent: AgentRef) -> Self {
             Self {
                 id,
-                agent,
+                agent: agent.name,
                 task,
                 output: String::new(),
                 status: ExecutionStatus::INITIATED,
@@ -96,16 +94,12 @@ pub struct Task {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq)]
 pub struct AgentRef {
-    pub application: String,
-    pub instance: String,
+    pub name: String,
 }
 
 impl From<agent::Agent> for AgentRef {
     fn from(agent: agent::Agent) -> Self {
-        AgentRef {
-            application: agent.application,
-            instance: agent.instance,
-        }
+        AgentRef { name: agent.name }
     }
 }
 
@@ -196,16 +190,14 @@ mod tests {
     fn check_agent() -> Result<()> {
         assert_json_eq(
             agent::Agent {
-                application: "my-app".into(),
-                instance: "single".into(),
+                name: "my-app".into(),
                 tasks: vec![Task {
                     id: "my-task".into(),
                     description: Some("some description".to_string()),
                 }],
             },
             json!({
-                "application": "my-app",
-                "instance": "single",
+                "name": "my-app",
                 "tasks": [
                     { "id": "my-task", "description": "some description" }
                 ]
@@ -236,17 +228,11 @@ mod tests {
         assert_json_eq(
             client::RunTask {
                 task_id: "clean".into(),
-                agent: AgentRef {
-                    application: "app".into(),
-                    instance: "single".into(),
-                },
+                agent: "app".into(),
             },
             json!({
                 "task_id": "clean",
-                "agent": {
-                    "application": "app",
-                    "instance": "single"
-                }
+                "agent": "app"
             }),
         )?;
 
@@ -256,13 +242,9 @@ mod tests {
     #[test]
     fn check_agent_ref() -> Result<()> {
         assert_json_eq(
-            AgentRef {
-                instance: "foo".into(),
-                application: "app".into(),
-            },
+            AgentRef { name: "app".into() },
             json!({
-                "instance": "foo",
-                "application": "app"
+                "name": "app"
             }),
         )?;
 
@@ -312,10 +294,7 @@ mod tests {
                 id: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
                 status: ExecutionStatus::RUNNING,
                 output: "output".into(),
-                agent: AgentRef {
-                    application: "app".into(),
-                    instance: "single".into(),
-                },
+                agent: "app".into(),
                 task: Task {
                     id: "clean".into(),
                     description: None,
@@ -332,10 +311,7 @@ mod tests {
                 "task": {
                     "id": "clean"
                 },
-                "agent": {
-                    "application": "app",
-                    "instance": "single"
-                }
+                "agent": "app"
             }),
         )?;
 
