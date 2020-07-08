@@ -1,6 +1,5 @@
 {
-  "application": "my",
-  "instance": "single",
+  "agent": "single",
   "tasks": [
     {
       "id": "date"

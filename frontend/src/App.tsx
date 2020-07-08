@@ -21,8 +21,8 @@ export const App: React.SFC<AppProps> = (props) => {
   let taskTemplate = (a: Agent, t: Task) =>
     <li key={t.id}><a href='#' onClick={() => curator.runTask(a, t)}>{t.id}</a></li>
 
-  let agentTemplate = (agent: Agent) => <li key={agent.application + "@" + agent.instance}>
-    {agent.application}@{agent.instance}
+  let agentTemplate = (agent: Agent) => <li key={agent.name}>
+    {agent.name}
     <ol>{agent.tasks.map(t => taskTemplate(agent, t))}</ol>
   </li>
 

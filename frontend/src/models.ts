@@ -1,17 +1,11 @@
 export interface Agent {
-  application: string,
-  instance: string,
+  name: string,
   tasks: Array<Task>
-}
-
-export interface AgentRef {
-  application: string,
-  instance: string
 }
 
 export interface Execution {
   id: string,
-  agent: AgentRef,
+  agent: string,
   status: ExecutionStatus,
   output: string,
   task: Task,
