@@ -57,8 +57,7 @@ paths:
             examples:
               example:
                 value:
-                  application: todo-application
-                  instance: web-frontend
+                  name: web-frontend
                   tasks:
                     - id: cleanup-database
                     - id: report-load
@@ -119,16 +118,8 @@ paths:
                   type: string
                   description: task to execute
                 agent:
-                  type: object
+                  type: string
                   description: agent instance to run task on
-                  required:
-                    - application
-                    - instance
-                  properties:
-                    application:
-                      type: string
-                    instance:
-                      type: string
               required:
                 - task_id
                 - agent
@@ -136,9 +127,7 @@ paths:
               create new execution:
                 value:
                   task_id: cleanup-database
-                  agent:
-                    application: todo-application
-                    instance: web-frontend
+                  agent: db-agent
         description: Run a Task and returns new execution.
       parameters: []
   /backend/agents:
@@ -157,14 +146,12 @@ paths:
               examples:
                 basic:
                   value:
-                    - application: todo-app
-                      instance: web-frontend
+                    - name: web-frontend
                       tasks:
-                        - name: remove-inactive-sessions
-                    - application: todo-app
-                      instance: worker
+                        - id: remove-inactive-sessions
+                    - name: worker
                       tasks:
-                        - name: cleanup-database
+                        - id: cleanup-database
       operationId: get-agents
       description: List all active agents in the system and their tasks
     parameters: []
@@ -209,11 +196,10 @@ components:
       description: Agent is a program capable of running tasks. Agents are described by name which is hostname in most cases.
       x-examples:
         basic:
-          application: todo
-          instance: todo-web-frontend
+          name: todo-web-frontend
           tasks:
-            - name: cleanup-database
-            - name: send-notifications
+            - id: cleanup-database
+            - id: send-notifications
       properties:
         name:
           type: string
