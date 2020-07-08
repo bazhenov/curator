@@ -71,10 +71,10 @@ pub mod client {
     }
 
     impl Execution {
-        pub fn new(id: Uuid, task: Task, agent: AgentRef) -> Self {
+        pub fn new(id: Uuid, task: Task, agent: String) -> Self {
             Self {
                 id,
-                agent: agent.name,
+                agent,
                 task,
                 output: String::new(),
                 status: ExecutionStatus::INITIATED,
@@ -90,17 +90,6 @@ pub struct Task {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq)]
-pub struct AgentRef {
-    pub name: String,
-}
-
-impl From<agent::Agent> for AgentRef {
-    fn from(agent: agent::Agent) -> Self {
-        AgentRef { name: agent.name }
-    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Copy, Clone)]
@@ -233,18 +222,6 @@ mod tests {
             json!({
                 "task_id": "clean",
                 "agent": "app"
-            }),
-        )?;
-
-        Ok(())
-    }
-
-    #[test]
-    fn check_agent_ref() -> Result<()> {
-        assert_json_eq(
-            AgentRef { name: "app".into() },
-            json!({
-                "name": "app"
             }),
         )?;
 

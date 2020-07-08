@@ -227,7 +227,7 @@ impl From<Arc<Notify>> for CloseHandle {
 }
 
 pub struct AgentLoop {
-    agent: AgentRef,
+    name: String,
     uri: String,
     tasks: HashMap<String, TaskDef>,
     close_handle: Arc<Notify>,
@@ -240,7 +240,7 @@ impl AgentLoop {
         let tasks = tasks.into_iter().map(|i| (i.id.clone(), i)).collect();
         let close_handle = Arc::new(Notify::new());
         let mut agent_loop = Self {
-            agent: AgentRef { name },
+            name,
             uri: format!("http://{}", host),
             tasks,
             close_handle: close_handle.clone(),
@@ -265,7 +265,7 @@ impl AgentLoop {
             })
             .collect::<Vec<_>>();
         let agent = agent::Agent {
-            name: self.agent.name.clone(),
+            name: self.name.clone(),
             tasks,
         };
 

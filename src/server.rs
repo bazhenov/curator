@@ -27,7 +27,7 @@ enum ServerError {
 }
 
 pub struct Agent {
-    pub agent: AgentRef,
+    pub name: String,
     pub tasks: HashSet<Task>,
     channel: UnboundedSender<io::Result<Bytes>>,
 }
@@ -138,13 +138,13 @@ async fn new_agent(
     let tasks = new_agent.tasks.iter().cloned().collect();
 
     let agent = Agent {
-        agent: new_agent.into(),
+        name: new_agent.name,
         channel: tx,
         tasks,
     };
 
-    info!("New agent connected: {}", agent.agent.name);
-    agents.insert(agent.agent.name.clone(), agent);
+    info!("New agent connected: {}", agent.name);
+    agents.insert(agent.name.clone(), agent);
 
     HttpResponse::Ok()
         .header("Content-Type", "text/event-stream")
@@ -229,7 +229,7 @@ async fn list_agents(agents: web::Data<Mutex<HashMap<String, Agent>>>) -> impl R
     let agents = agents
         .values()
         .map(|a| agent::Agent {
-            name: a.agent.name.clone(),
+            name: a.name.clone(),
             tasks: a.tasks.iter().cloned().collect(),
         })
         .collect::<Vec<_>>();
@@ -268,7 +268,7 @@ async fn run_task(
                 let mut executions = executions.lock().unwrap();
                 executions.0.insert(
                     execution_id,
-                    client::Execution::new(execution_id, task.clone(), agent.agent.clone()),
+                    client::Execution::new(execution_id, task.clone(), run_task.agent.clone()),
                 );
                 HttpResponse::Ok().json(client::ExecutionRef { execution_id })
             }
