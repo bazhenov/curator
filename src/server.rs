@@ -170,11 +170,7 @@ async fn report_task(
         }
         execution.status = report.status;
         if let Some(lines) = report.stdout_append.take() {
-            execution.output = if execution.output.is_empty() {
-                lines
-            } else {
-                format!("{}\n{}", execution.output, lines)
-            }
+            execution.output.push_str(&lines);
         }
     }
     HttpResponse::Ok().finish()
