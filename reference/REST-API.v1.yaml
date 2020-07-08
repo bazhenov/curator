@@ -273,11 +273,3 @@ components:
         - FAILED
         - COMPLETED
       x-examples: {}
-    AgentRef:
-      title: AgentRef
-      type: object
-      properties:
-        name:
-          type: string
-      required:
-        - name
