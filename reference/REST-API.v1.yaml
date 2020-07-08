@@ -206,7 +206,7 @@ components:
     Agent:
       title: Agent
       type: object
-      description: Agent is a program capable of running tasks. Agent described by application and instance name. Instance name is the hostname in most cases. Application name is used for grouping replicated or distributed instances in one logical unit for convinience purposes as well as more fine grained control over task execution.
+      description: Agent is a program capable of running tasks. Agents are described by name which is hostname in most cases.
       x-examples:
         basic:
           application: todo
@@ -215,19 +215,15 @@ components:
             - name: cleanup-database
             - name: send-notifications
       properties:
-        application:
+        name:
           type: string
           example: todo-application
-        instance:
-          type: string
-          example: todo-application-host
         tasks:
           type: array
           items:
             $ref: '#/components/schemas/Task'
       required:
-        - application
-        - instance
+        - name
         - tasks
     ExecutionReport:
       title: ExecutionReport
@@ -253,12 +249,13 @@ components:
     Execution:
       title: Execution
       type: object
+      description: ''
       properties:
         id:
           type: string
           format: uuid
         agent:
-          $ref: '#/components/schemas/AgentRef'
+          type: string
         output:
           type: string
         status:
@@ -280,7 +277,6 @@ components:
         - status
         - started
         - task
-      description: ''
     ExecutionStatus:
       type: string
       title: ExecutionStatus
@@ -295,10 +291,7 @@ components:
       title: AgentRef
       type: object
       properties:
-        application:
-          type: string
-        instance:
+        name:
           type: string
       required:
-        - application
-        - instance
+        - name
