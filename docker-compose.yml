@@ -13,8 +13,7 @@ services:
     environment:
       - RUST_LOG=curator=info
       - CURATOR_HOST=backend:8080
-      - CURATOR_APP_NAME=test
-      - CURATOR_INSTANCE_NAME=single
+      - AGENT_NAME=single
     depends_on:
       - backend
   frontend:

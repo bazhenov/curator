@@ -25,8 +25,7 @@ COPY --from=builder /opt/curator-agent /opt/curator-agent
 WORKDIR /opt
 ENTRYPOINT /opt/curator-agent \
 	--host $CURATOR_HOST \
-	--instance $CURATOR_INSTANCE_NAME \
-	--application $CURATOR_APP_NAME
+	--name $AGENT_NAME
 
 # Version of curator-agent for local development only
 FROM centos:centos8 AS curator-agent-dev
@@ -40,5 +39,4 @@ COPY --from=builder /opt/curator-agent /opt/curator-agent
 WORKDIR /opt
 ENTRYPOINT /opt/curator-agent \
 	--host $CURATOR_HOST \
-	--instance $CURATOR_INSTANCE_NAME \
-	--application $CURATOR_APP_NAME
+	--name $AGENT_NAME

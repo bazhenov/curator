@@ -111,7 +111,7 @@ export class Curator {
   runTask(agent: Agent, task: Task) {
     let params = {
       method: "POST",
-      body: JSON.stringify({ task_id: task.id, agent }),
+      body: JSON.stringify({ task_id: task.id, agent: agent.name }),
       headers: {
         'Content-Type': 'application/json'
       }
