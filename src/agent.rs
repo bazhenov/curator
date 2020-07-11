@@ -5,9 +5,9 @@ use hyper::{
     header::{ACCEPT, CONTENT_TYPE},
     http, Body, Client, Request, Response,
 };
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
-    collections::{HashMap, BTreeSet},
+    collections::{BTreeSet, HashMap},
     ffi::OsStr,
     fs::{read, File},
     io::{Cursor, Seek, SeekFrom, Write},
@@ -264,7 +264,7 @@ impl AgentLoop {
             .map(|t| Task {
                 id: t.id.clone(),
                 description: t.description.clone(),
-                tags: t.tags.clone()
+                tags: t.tags.clone(),
             })
             .collect::<Vec<_>>();
         let agent = agent::Agent {
@@ -540,10 +540,10 @@ mod tests {
 
     use super::*;
     use crate::tests::*;
+    use maplit::btreeset;
     use serde_json::json;
     use std::fs;
     use tempfile::TempDir;
-    use maplit::btreeset;
 
     fn init() {
         let _ = env_logger::builder().is_test(true).try_init();
@@ -577,7 +577,7 @@ mod tests {
                 command: "who".into(),
                 args: vec!["-a".into()],
                 description: Some("Calling who command".into()),
-                tags: btreeset!{"who".into(), "unix".into()},
+                tags: btreeset! {"who".into(), "unix".into()},
                 ..Default::default()
             },
             json!({

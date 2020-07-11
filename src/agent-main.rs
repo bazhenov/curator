@@ -1,5 +1,7 @@
 extern crate clap;
+extern crate ctrlc;
 extern crate curator;
+
 use clap::App;
 use curator::{
     agent::{discover, AgentLoop},
@@ -9,6 +11,9 @@ use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     process::exit,
+    sync::atomic::{AtomicBool, Ordering},
+    sync::Arc,
+    thread,
     time::Duration,
 };
 use tokio::time::delay_for;
@@ -17,13 +22,28 @@ use tokio::time::delay_for;
 async fn main() {
     env_logger::init();
 
-    match run().await {
-        Err(e) => {
-            log_errors(&e);
-            exit(1);
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+    })
+    .expect("Unable to install Ctrl-C handler");
+
+    tokio::spawn(async move {
+        match run().await {
+            Err(e) => {
+                log_errors(&e);
+                exit(1);
+            }
+            Ok(_) => exit(0),
         }
-        Ok(_) => exit(0),
-    };
+    });
+
+    while running.load(Ordering::SeqCst) {
+        thread::sleep(Duration::from_millis(100));
+    }
+    println!("Got Ctrl-C! Shuting down...");
 }
 
 async fn run() -> Result<()> {
@@ -45,10 +65,10 @@ async fn run() -> Result<()> {
     loop {
         let tasks = discover("./").await?;
 
-        let hash = hash_values(&tasks);
+        let hash = Some(hash_values(&tasks));
 
-        let has_changes = tasks_hash.map_or(true, |h| h != hash);
-        tasks_hash = Some(hash);
+        let has_changes = tasks_hash != hash;
+        tasks_hash = hash;
 
         if has_changes {
             trace!("Reloading tasks..");
