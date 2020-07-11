@@ -85,7 +85,7 @@ impl Curator {
                 App::new()
                     .app_data(agents.clone())
                     .app_data(executions.clone())
-                    .route("/backend/events", web::post().to(new_agent))
+                    .route("/backend/events", web::post().to(agent_connected))
                     .route("/backend/task/run", web::post().to(run_task))
                     .route("/backend/execution/report", web::post().to(report_task))
                     .route(
@@ -127,7 +127,7 @@ impl Curator {
     }
 }
 
-async fn new_agent(
+async fn agent_connected(
     new_agent: web::Json<agent::Agent>,
     agents: web::Data<Mutex<HashMap<String, Agent>>>,
 ) -> impl Responder {

@@ -1,7 +1,7 @@
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashSet,
+    collections::BTreeSet,
     sync::{Arc, Mutex},
 };
 use uuid::Uuid;
@@ -93,8 +93,8 @@ pub struct Task {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(skip_serializing_if = "HashSet::is_empty", default)]
-    pub tags: HashSet<String>,
+    #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
+    pub tags: BTreeSet<String>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Copy, Clone)]
@@ -151,10 +151,9 @@ mod tests {
 
     use super::{agent, client, *};
     use crate::prelude::*;
-    use maplit::hashset;
-    use serde::de::DeserializeOwned;
-    use serde_json::{json, Value};
-    use std::fmt::Debug;
+    use crate::tests::*;
+    use maplit::btreeset;
+    use serde_json::json;
 
     #[test]
     fn check_execution_ref() -> Result<()> {
@@ -183,7 +182,7 @@ mod tests {
             Task {
                 id: "my-id".to_string(),
                 description: Some("some description".to_string()),
-                tags: hashset!["shell".into(), "unix".into()],
+                tags: btreeset!["shell".into(), "unix".into()],
                 ..Default::default()
             },
             json!({"id": "my-id", "description": "some description", "tags": ["shell", "unix"]}),
@@ -307,26 +306,5 @@ mod tests {
             },
             json!({ "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003" }),
         )
-    }
-
-    /// Checks serializing/deserializing cycle of value and json
-    fn assert_json_eq<T>(value: T, json: Value) -> Result<()>
-    where
-        T: Serialize + DeserializeOwned + PartialEq + Debug,
-    {
-        assert_eq!(serde_json::to_value(&value)?, json);
-        assert_eq!(value, serde_json::from_value(json)?);
-
-        Ok(())
-    }
-
-    /// Checks deserializing cycle of value and json
-    fn assert_json_reads<T>(value: T, json: Value) -> Result<()>
-    where
-        T: Serialize + DeserializeOwned + PartialEq + Debug,
-    {
-        assert_eq!(value, serde_json::from_value(json)?);
-
-        Ok(())
     }
 }
