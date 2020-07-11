@@ -4,7 +4,9 @@
     "agent": "my",
     "output": "22:56  up  5:20, 3 users, load averages: 1.26 1.93 2.07",
     "task": {
-      "id": "uptime"
+      "id": "uptime",
+      "desription": "Returning uptim and load averages",
+      "tags": ["unix", "loadavg", "uptime"]
     },
     "status": "RUNNING",
     "started": "2020-04-05T12:56:20.311287Z"

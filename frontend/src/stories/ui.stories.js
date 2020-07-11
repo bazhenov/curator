@@ -16,11 +16,12 @@ let agents = [
     name: "app1",
     tasks: [
       {
-        id: "task1"
+        id: "jstack",
+        description: "Running jstack on given JVM",
+        tags: ["java", "jstack", "my-app-deployment"]
       },
       {
-        id: "task2",
-        description: "Some task description"
+        id: "task2"
       }
     ]
   },
@@ -29,7 +30,8 @@ let agents = [
     tasks: [
       {
         id: "task1",
-        description: "Some task description"
+        description: "Some task description",
+        tags: ["t1", "t2"]
       }
     ]
   },
@@ -50,6 +52,13 @@ export const taskSuggest = () =>
     agents={agents}
     isOpen={true}
     forceQuery="ta"
+    onSelect={action('onSelect')} />
+
+export const taskSuggestSearchingByTag = () =>
+  <TaskSuggest
+    agents={agents}
+    isOpen={true}
+    forceQuery="ta my-app"
     onSelect={action('onSelect')} />
 
 export const managedTaskSuggest = () => <ManagedTaskSuggest />
