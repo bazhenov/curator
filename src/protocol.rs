@@ -1,6 +1,9 @@
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashSet,
+    sync::{Arc, Mutex},
+};
 use uuid::Uuid;
 
 /// Structs used in Curator<->Agent communication protocol
@@ -85,11 +88,13 @@ pub mod client {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Hash, Eq)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Eq, Default)]
 pub struct Task {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "HashSet::is_empty", default)]
+    pub tags: HashSet<String>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Copy, Clone)]
@@ -146,6 +151,7 @@ mod tests {
 
     use super::{agent, client, *};
     use crate::prelude::*;
+    use maplit::hashset;
     use serde::de::DeserializeOwned;
     use serde_json::{json, Value};
     use std::fmt::Debug;
@@ -168,11 +174,20 @@ mod tests {
             Task {
                 id: "my-id".to_string(),
                 description: Some("some description".to_string()),
+                ..Default::default()
             },
             json!({"id": "my-id", "description": "some description"}),
         )?;
 
-        Ok(())
+        assert_json_reads(
+            Task {
+                id: "my-id".to_string(),
+                description: Some("some description".to_string()),
+                tags: hashset!["shell".into(), "unix".into()],
+                ..Default::default()
+            },
+            json!({"id": "my-id", "description": "some description", "tags": ["shell", "unix"]}),
+        )
     }
 
     #[test]
@@ -183,6 +198,7 @@ mod tests {
                 tasks: vec![Task {
                     id: "my-task".into(),
                     description: Some("some description".to_string()),
+                    ..Default::default()
                 }],
             },
             json!({
@@ -191,9 +207,7 @@ mod tests {
                     { "id": "my-task", "description": "some description" }
                 ]
             }),
-        )?;
-
-        Ok(())
+        )
     }
 
     #[test]
@@ -207,9 +221,7 @@ mod tests {
                 "task_id": "clean",
                 "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003"
             }),
-        )?;
-
-        Ok(())
+        )
     }
 
     #[test]
@@ -223,9 +235,7 @@ mod tests {
                 "task_id": "clean",
                 "agent": "app"
             }),
-        )?;
-
-        Ok(())
+        )
     }
 
     #[test]
@@ -241,9 +251,7 @@ mod tests {
                 "status": "RUNNING",
                 "stdout_append": "output"
             }),
-        )?;
-
-        Ok(())
+        )
     }
 
     #[test]
@@ -259,9 +267,7 @@ mod tests {
                 "status": "RUNNING",
                 "stdout": "output"
             }),
-        )?;
-
-        Ok(())
+        )
     }
 
     #[test]
@@ -274,7 +280,7 @@ mod tests {
                 agent: "app".into(),
                 task: Task {
                     id: "clean".into(),
-                    description: None,
+                    ..Default::default()
                 },
                 started: Utc.ymd(2017, 11, 3).and_hms(9, 10, 11),
                 finished: None,
@@ -290,9 +296,7 @@ mod tests {
                 },
                 "agent": "app"
             }),
-        )?;
-
-        Ok(())
+        )
     }
 
     #[test]
@@ -302,17 +306,27 @@ mod tests {
                 execution: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
             },
             json!({ "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003" }),
-        )?;
-
-        Ok(())
+        )
     }
 
+    /// Checks serializing/deserializing cycle of value and json
     fn assert_json_eq<T>(value: T, json: Value) -> Result<()>
     where
         T: Serialize + DeserializeOwned + PartialEq + Debug,
     {
         assert_eq!(serde_json::to_value(&value)?, json);
         assert_eq!(value, serde_json::from_value(json)?);
+
+        Ok(())
+    }
+
+    /// Checks deserializing cycle of value and json
+    fn assert_json_reads<T>(value: T, json: Value) -> Result<()>
+    where
+        T: Serialize + DeserializeOwned + PartialEq + Debug,
+    {
+        assert_eq!(value, serde_json::from_value(json)?);
+
         Ok(())
     }
 }

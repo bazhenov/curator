@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fs::File,
     io::{self, Write},
     path::Path,
@@ -28,7 +28,7 @@ enum ServerError {
 
 pub struct Agent {
     pub name: String,
-    pub tasks: HashSet<Task>,
+    pub tasks: Vec<Task>,
     channel: UnboundedSender<io::Result<Bytes>>,
 }
 
@@ -135,7 +135,7 @@ async fn new_agent(
     let mut agents = agents.lock().unwrap();
 
     let new_agent = new_agent.into_inner();
-    let tasks = new_agent.tasks.iter().cloned().collect();
+    let tasks = new_agent.tasks.clone();
 
     let agent = Agent {
         name: new_agent.name,
@@ -230,7 +230,7 @@ async fn list_agents(agents: web::Data<Mutex<HashMap<String, Agent>>>) -> impl R
         .values()
         .map(|a| agent::Agent {
             name: a.name.clone(),
-            tasks: a.tasks.iter().cloned().collect(),
+            tasks: a.tasks.clone(),
         })
         .collect::<Vec<_>>();
 

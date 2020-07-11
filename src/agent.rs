@@ -262,6 +262,7 @@ impl AgentLoop {
             .map(|t| Task {
                 id: t.id.clone(),
                 description: t.description.clone(),
+                ..Default::default()
             })
             .collect::<Vec<_>>();
         let agent = agent::Agent {
