@@ -93,12 +93,19 @@ code {
 }
 
 .bp3-omnibar {
+  .task-tags {
+    .bp3-tag {
+      margin-right: 5px;
+    }
+  }
   .bp3-active {
     .bp3-text-muted {
       color: hsla(0,0%,100%,.7);
     }
-    .bp3-tag {
-      background-color: hsla(0,0%,100%,.7);
+    .task-tags {
+      .bp3-tag {
+        background-color: hsla(0,0%,100%,.7);
+      }
     }
   }
 }

@@ -16,6 +16,7 @@ export interface Execution {
 export interface Task {
   id: string,
   description?: string
+  tags?: Array<string>
 }
 
 export enum ExecutionStatus {

@@ -47,8 +47,12 @@ pub mod errors {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::prelude::*;
+    use serde::de::DeserializeOwned;
+    use serde::Serialize;
+    use serde_json::Value;
+    use std::fmt::Debug;
 
     #[test]
     fn logging() {
@@ -69,6 +73,27 @@ mod tests {
     fn inner() -> Result<()> {
         use std::fs::File;
         File::open("./not-found")?;
+        Ok(())
+    }
+
+    /// Checks serializing/deserializing cycle of value and json
+    pub fn assert_json_eq<T>(value: T, json: Value) -> Result<()>
+    where
+        T: Serialize + DeserializeOwned + PartialEq + Debug,
+    {
+        assert_eq!(serde_json::to_value(&value)?, json);
+        assert_eq!(value, serde_json::from_value(json)?);
+
+        Ok(())
+    }
+
+    /// Checks deserializing cycle of value and json
+    pub fn assert_json_reads<T>(value: T, json: Value) -> Result<()>
+    where
+        T: DeserializeOwned + PartialEq + Debug,
+    {
+        assert_eq!(value, serde_json::from_value(json)?);
+
         Ok(())
     }
 }

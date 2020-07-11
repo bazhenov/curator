@@ -53,7 +53,8 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
           : <code>{e.task.id}</code>}
       </div>
       <div className="info">
-        <Tag minimal={true}>{e.agent}</Tag>
+        <Tag>{e.agent}</Tag>
+        {e.task.tags?.map(t => <Tag minimal={true}>{t}</Tag>)}
       </div>
       <div className="operations">
       </div>
@@ -87,11 +88,25 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
 
   const TaskSelect = Omnibar.ofType<AgentTask>()
   const predicate : ItemPredicate<AgentTask> = (query, agentTask) => {
-    let idMatch = agentTask[1].id.indexOf(query) >= 0;
-    if ( idMatch )
-      return true
-    let descriptionMatch = (agentTask[1].description?.indexOf(query) || -1) >= 0
-    return descriptionMatch;
+    for (let part of query.split(" ")) {
+      if (part === "")
+        continue;
+
+      let idMatch = agentTask[1].id.indexOf(part) >= 0;
+      if ( idMatch )
+        continue
+
+      let descriptionMatch = (agentTask[1].description?.indexOf(part) || -1) >= 0
+      if ( descriptionMatch )
+        continue
+
+      let tagsMatch = agentTask[1].tags?.some(t => t.indexOf(part) >= 0)
+      if ( tagsMatch )
+        continue
+
+      return false
+    }
+    return true
   }
     
   let renderer: ItemRenderer<AgentTask> = (agentTask, {handleClick, modifiers, query}) => {
@@ -106,14 +121,19 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
       text={
         <>
           {task.id}
-          <br />
-          <span className="bp3-text-muted">
-            {task.description && 
-              <Highlight text={task.description} query={query} />}
-          </span>
+          {task.description && 
+            <span className="bp3-text-muted">
+            <br />
+            <Highlight text={task.description} query={query} />
+          </span>}
+          {task.tags && 
+            <span className="task-tags">
+              <br />
+              {task.tags.map(t => <Tag minimal={true}>{t}</Tag>)}
+            </span>}
         </>
       }
-      labelElement={<Tag minimal={true}>{agent.name}</Tag>}
+      labelElement={<Tag>{agent.name}</Tag>}
       key={task.id + "/" + location}/>
   }
 

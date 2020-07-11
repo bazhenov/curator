@@ -5,9 +5,9 @@ use hyper::{
     header::{ACCEPT, CONTENT_TYPE},
     http, Body, Client, Request, Response,
 };
-use serde::Serialize;
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, BTreeSet},
     ffi::OsStr,
     fs::{read, File},
     io::{Cursor, Seek, SeekFrom, Write},
@@ -43,7 +43,7 @@ enum Errors {
     HttpClient(http::Error),
 }
 
-#[derive(serde::Deserialize, Hash, PartialEq, Eq, Clone, Debug)]
+#[derive(Deserialize, Hash, PartialEq, Eq, Clone, Debug, Default)]
 pub struct TaskDef {
     pub id: String,
     pub command: String,
@@ -51,6 +51,8 @@ pub struct TaskDef {
     pub args: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
+    pub tags: BTreeSet<String>,
 }
 
 impl TaskDef {
@@ -198,7 +200,7 @@ pub async fn discover(path: impl AsRef<Path>) -> Result<Vec<TaskDef>> {
     Ok(tasks)
 }
 
-fn gather_tasks<T: serde::de::DeserializeOwned>(script: PathBuf) -> Result<Vec<T>> {
+fn gather_tasks<T: DeserializeOwned>(script: PathBuf) -> Result<Vec<T>> {
     use std::process::Command;
 
     let output = Command::new(script)
@@ -262,6 +264,7 @@ impl AgentLoop {
             .map(|t| Task {
                 id: t.id.clone(),
                 description: t.description.clone(),
+                tags: t.tags.clone()
             })
             .collect::<Vec<_>>();
         let agent = agent::Agent {
@@ -536,8 +539,11 @@ enum ChildProgress {
 mod tests {
 
     use super::*;
+    use crate::tests::*;
+    use serde_json::json;
     use std::fs;
     use tempfile::TempDir;
+    use maplit::btreeset;
 
     fn init() {
         let _ = env_logger::builder().is_test(true).try_init();
@@ -561,6 +567,27 @@ mod tests {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn check_taskdef_read_write() -> Result<()> {
+        assert_json_reads(
+            TaskDef {
+                id: "foo".into(),
+                command: "who".into(),
+                args: vec!["-a".into()],
+                description: Some("Calling who command".into()),
+                tags: btreeset!{"who".into(), "unix".into()},
+                ..Default::default()
+            },
+            json!({
+                "id": "foo",
+                "command": "who",
+                "args": ["-a"],
+                "tags": ["who", "unix"],
+                "description": "Calling who command"
+            }),
+        )
     }
 
     #[tokio::test]
@@ -595,7 +622,7 @@ mod tests {
             id: "id".to_string(),
             command,
             args,
-            description: None,
+            ..Default::default()
         }
     }
 
