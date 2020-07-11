@@ -1,10 +1,7 @@
 [
   {
     "id": "397be2fd-88a8-4142-a1a7-900b3037217f",
-    "agent": {
-      "application": "my",
-      "instance": "single"
-    },
+    "agent": "my",
     "output": "22:56  up  5:20, 3 users, load averages: 1.26 1.93 2.07",
     "task": {
       "id": "uptime"
@@ -14,10 +11,7 @@
   },
   {
     "id": "c4d52a52-ce98-499e-8e4a-64f887ef4174",
-    "agent": {
-      "application": "my",
-      "instance": "single"
-    },
+    "agent": "my",
     "output": "Sun Apr  5 22:56:06 +10 2020",
     "task": {
       "id": "date"
@@ -28,10 +22,7 @@
   },
   {
     "id": "2b938fba-0a05-4fd7-8949-dccabf9eb1cd",
-    "agent": {
-      "application": "my",
-      "instance": "single"
-    },
+    "agent": "my",
     "output": "22:56  up  5:19, 3 users, load averages: 1.37 1.96 2.09\nUSER     TTY      FROM              LOGIN@  IDLE WHAT\nbazhenov console  -                17:37    5:18 -\nbazhenov s000     -                20:20       1 -zsh\nbazhenov s001     -                22:50       - tmux -u attach-session -t curator",
     "task": {
       "id": "w"

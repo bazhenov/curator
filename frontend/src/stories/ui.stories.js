@@ -13,8 +13,7 @@ export default {
 
 let agents = [
   {
-    application: "app1",
-    instance: "single",
+    name: "app1",
     tasks: [
       {
         id: "task1"
@@ -26,8 +25,7 @@ let agents = [
     ]
   },
   {
-    application: "app2",
-    instance: "single",
+    name: "app2",
     tasks: [
       {
         id: "task1",

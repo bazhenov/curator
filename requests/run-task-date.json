@@ -1,7 +1,4 @@
 {
   "task_id": "date",
-  "agent": {
-    "instance": "single",
-    "application": "my"
-  }
+  "agent": "single"
 }

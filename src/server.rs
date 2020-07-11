@@ -27,7 +27,7 @@ enum ServerError {
 }
 
 pub struct Agent {
-    pub agent: AgentRef,
+    pub name: String,
     pub tasks: HashSet<Task>,
     channel: UnboundedSender<io::Result<Bytes>>,
 }
@@ -71,7 +71,7 @@ struct Executions(HashMap<Uuid, client::Execution>);
 
 pub struct Curator {
     server: actix_server::Server,
-    pub agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>,
+    pub agents: web::Data<Mutex<HashMap<String, Agent>>>,
 }
 
 impl Curator {
@@ -129,7 +129,7 @@ impl Curator {
 
 async fn new_agent(
     new_agent: web::Json<agent::Agent>,
-    agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>,
+    agents: web::Data<Mutex<HashMap<String, Agent>>>,
 ) -> impl Responder {
     let (tx, rx) = unbounded_channel();
     let mut agents = agents.lock().unwrap();
@@ -138,16 +138,13 @@ async fn new_agent(
     let tasks = new_agent.tasks.iter().cloned().collect();
 
     let agent = Agent {
-        agent: new_agent.into(),
+        name: new_agent.name,
         channel: tx,
         tasks,
     };
 
-    info!(
-        "New agent connected: {}@{}",
-        agent.agent.instance, agent.agent.application
-    );
-    agents.insert(agent.agent.clone(), agent);
+    info!("New agent connected: {}", agent.name);
+    agents.insert(agent.name.clone(), agent);
 
     HttpResponse::Ok()
         .header("Content-Type", "text/event-stream")
@@ -226,14 +223,13 @@ async fn list_executions(executions: web::Data<Mutex<Executions>>) -> impl Respo
     HttpResponse::Ok().json(body)
 }
 
-async fn list_agents(agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>) -> impl Responder {
+async fn list_agents(agents: web::Data<Mutex<HashMap<String, Agent>>>) -> impl Responder {
     let agents = agents.lock().unwrap();
 
     let agents = agents
         .values()
         .map(|a| agent::Agent {
-            application: a.agent.application.clone(),
-            instance: a.agent.instance.clone(),
+            name: a.name.clone(),
             tasks: a.tasks.iter().cloned().collect(),
         })
         .collect::<Vec<_>>();
@@ -243,7 +239,7 @@ async fn list_agents(agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>) -> impl
 
 async fn run_task(
     run_task: web::Json<client::RunTask>,
-    agents: web::Data<Mutex<HashMap<AgentRef, Agent>>>,
+    agents: web::Data<Mutex<HashMap<String, Agent>>>,
     executions: web::Data<Mutex<Executions>>,
 ) -> impl Responder {
     let mut agents = agents.lock().unwrap();
@@ -272,7 +268,7 @@ async fn run_task(
                 let mut executions = executions.lock().unwrap();
                 executions.0.insert(
                     execution_id,
-                    client::Execution::new(execution_id, task.clone(), agent.agent.clone()),
+                    client::Execution::new(execution_id, task.clone(), run_task.agent.clone()),
                 );
                 HttpResponse::Ok().json(client::ExecutionRef { execution_id })
             }

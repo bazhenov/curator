@@ -53,8 +53,7 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
           : <code>{e.task.id}</code>}
       </div>
       <div className="info">
-        <Tag minimal={true}>{e.agent.application}</Tag>
-        <Tag minimal={true}>{e.agent.instance}</Tag>
+        <Tag minimal={true}>{e.agent}</Tag>
       </div>
       <div className="operations">
       </div>
@@ -69,7 +68,7 @@ export const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
     <p>Status: {execution.status}</p>
     <p>Started: {moment(execution.started).format()}</p>
     <p>Finished: {execution.finished && moment(execution.finished).format()}</p>
-    <p>Agent: <code>{execution.agent.application}@{execution.agent.instance}</code></p>
+    <p>Agent: <code>{execution.agent}</code></p>
     <p><a href={"/backend/artifacts/" + execution.id + ".tar.gz"} role="button" className="bp3-button bp3-icon-database bp3-minimal">Artifacts</a></p>
     <pre>{execution.output}</pre>
   </div>
@@ -100,7 +99,7 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
       return null
     }
     let [agent, task] = agentTask
-    let location = agent.application + "@" + agent.instance;
+    let location = agent.name;
     return <MenuItem
       active={modifiers.active}
       onClick={handleClick}
@@ -114,12 +113,7 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
           </span>
         </>
       }
-      labelElement={
-        <>
-          <Tag minimal={true}>{agent.application}</Tag>&nbsp;
-          <Tag minimal={true}>{agent.instance}</Tag>
-        </>
-      }
+      labelElement={<Tag minimal={true}>{agent.name}</Tag>}
       key={task.id + "/" + location}/>
   }
 
