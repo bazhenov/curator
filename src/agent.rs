@@ -627,39 +627,48 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn check_run_command_has_isolated_directory() {
+    async fn check_run_command_has_isolated_directory() -> Result<()> {
         init();
 
         let task = create_task("pwd", &[]);
-        let (stdout1, _) = execute(task).await;
+        let (stdout1, _) = execute(task).await?;
 
         let task = create_task("pwd", &[]);
-        let (stdout2, _) = execute(task).await;
+        let (stdout2, _) = execute(task).await?;
 
         assert_ne!(
             stdout1, stdout2,
             "Each execution should have each own private working directory"
         );
+
+        Ok(())
     }
 
     #[tokio::test]
-    async fn check_stdout_works_correctly() {
-        let (stdout, _) = execute(create_task("sh", &["-c", "echo 1; echo 2"])).await;
+    async fn check_stdout_works_correctly() -> Result<()> {
+        init();
+
+        let (stdout, _) = execute(create_task("sh", &["-c", "echo 1; echo 2"])).await?;
         assert_eq!("1\n2\n", stdout);
+
+        Ok(())
     }
 
-    async fn execute(task: TaskDef) -> (String, i32) {
+    async fn execute(task: TaskDef) -> Result<(String, i32)> {
         use ChildProgress::*;
 
         let (tx, mut rx) = mpsc::channel(1);
 
-        tokio::spawn(AgentLoop::run_task(task, tx));
+        let task = tokio::spawn(AgentLoop::run_task(task, tx));
 
         let mut stdout = String::new();
         while let Some(msg) = rx.recv().await {
             match msg {
                 Stdout(ref s) => stdout.push_str(s),
-                Finished(exit_code) => return (stdout, exit_code),
+                Finished(exit_code) => {
+                    task.await??;
+                    return Ok((stdout, exit_code));
+                }
                 FailedToStart(reason) => panic!("Unable to start process: {}", reason),
                 Interrupted => panic!("Interrupted"),
                 ArtifactsReady(_) => {}
