@@ -13,17 +13,18 @@ RUN --mount=type=cache,target=./target \
   cp ./target/release/curator-agent /opt
 
 FROM centos:centos8 AS curator-server
-COPY --from=builder /opt/curator-server /opt/curator-server
+WORKDIR /opt
+COPY --from=builder /opt/curator-server /curator-server
 EXPOSE 8080
-ENTRYPOINT ["/opt/curator-server"]
+ENTRYPOINT ["/curator-server"]
 
 # Base docker image for creating agent images
 # with custom discovery utilities
 FROM centos:centos8 AS curator-agent
-COPY --from=builder /opt/curator-agent /opt/curator-agent
+COPY --from=builder /opt/curator-agent /curator-agent
 
 WORKDIR /opt
-ENTRYPOINT /opt/curator-agent \
+ENTRYPOINT /curator-agent \
 	--host $CURATOR_HOST \
 	--name $AGENT_NAME
 
@@ -34,9 +35,9 @@ RUN --mount=type=cache,target=/var/cache/dnf yum -y update
 RUN --mount=type=cache,target=/var/cache/dnf yum -y install jq lsof
 
 COPY local/lsof.discovery.sh /opt/lsof.discovery.sh
-COPY --from=builder /opt/curator-agent /opt/curator-agent
+COPY --from=builder /opt/curator-agent /curator-agent
 
 WORKDIR /opt
-ENTRYPOINT /opt/curator-agent \
+ENTRYPOINT /curator-agent \
 	--host $CURATOR_HOST \
 	--name $AGENT_NAME
