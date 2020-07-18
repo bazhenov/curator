@@ -9,7 +9,8 @@ use std::{
 use actix_files::NamedFile;
 
 use actix_web::{
-    error::PayloadError, http::header::*, web, App, HttpResponse, HttpServer, Responder,
+    error::PayloadError, http::header::*, middleware::Logger, web, App, HttpResponse, HttpServer,
+    Responder,
 };
 use bytes::Bytes;
 use futures::StreamExt;
@@ -83,6 +84,7 @@ impl Curator {
             let agents = agents.clone();
             move || {
                 App::new()
+                    .wrap(Logger::default())
                     .app_data(agents.clone())
                     .app_data(executions.clone())
                     .route("/backend/events", web::post().to(agent_connected))
