@@ -389,20 +389,20 @@ impl AgentLoop {
         let client = Client::new();
 
         while let Some(progress) = rx.recv().await {
-            let report = match progress {
+            let report = match &progress {
                 Stdout(line) => report_request(
                     &uri,
                     agent::ExecutionReport {
                         id,
                         status: RUNNING,
-                        stdout_append: Some(line),
+                        stdout_append: Some(line.to_string()),
                     },
                 ),
                 Finished(exit_code) => report_request(
                     &uri,
                     agent::ExecutionReport {
                         id,
-                        status: ExecutionStatus::from_unix_exit_code(exit_code),
+                        status: ExecutionStatus::from_unix_exit_code(*exit_code),
                         stdout_append: None,
                     },
                 ),
@@ -411,7 +411,7 @@ impl AgentLoop {
                     agent::ExecutionReport {
                         id,
                         status: REJECTED,
-                        stdout_append: Some(reason),
+                        stdout_append: Some(reason.to_string()),
                     },
                 ),
                 Interrupted => report_request(
@@ -425,15 +425,17 @@ impl AgentLoop {
                 ArtifactsReady(path) => attach_artifacts_request(&uri, id, path),
             };
 
-            match client.request(report?).await {
-                Err(e) => {
-                    error!("Error while reporting back to Curator: {:?}", e);
-                }
-                Ok(r) if !r.status().is_success() => {
-                    error!("Error while reporting back to Curator HTTP/{}", r.status());
-                }
-                Ok(_) => {}
+            let response = client.request(report?).await?;
+            if !response.status().is_success() {
+                bail!(format_err!(
+                    "Error while reporting back to Curator HTTP/{}",
+                    response.status()
+                ));
             }
+
+            // progress-message could have additional resources allocated (artifact files on a FS)
+            // which should be dropped only after reporting to server is finished
+            drop(progress);
         }
 
         Ok(())
@@ -490,7 +492,7 @@ impl AgentLoop {
             .wait_with_output()
             .await?;
         drop(work_dir);
-        tx.send(ArtifactsReady(PathBuf::from(path))).await?;
+        tx.send(ArtifactsReady(path.into())).await?;
         Ok(())
     }
 }
@@ -527,12 +529,44 @@ fn attach_artifacts_request(uri: &str, id: Uuid, path: impl AsRef<Path>) -> Resu
 }
 
 #[derive(Debug)]
+struct Artifact(PathBuf);
+
+impl Drop for Artifact {
+    fn drop(&mut self) {
+        use std::fs;
+
+        if let Err(e) = fs::remove_file(&self.0) {
+            warn!(
+                "Unable to remove artifact file: {}. Reason: {}",
+                self.0.display(),
+                e
+            );
+        }
+    }
+}
+
+impl AsRef<Path> for Artifact {
+    fn as_ref(&self) -> &Path {
+        &self.0.as_ref()
+    }
+}
+
+impl From<&str> for Artifact {
+    fn from(path: &str) -> Self {
+        Self(PathBuf::from(path))
+    }
+}
+
+#[derive(Debug)]
 enum ChildProgress {
     Stdout(String),
     Finished(i32),
     Interrupted,
     FailedToStart(String),
-    ArtifactsReady(PathBuf),
+
+    /// Generated when artifact is ready. Artifact implement `Drop`, so
+    /// underlying file will be removed when variable is leaving scope.
+    ArtifactsReady(Artifact),
 }
 
 #[cfg(test)]
@@ -611,6 +645,23 @@ mod tests {
         assert_eq!(tasks.len(), 1);
         let first_task = tasks.iter().next().unwrap();
         assert_eq!(first_task.id, "date");
+        Ok(())
+    }
+
+    #[test]
+    fn artifact_should_remove_its_file() -> Result<()> {
+        let tmp = TempDir::new()?;
+        let path = tmp.path().join("test.bin");
+        File::create(&path)?;
+
+        {
+            let _artifact = Artifact(path.clone());
+        }
+        assert!(
+            !path.exists(),
+            "File should be removed after artifact leaving scope"
+        );
+
         Ok(())
     }
 
