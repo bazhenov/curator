@@ -71,6 +71,7 @@ pub mod client {
         pub status: ExecutionStatus,
         pub started: DateTime<Utc>,
         pub finished: Option<DateTime<Utc>>,
+        pub artifact_size: Option<usize>,
     }
 
     impl Execution {
@@ -83,6 +84,7 @@ pub mod client {
                 status: ExecutionStatus::INITIATED,
                 started: Utc::now(),
                 finished: None,
+                artifact_size: None,
             }
         }
     }
@@ -283,6 +285,7 @@ mod tests {
                 },
                 started: Utc.ymd(2017, 11, 3).and_hms(9, 10, 11),
                 finished: None,
+                artifact_size: Some(3315),
             },
             json!({
                 "id": "596cf5b4-70ba-11ea-bc55-0242ac130003",
@@ -293,7 +296,8 @@ mod tests {
                 "task": {
                     "id": "clean"
                 },
-                "agent": "app"
+                "agent": "app",
+                "artifact_size": 3315,
             }),
         )
     }

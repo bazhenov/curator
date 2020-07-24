@@ -17,7 +17,7 @@ pub mod prelude {
     pub use thiserror::Error;
     pub type IoResult<T> = std::result::Result<T, std::io::Error>;
 
-    pub use log::{error, info, trace, warn};
+    pub use log::{debug, error, info, trace, warn};
 }
 
 pub type Shared<T> = Arc<Mutex<T>>;
