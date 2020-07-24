@@ -260,17 +260,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
-        artifacts:
-          type: object
-          properties:
-            ready:
-              type: boolean
-              description: Does artifact ready to be downloaded?
-            size:
-              type: integer
-              description: Size of artifacts in bytes
-          required:
-            - ready
+        artifact_size:
+          type: integer
+          description: Size of artifacts if it's ready for downloading
       required:
         - id
         - agent
