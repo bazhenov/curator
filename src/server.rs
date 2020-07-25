@@ -9,8 +9,8 @@ use std::{
 use actix_files::NamedFile;
 
 use actix_web::{
-    error::PayloadError, http::header::*, middleware::Logger, web, App, HttpResponse, HttpServer,
-    Responder,
+    dev::HttpResponseBuilder, error::PayloadError, error::ResponseError, http::header::*,
+    http::StatusCode, middleware::Logger, web, App, HttpResponse, HttpServer, Responder,
 };
 use bytes::Bytes;
 use futures::StreamExt;
@@ -25,7 +25,38 @@ use chrono::prelude::*;
 enum ServerError {
     #[error("Can't read payload from HTTP request")]
     Payload(PayloadError),
+
+    #[error("Unable to create artifact file")]
+    UnableToCreateArtifact(io::Error),
+
+    #[error("Execution not found: {}", .0)]
+    ExecutionNotFound(Uuid),
+
+    #[error("Invalid artifact type. Only application/x-tgz is supported")]
+    InvalidArtifactType,
 }
+
+impl ResponseError for ServerError {
+    fn error_response(&self) -> HttpResponse {
+        HttpResponseBuilder::new(self.status_code())
+            .set_header(CONTENT_TYPE, "text/html; charset=utf-8")
+            .body(format!("{}", self))
+    }
+
+    fn status_code(&self) -> StatusCode {
+        use ServerError::*;
+
+        match self {
+            Payload(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            UnableToCreateArtifact(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ExecutionNotFound(_) => StatusCode::CONFLICT,
+            InvalidArtifactType => StatusCode::NOT_ACCEPTABLE,
+        }
+    }
+}
+
+/// Controller specific Result-type. Error type can be turned into HTTP error
+type ServerResult<T> = std::result::Result<T, ServerError>;
 
 pub struct Agent {
     pub name: String,
@@ -184,18 +215,29 @@ async fn attach_artifacts(
     payload: web::Payload,
     query: web::Query<ArtifactParams>,
     request: web::HttpRequest,
-) -> impl Responder {
+    executions: web::Data<Mutex<Executions>>,
+) -> ServerResult<HttpResponse> {
     let content_type = request.headers().get(CONTENT_TYPE).map(HeaderValue::to_str);
+    use ServerError::*;
+
     match content_type {
         Some(Ok("application/x-tgz")) => {
-            let file_name = format!("./{}.tar.gz", query.id);
-            if write_artifact_to_file(payload, file_name).await.is_ok() {
-                HttpResponse::Ok().finish()
+            let mut executions = executions.lock().unwrap();
+
+            if let Some(execution) = executions.0.get_mut(&query.id) {
+                let file_name = format!("./{}.tar.gz", query.id);
+                let bytes_written = save_artifact(payload, file_name).await?;
+                execution.artifact_size = Some(bytes_written);
+                debug!(
+                    "New artifact uploaded. Execution: {}, size: {}",
+                    query.id, bytes_written
+                );
+                Ok(HttpResponse::Ok().finish())
             } else {
-                HttpResponse::InternalServerError().finish()
+                Err(ExecutionNotFound(query.id))
             }
         }
-        _ => HttpResponse::NotAcceptable().finish(),
+        _ => Err(InvalidArtifactType),
     }
 }
 
@@ -206,16 +248,20 @@ async fn download_artifact(query: web::Path<ArtifactParams>) -> IoResult<NamedFi
     NamedFile::open(path)
 }
 
-async fn write_artifact_to_file(
+async fn save_artifact(
     mut payload: web::Payload,
     file_name: impl AsRef<Path>,
-) -> Result<()> {
-    let mut file = File::create(file_name)?;
+) -> ServerResult<usize> {
+    use ServerError::*;
+
+    let mut file = File::create(file_name).map_err(UnableToCreateArtifact)?;
+    let mut bytes_written = 0;
     while let Some(chunk) = payload.next().await {
-        let bytes: Bytes = chunk.map_err(ServerError::Payload)?;
-        file.write_all(&bytes)?;
+        let bytes = chunk.map_err(ServerError::Payload)?;
+        file.write_all(&bytes).map_err(UnableToCreateArtifact)?;
+        bytes_written += bytes.len();
     }
-    Ok(())
+    Ok(bytes_written)
 }
 
 async fn list_executions(executions: web::Data<Mutex<Executions>>) -> impl Responder {

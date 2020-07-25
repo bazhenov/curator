@@ -20,7 +20,8 @@
     },
     "status": "COMPLETED",
     "started": "2020-04-05T12:56:06.468306Z",
-    "finished": "2020-04-05T12:56:06.474941Z"
+    "finished": "2020-04-05T12:56:06.474941Z",
+    "artifact_size": 144223
   },
   {
     "id": "2b938fba-0a05-4fd7-8949-dccabf9eb1cd",

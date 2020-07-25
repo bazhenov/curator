@@ -188,6 +188,10 @@ components:
           description: name of the task. Will be presented as is to operator using the system
         description:
           type: string
+        tags:
+          type: array
+          items:
+            type: string
       required:
         - id
     Agent:
@@ -256,6 +260,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+        artifact_size:
+          type: integer
+          description: Size of artifacts if it's ready for downloading
       required:
         - id
         - agent

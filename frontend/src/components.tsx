@@ -1,6 +1,7 @@
 import React from 'react'
-import { Button, Intent, ProgressBar, Tag, MenuItem } from '@blueprintjs/core'
+import { Button, Intent, ProgressBar, Tag, MenuItem, Spinner } from '@blueprintjs/core'
 import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select"
+import numeral from "numeral"
 
 import './index.scss'
 import { Execution, ExecutionStatus, Task, Agent } from './models'
@@ -67,10 +68,20 @@ export const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
   return <div className="execution-full">
     <p>ExecutionID: {execution.id}</p>
     <p>Status: {execution.status}</p>
-    <p>Started: {moment(execution.started).format()}</p>
-    <p>Finished: {execution.finished && moment(execution.finished).format()}</p>
+    <p>Started: {moment(execution.started).format("LLLL")}</p>
+    {execution.finished && <p>Finished: {moment(execution.finished).format("LLLL")}</p>}
     <p>Agent: <code>{execution.agent}</code></p>
-    <p><a href={"/backend/artifacts/" + execution.id + ".tar.gz"} role="button" className="bp3-button bp3-icon-database bp3-minimal">Artifacts</a></p>
+    {execution.status !== ExecutionStatus.RUNNING &&
+      <p>
+        {execution.artifact_size
+          ? <a href={"/backend/artifacts/" + execution.id + ".tar.gz"} role="button"
+            className="bp3-button bp3-icon-database bp3-minimal">
+              Artifacts ({numeral(execution.artifact_size).format("0 ib")})</a>
+          : <a role="button"
+          className="bp3-button bp3-icon-database bp3-minimal bp3-disabled">
+            Artifacts&nbsp;<Spinner size={Spinner.SIZE_SMALL} /></a>}
+        
+      </p>}
     <pre>{execution.output}</pre>
   </div>
 }

@@ -1,20 +1,21 @@
 export interface Agent {
-  name: string,
+  name: string
   tasks: Array<Task>
 }
 
 export interface Execution {
-  id: string,
-  agent: string,
-  status: ExecutionStatus,
-  output: string,
-  task: Task,
-  started: string,
+  id: string
+  agent: string
+  status: ExecutionStatus
+  output: string
+  task: Task
+  started: string
   finished?: string
+  artifact_size?: Number
 }
 
 export interface Task {
-  id: string,
+  id: string
   description?: string
   tags?: Array<string>
 }
@@ -24,5 +25,5 @@ export enum ExecutionStatus {
   INITIATED = "INITIATED",
   REJECTED = "REJECTED",
   COMPLETED = "COMPLETED",
-  FAILED = "FAILED"
+  FAILED = "FAILED",
 }
