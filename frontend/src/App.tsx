@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {Agent, Execution, Task} from './models'
-import { ExecutionList, Layout, TaskSuggest, ExecutionUI } from './components';
+import { TableExecutionList, Layout, TaskSuggest, ExecutionUI, CardExecutionList } from './components';
 import { Navbar, Alignment, Button } from '@blueprintjs/core';
 
 interface AppProps {
@@ -39,7 +39,7 @@ export const App: React.SFC<AppProps> = (props) => {
 
   let executionUi = <div>
     <h2>Executions</h2>
-    <ExecutionList executions={executions} onSelect={setSelectedExecutionId}/>
+    <CardExecutionList executions={executions} onSelect={setSelectedExecutionId}/>
     {selectedExecution && <ExecutionUI execution={selectedExecution} />}
   </div>
 

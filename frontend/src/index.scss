@@ -37,7 +37,7 @@ code {
   }
 }
 
-.execution {
+.execution-list-table {
   border-bottom: 1px dashed #ddd;
   display: grid;
   height: 60px;
@@ -80,6 +80,68 @@ code {
 .execution:hover .operations {
   visibility: visible;
 }
+
+.execution-brief-container {
+  display: flex;
+  flex-wrap: wrap;
+
+  .execution:hover {
+    background-color: #eee;
+  }
+
+  .execution {
+    display: grid;
+    grid-template-columns: 50px 3fr 1fr;
+    grid-template-rows: 1fr 25px;
+    grid-template-areas: "indicator title info" "indicator tags info";
+    border: 1px #ddd dashed;
+    border-radius: 5px;
+    min-width: 400px;
+    margin: 10px;
+    padding: 5px;
+    cursor: pointer;
+
+    .indicator {
+      grid-area: indicator;
+      margin: auto;
+    }
+
+    .tags {
+      grid-area: tags;
+      margin: auto 0;
+      .bp3-tag {
+        margin-right: 5px;
+      }
+    }
+
+    .title {
+      grid-area: title;
+      margin: 0;
+      padding-right: 15px;
+
+      ol {
+        list-style: none;
+        padding: 0;
+        margin: 5px 0;
+        @extend .bp3-monospace-text;
+
+        li {
+          white-space: nowrap;
+        }
+      }
+    }
+
+    .info {
+      grid-area: info;
+      margin: auto 0;
+      white-space: nowrap;
+      @extend .bp3-text-muted;
+      @extend .bp3-text-small;
+    }
+  }
+}
+
+
 
 .execution-full {
   margin-top: 30px;

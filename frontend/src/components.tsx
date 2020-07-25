@@ -7,6 +7,10 @@ import './index.scss'
 import { Execution, ExecutionStatus, Task, Agent, hasArtifact } from './models'
 import moment from 'moment'
 
+import { CardExecutionList } from './ExecutionList'
+
+export { CardExecutionList }
+
 export const B: React.FC<{}> = () => <>
   <p>Hello</p>
   <Button intent="success" text="button content" />
@@ -30,9 +34,9 @@ interface ExecutionListProps {
   onSelect?: (_: String) => void,
 }
 
-export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
+export const TableExecutionList: React.FC<ExecutionListProps> = (props) => {
   return <div>
-    {props.executions.map(e => <div key={e.id} className="execution">
+    {props.executions.map(e => <div key={e.id} className="execution-list-table">
       <div className="indicator">
         {e.status === ExecutionStatus.COMPLETED &&
           <ProgressBar intent={Intent.SUCCESS} stripes={false}/>}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Layout, ExecutionList, TaskSuggest, ExecutionUI } from '../components'
+import { Layout, TableExecutionList, TaskSuggest, ExecutionUI } from '../components'
 import { executions } from './fixture'
 import { action } from '@storybook/addon-actions';
 
@@ -43,7 +43,7 @@ export const layout = () => <Layout
   sidebar={"sidebar"}
   content={"content"}/>
 
-export const executionList = () => <ExecutionList onSelect={action('onSelect')} executions={executions} />
+export const executionList = () => <TableExecutionList onSelect={action('onSelect')} executions={executions} />
 
 export const Execution = ()  => <ExecutionUI execution={executions[1]} />
 
