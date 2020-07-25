@@ -4,7 +4,7 @@ import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select"
 import numeral from "numeral"
 
 import './index.scss'
-import { Execution, ExecutionStatus, Task, Agent } from './models'
+import { Execution, ExecutionStatus, Task, Agent, hasArtifact } from './models'
 import moment from 'moment'
 
 export const B: React.FC<{}> = () => <>
@@ -50,7 +50,7 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
       </div>
       <div className="title">
         {props.onSelect
-          ? <a onClick={() => props.onSelect && props?.onSelect(e.id)}><code>{e.task.id}</code></a>
+          ? <a href={"#execution-" + e.id} onClick={() => props.onSelect && props?.onSelect(e.id)}><code>{e.task.id}</code></a>
           : <code>{e.task.id}</code>}
       </div>
       <div className="info">
@@ -71,13 +71,13 @@ export const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
     <p>Started: {moment(execution.started).format("LLLL")}</p>
     {execution.finished && <p>Finished: {moment(execution.finished).format("LLLL")}</p>}
     <p>Agent: <code>{execution.agent}</code></p>
-    {execution.status !== ExecutionStatus.RUNNING &&
+    {hasArtifact(execution) &&
       <p>
         {execution.artifact_size
           ? <a href={"/backend/artifacts/" + execution.id + ".tar.gz"} role="button"
             className="bp3-button bp3-icon-database bp3-minimal">
               Artifacts ({numeral(execution.artifact_size).format("0 ib")})</a>
-          : <a role="button"
+          : <a href="#artifact-is-in-progress" role="button"
           className="bp3-button bp3-icon-database bp3-minimal bp3-disabled">
             Artifacts&nbsp;<Spinner size={Spinner.SIZE_SMALL} /></a>}
         

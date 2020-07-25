@@ -1,23 +1,23 @@
 export interface Agent {
-  name: string
-  tasks: Array<Task>
+  readonly name: string
+  readonly tasks: Array<Task>
 }
 
 export interface Execution {
-  id: string
-  agent: string
-  status: ExecutionStatus
-  output: string
-  task: Task
-  started: string
-  finished?: string
-  artifact_size?: Number
+  readonly id: string
+  readonly agent: string
+  readonly status: ExecutionStatus
+  readonly output: string
+  readonly task: Task
+  readonly started: string
+  readonly finished?: string
+  readonly artifact_size?: Number
 }
 
 export interface Task {
-  id: string
-  description?: string
-  tags?: Array<string>
+  readonly id: string
+  readonly description?: string
+  readonly tags?: Array<string>
 }
 
 export enum ExecutionStatus {
@@ -26,4 +26,9 @@ export enum ExecutionStatus {
   REJECTED = "REJECTED",
   COMPLETED = "COMPLETED",
   FAILED = "FAILED",
+}
+
+export function hasArtifact(e: Execution): boolean {
+  return e.status === ExecutionStatus.COMPLETED ||
+    e.status === ExecutionStatus.FAILED
 }

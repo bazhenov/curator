@@ -14,12 +14,12 @@ export const App: React.SFC<AppProps> = (props) => {
   const [executions, setExecutions] = useState<Array<Execution>>([]);
   const [selectedExecutionId, setSelectedExecutionId] = useState<String | null>(null);
   
-  useEffect(() => curator.onAgentsChange(setAgents))
-  useEffect(() => curator.onExecutionsChange(setExecutions))
+  useEffect(() => curator.onAgentsChange(setAgents), [curator, setAgents])
+  useEffect(() => curator.onExecutionsChange(setExecutions), [curator, setExecutions])
   let [isOmnibarOpen, setOmnibarOpen] = useState(false);
 
   let taskTemplate = (a: Agent, t: Task) =>
-    <li key={t.id}><a href='#' onClick={() => curator.runTask(a, t)}>{t.id}</a></li>
+    <li key={t.id}><a href={'#key-' + t.id} onClick={() => curator.runTask(a, t)}>{t.id}</a></li>
 
   let agentTemplate = (agent: Agent) => <li key={agent.name}>
     {agent.name}
@@ -86,7 +86,7 @@ export class Curator {
       .then(r => r.json())
       .then(r => {
         // Replace with Conditional GET on backend side
-        if (JSON.stringify(this.agents) != JSON.stringify(r)) {
+        if (JSON.stringify(this.agents) !== JSON.stringify(r)) {
           this.agents = r;
           this.agentChangeListeners.forEach(listener => listener(r))
         }
@@ -100,7 +100,7 @@ export class Curator {
       .then(r => r.sort((a: Execution, b: Execution) => a.started < b.started))
       .then(r => {
         // Replace with Conditional GET on backend side
-        if (JSON.stringify(this.executions) != JSON.stringify(r)) {
+        if (JSON.stringify(this.executions) !== JSON.stringify(r)) {
           this.executions = r
           this.executionChangeListeners.forEach(listener => listener(r))
         }
