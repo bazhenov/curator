@@ -11,9 +11,6 @@ use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     process::exit,
-    sync::atomic::{AtomicBool, Ordering},
-    sync::Arc,
-    thread,
     time::Duration,
 };
 use tokio::time::delay_for;
@@ -22,28 +19,19 @@ use tokio::time::delay_for;
 async fn main() {
     env_logger::init();
 
-    let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
-
     ctrlc::set_handler(move || {
-        r.store(false, Ordering::SeqCst);
+        println!("Got Ctrl-C! Shuting down...");
+        exit(1);
     })
     .expect("Unable to install Ctrl-C handler");
 
-    tokio::spawn(async move {
-        match run().await {
-            Err(e) => {
-                log_errors(&e);
-                exit(1);
-            }
-            Ok(_) => exit(0),
+    match run().await {
+        Err(e) => {
+            log_errors(&e);
+            exit(1);
         }
-    });
-
-    while running.load(Ordering::SeqCst) {
-        thread::sleep(Duration::from_millis(100));
+        Ok(_) => exit(0),
     }
-    println!("Got Ctrl-C! Shuting down...");
 }
 
 async fn run() -> Result<()> {
