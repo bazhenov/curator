@@ -61,6 +61,7 @@ impl ResponseError for ServerError {
 
 /// Controller specific Result-type. Error type can be turned into HTTP error
 type ServerResult<T> = std::result::Result<T, ServerError>;
+type AgentMap = HashMap<String, Agent>;
 
 pub struct Agent {
     pub name: String,
@@ -105,6 +106,15 @@ impl Agent {
         Ok(())
     }
 
+    /// Updates heartbeat time on an agent
+    /// 
+    /// Hearbeats required to remove stalled agents becasue SSE doesn't allow to track client disconnection
+    /// without sending messages to client. Moreover even sending messages to client doesn't provide time bounds
+    /// for stale agent detection because local TCP stack can buffer outgoing messages for quite a while.
+    fn ping_recevied(&mut self) {
+        self.hb = Instant::now();
+    }
+
     #[inline]
     fn send<T>(&self, data: T) -> Result<()>
     where
@@ -122,12 +132,12 @@ struct Executions(HashMap<Uuid, client::Execution>);
 
 pub struct Curator {
     server: actix_server::Server,
-    pub agents: web::Data<Mutex<HashMap<String, Agent>>>,
+    pub agents: web::Data<Mutex<AgentMap>>,
 }
 
 impl Curator {
     pub fn start() -> Result<Self> {
-        let agents: HashMap<String, Agent> = HashMap::new();
+        let agents: AgentMap = HashMap::new();
         let agents = web::Data::new(Mutex::new(agents));
         let executions = web::Data::new(Mutex::new(Executions::default()));
 
@@ -192,13 +202,17 @@ impl Curator {
     }
 }
 
-async fn agent_ping(agent: web::Json<agent::Agent>) -> impl Responder {
+async fn agent_ping(agent: web::Json<agent::Agent>, agents: web::Data<Mutex<AgentMap>>) -> impl Responder {
+    let mut agents = agents.lock().unwrap();
+    if let Some(agent) = agents.get_mut(&agent.name) {
+        agent.ping_recevied();
+    }
     HttpResponse::Ok()
 }
 
 async fn agent_connected(
     new_agent: web::Json<agent::Agent>,
-    agents: web::Data<Mutex<HashMap<String, Agent>>>,
+    agents: web::Data<Mutex<AgentMap>>,
 ) -> impl Responder {
     let mut agents = agents.lock().unwrap();
 
@@ -302,7 +316,7 @@ async fn list_executions(executions: web::Data<Mutex<Executions>>) -> impl Respo
     HttpResponse::Ok().json(body)
 }
 
-async fn list_agents(agents: web::Data<Mutex<HashMap<String, Agent>>>) -> impl Responder {
+async fn list_agents(agents: web::Data<Mutex<AgentMap>>) -> impl Responder {
     let agents = agents.lock().unwrap();
 
     let agents = agents
@@ -318,7 +332,7 @@ async fn list_agents(agents: web::Data<Mutex<HashMap<String, Agent>>>) -> impl R
 
 async fn run_task(
     run_task: web::Json<client::RunTask>,
-    agents: web::Data<Mutex<HashMap<String, Agent>>>,
+    agents: web::Data<Mutex<AgentMap>>,
     executions: web::Data<Mutex<Executions>>,
 ) -> impl Responder {
     let mut agents = agents.lock().unwrap();
