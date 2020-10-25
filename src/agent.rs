@@ -41,6 +41,9 @@ pub struct SseClient {
 enum Errors {
     #[error("Error performing HTTP request to a Curator server")]
     HttpClient(http::Error),
+
+    #[error("Unexpected status code: {}", .0)]
+    UnexpectedStatusCode(http::StatusCode),
 }
 
 #[derive(Deserialize, Hash, PartialEq, Eq, Clone, Debug, Default)]
@@ -101,11 +104,7 @@ impl SseClient {
 
         let response = client.request(req).await?;
         if !response.status().is_success() {
-            bail!(format_err!(
-                "Client connect error: {} HTTP/{}",
-                uri,
-                response.status().as_u16()
-            ));
+            bail!(Errors::UnexpectedStatusCode(response.status()));
         }
 
         Ok(Self {
@@ -294,37 +293,60 @@ impl AgentLoop {
 
             loop {
                 let mut on_message = client.next_event().boxed().fuse();
+                let mut ping_timeout = delay_for(Duration::from_secs(2)).boxed().fuse();
 
                 select! {
+                    // Handling new incoming message
                     msg = on_message => {
                         match msg {
-                            Ok(msg) => {
-                                if let Some(msg) = msg {
-                                    trace!("Incoming message...");
-                                    self.process_message(&msg);
-                                } else {
-                                    trace!("Stream ended. Trying to reconnect");
-                                    delay_for(Duration::from_secs(1)).await;
-                                    break;
-                                }
+                            Ok(Some(msg)) => {
+                                self.process_message(&msg);
                             },
+                            Ok(None) => {
+                                trace!("Stream ended. Trying to reconnect");
+                                break;
+                            }
                             Err(e) => {
                                 trace!("Error from the upstream: {}", e);
-                                delay_for(Duration::from_secs(1)).await;
                                 break;
                             }
                         }
                     },
+
+                    // pinging server back to report agent is alive
+                    _ = ping_timeout => {
+                        if let Err(e) = self.ping_server(&agent).await {
+                            warn!("Unable to ping server: {}", e);
+                            break;
+                        }
+                    },
+
                     _ = on_close => {
                         trace!("Close signal received. Exiting");
                         return Ok(());
                     }
                 }
             }
+            delay_for(Duration::from_secs(1)).await;
         }
     }
 
+    async fn ping_server(&self, agent: &agent::Agent) -> Result<()> {
+        trace!("Ping server");
+        let client = Client::new();
+        let json = serde_json::to_string(&agent)?;
+        let report = Request::post(format!("{}/backend/ping", self.uri))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json));
+        let response = client.request(report?).await?;
+        if !response.status().is_success() {
+            bail!(Errors::UnexpectedStatusCode(response.status()));
+        }
+        Ok(())
+    }
+
     fn process_message(&self, event: &SseEvent) {
+        trace!("Incoming message...");
         let (name, event) = event;
         match name {
             Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {

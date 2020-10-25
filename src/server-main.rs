@@ -4,9 +4,10 @@ extern crate curator;
 use std::{
     sync::atomic::{AtomicBool, Ordering},
     sync::Arc,
-    thread,
     time::Duration,
 };
+
+use tokio::time::delay_for;
 
 use curator::{prelude::*, server::Curator};
 
@@ -23,7 +24,7 @@ async fn main() -> Result<()> {
 
     let curator = Curator::start()?;
     while running.load(Ordering::SeqCst) {
-        thread::sleep(Duration::from_millis(100));
+        delay_for(Duration::from_millis(100)).await;
     }
     println!("Got Ctrl-C! Shuting down...");
     curator.stop(true).await;

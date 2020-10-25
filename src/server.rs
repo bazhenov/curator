@@ -4,6 +4,7 @@ use std::{
     io::{self, Write},
     path::Path,
     sync::Mutex,
+    time::{Duration, Instant},
 };
 
 use actix_files::NamedFile;
@@ -15,7 +16,10 @@ use actix_web::{
 use bytes::Bytes;
 use futures::StreamExt;
 use serde::Deserialize;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use tokio::{
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    time::delay_for,
+};
 use uuid::Uuid;
 
 use crate::{agent::SseEvent, prelude::*, protocol::*};
@@ -61,10 +65,25 @@ type ServerResult<T> = std::result::Result<T, ServerError>;
 pub struct Agent {
     pub name: String,
     pub tasks: Vec<Task>,
-    channel: UnboundedSender<io::Result<Bytes>>,
+    tx: UnboundedSender<io::Result<Bytes>>,
+    // last heartbeat timestamp
+    hb: Instant,
 }
 
 impl Agent {
+    fn new(name: String, tasks: Vec<Task>) -> (Self, UnboundedReceiver<io::Result<Bytes>>) {
+        let (tx, rx) = unbounded_channel();
+        (
+            Self {
+                name,
+                tasks,
+                tx,
+                hb: Instant::now(),
+            },
+            rx,
+        )
+    }
+
     fn send_named_event<T>(&self, name: &str, event: &T) -> Result<()>
     where
         T: serde::Serialize,
@@ -91,7 +110,7 @@ impl Agent {
     where
         Bytes: From<T>,
     {
-        self.channel
+        self.tx
             .send(Ok(Bytes::from(data)))
             .context("Failed while send message to SSE-channel")
             .map_err(Into::into)
@@ -108,7 +127,8 @@ pub struct Curator {
 
 impl Curator {
     pub fn start() -> Result<Self> {
-        let agents = web::Data::new(Mutex::new(HashMap::new()));
+        let agents: HashMap<String, Agent> = HashMap::new();
+        let agents = web::Data::new(Mutex::new(agents));
         let executions = web::Data::new(Mutex::new(Executions::default()));
 
         let app = {
@@ -119,6 +139,7 @@ impl Curator {
                     .app_data(agents.clone())
                     .app_data(executions.clone())
                     .route("/backend/events", web::post().to(agent_connected))
+                    .route("/backend/ping", web::post().to(agent_ping))
                     .route("/backend/task/run", web::post().to(run_task))
                     .route("/backend/execution/report", web::post().to(report_task))
                     .route(
@@ -139,6 +160,18 @@ impl Curator {
             .bind("0.0.0.0:8080")?
             .run();
 
+        {
+            let agents = agents.clone();
+            tokio::spawn(async move {
+                loop {
+                    delay_for(Duration::from_secs(2)).await;
+                    trace!("Running cleanup...");
+                    let mut agents = agents.lock().unwrap();
+                    agents.retain(|_, agent| agent.hb.elapsed().as_secs() < 6);
+                }
+            });
+        }
+
         Ok(Self { server, agents })
     }
 
@@ -147,7 +180,6 @@ impl Curator {
         agents.retain(|_, agent| {
             if let Err(e) = agent.send_event(&event) {
                 error!("{}", e);
-
                 false
             } else {
                 true
@@ -160,21 +192,20 @@ impl Curator {
     }
 }
 
+async fn agent_ping(agent: web::Json<agent::Agent>) -> impl Responder {
+    HttpResponse::Ok()
+}
+
 async fn agent_connected(
     new_agent: web::Json<agent::Agent>,
     agents: web::Data<Mutex<HashMap<String, Agent>>>,
 ) -> impl Responder {
-    let (tx, rx) = unbounded_channel();
     let mut agents = agents.lock().unwrap();
 
     let new_agent = new_agent.into_inner();
     let tasks = new_agent.tasks.clone();
 
-    let agent = Agent {
-        name: new_agent.name,
-        channel: tx,
-        tasks,
-    };
+    let (agent, rx) = Agent::new(new_agent.name, tasks);
 
     info!("New agent connected: {}", agent.name);
     agents.insert(agent.name.clone(), agent);
