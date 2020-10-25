@@ -12,7 +12,7 @@ pub mod agent {
 
     pub const RUN_TASK_EVENT_NAME: &str = "run-task";
 
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     pub struct Agent {
         pub name: String,
         pub tasks: Vec<Task>,

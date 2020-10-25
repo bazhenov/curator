@@ -63,26 +63,28 @@ impl ResponseError for ServerError {
 type ServerResult<T> = std::result::Result<T, ServerError>;
 type AgentMap = HashMap<String, Agent>;
 
-pub struct Agent {
-    pub name: String,
-    pub tasks: Vec<Task>,
+struct Agent {
+    info: agent::Agent,
     tx: UnboundedSender<io::Result<Bytes>>,
     // last heartbeat timestamp
     hb: Instant,
 }
 
 impl Agent {
-    fn new(name: String, tasks: Vec<Task>) -> (Self, UnboundedReceiver<io::Result<Bytes>>) {
+    fn new(info: agent::Agent) -> (Self, UnboundedReceiver<io::Result<Bytes>>) {
         let (tx, rx) = unbounded_channel();
         (
             Self {
-                name,
-                tasks,
+                info,
                 tx,
                 hb: Instant::now(),
             },
             rx,
         )
+    }
+
+    fn find_task(&self, task_id: &str) -> Option<&Task> {
+        self.info.tasks.iter().find(|t| t.id == task_id)
     }
 
     fn send_named_event<T>(&self, name: &str, event: &T) -> Result<()>
@@ -107,7 +109,7 @@ impl Agent {
     }
 
     /// Updates heartbeat time on an agent
-    /// 
+    ///
     /// Hearbeats required to remove stalled agents becasue SSE doesn't allow to track client disconnection
     /// without sending messages to client. Moreover even sending messages to client doesn't provide time bounds
     /// for stale agent detection because local TCP stack can buffer outgoing messages for quite a while.
@@ -135,7 +137,7 @@ const HEARTBEAT_TIMEOUT_SEC: u64 = 6;
 
 pub struct Curator {
     server: actix_server::Server,
-    pub agents: web::Data<Mutex<AgentMap>>,
+    agents: web::Data<Mutex<AgentMap>>,
 }
 
 impl Curator {
@@ -205,7 +207,10 @@ impl Curator {
     }
 }
 
-async fn agent_heartbeat(agent: web::Json<agent::Agent>, agents: web::Data<Mutex<AgentMap>>) -> impl Responder {
+async fn agent_heartbeat(
+    agent: web::Json<agent::Agent>,
+    agents: web::Data<Mutex<AgentMap>>,
+) -> impl Responder {
     let mut agents = agents.lock().unwrap();
     if let Some(agent) = agents.get_mut(&agent.name) {
         agent.heartbeat_recevied();
@@ -220,12 +225,11 @@ async fn agent_connected(
     let mut agents = agents.lock().unwrap();
 
     let new_agent = new_agent.into_inner();
-    let tasks = new_agent.tasks.clone();
 
-    let (agent, rx) = Agent::new(new_agent.name, tasks);
+    let (agent, rx) = Agent::new(new_agent);
 
-    info!("New agent connected: {}", agent.name);
-    agents.insert(agent.name.clone(), agent);
+    info!("New agent connected: {}", agent.info.name);
+    agents.insert(agent.info.name.clone(), agent);
 
     HttpResponse::Ok()
         .header("Content-Type", "text/event-stream")
@@ -322,13 +326,7 @@ async fn list_executions(executions: web::Data<Mutex<Executions>>) -> impl Respo
 async fn list_agents(agents: web::Data<Mutex<AgentMap>>) -> impl Responder {
     let agents = agents.lock().unwrap();
 
-    let agents = agents
-        .values()
-        .map(|a| agent::Agent {
-            name: a.name.clone(),
-            tasks: a.tasks.clone(),
-        })
-        .collect::<Vec<_>>();
+    let agents = agents.values().map(|a| a.info.clone()).collect::<Vec<_>>();
 
     HttpResponse::Ok().json(agents)
 }
@@ -341,9 +339,7 @@ async fn run_task(
     let mut agents = agents.lock().unwrap();
 
     if let Some(agent) = agents.get(&run_task.agent) {
-        let chosen_task = agent.tasks.iter().find(|t| t.id == run_task.task_id);
-
-        if let Some(task) = chosen_task {
+        if let Some(task) = agent.find_task(&run_task.task_id) {
             let execution_id = Uuid::new_v4();
             let result = agent.send_named_event(
                 agent::RUN_TASK_EVENT_NAME,
