@@ -4,6 +4,7 @@ use std::{
     io::{self, Write},
     path::Path,
     sync::Mutex,
+    time::{Duration, Instant},
 };
 
 use actix_files::NamedFile;
@@ -15,7 +16,10 @@ use actix_web::{
 use bytes::Bytes;
 use futures::StreamExt;
 use serde::Deserialize;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use tokio::{
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    time::delay_for,
+};
 use uuid::Uuid;
 
 use crate::{agent::SseEvent, prelude::*, protocol::*};
@@ -57,14 +61,30 @@ impl ResponseError for ServerError {
 
 /// Controller specific Result-type. Error type can be turned into HTTP error
 type ServerResult<T> = std::result::Result<T, ServerError>;
+type AgentMap = HashMap<String, Agent>;
 
 pub struct Agent {
     pub name: String,
     pub tasks: Vec<Task>,
-    channel: UnboundedSender<io::Result<Bytes>>,
+    tx: UnboundedSender<io::Result<Bytes>>,
+    // last heartbeat timestamp
+    hb: Instant,
 }
 
 impl Agent {
+    fn new(name: String, tasks: Vec<Task>) -> (Self, UnboundedReceiver<io::Result<Bytes>>) {
+        let (tx, rx) = unbounded_channel();
+        (
+            Self {
+                name,
+                tasks,
+                tx,
+                hb: Instant::now(),
+            },
+            rx,
+        )
+    }
+
     fn send_named_event<T>(&self, name: &str, event: &T) -> Result<()>
     where
         T: serde::Serialize,
@@ -86,12 +106,21 @@ impl Agent {
         Ok(())
     }
 
+    /// Updates heartbeat time on an agent
+    /// 
+    /// Hearbeats required to remove stalled agents becasue SSE doesn't allow to track client disconnection
+    /// without sending messages to client. Moreover even sending messages to client doesn't provide time bounds
+    /// for stale agent detection because local TCP stack can buffer outgoing messages for quite a while.
+    fn heartbeat_recevied(&mut self) {
+        self.hb = Instant::now();
+    }
+
     #[inline]
     fn send<T>(&self, data: T) -> Result<()>
     where
         Bytes: From<T>,
     {
-        self.channel
+        self.tx
             .send(Ok(Bytes::from(data)))
             .context("Failed while send message to SSE-channel")
             .map_err(Into::into)
@@ -101,14 +130,18 @@ impl Agent {
 #[derive(Default)]
 struct Executions(HashMap<Uuid, client::Execution>);
 
+const CLEANUP_INTERVAL_SEC: u64 = 2;
+const HEARTBEAT_TIMEOUT_SEC: u64 = 6;
+
 pub struct Curator {
     server: actix_server::Server,
-    pub agents: web::Data<Mutex<HashMap<String, Agent>>>,
+    pub agents: web::Data<Mutex<AgentMap>>,
 }
 
 impl Curator {
     pub fn start() -> Result<Self> {
-        let agents = web::Data::new(Mutex::new(HashMap::new()));
+        let agents: AgentMap = HashMap::new();
+        let agents = web::Data::new(Mutex::new(agents));
         let executions = web::Data::new(Mutex::new(Executions::default()));
 
         let app = {
@@ -119,6 +152,7 @@ impl Curator {
                     .app_data(agents.clone())
                     .app_data(executions.clone())
                     .route("/backend/events", web::post().to(agent_connected))
+                    .route("/backend/hb", web::post().to(agent_heartbeat))
                     .route("/backend/task/run", web::post().to(run_task))
                     .route("/backend/execution/report", web::post().to(report_task))
                     .route(
@@ -139,6 +173,18 @@ impl Curator {
             .bind("0.0.0.0:8080")?
             .run();
 
+        {
+            let agents = agents.clone();
+            tokio::spawn(async move {
+                loop {
+                    delay_for(Duration::from_secs(CLEANUP_INTERVAL_SEC)).await;
+                    trace!("Running cleanup...");
+                    let mut agents = agents.lock().unwrap();
+                    agents.retain(|_, agent| agent.hb.elapsed().as_secs() < HEARTBEAT_TIMEOUT_SEC);
+                }
+            });
+        }
+
         Ok(Self { server, agents })
     }
 
@@ -147,7 +193,6 @@ impl Curator {
         agents.retain(|_, agent| {
             if let Err(e) = agent.send_event(&event) {
                 error!("{}", e);
-
                 false
             } else {
                 true
@@ -160,21 +205,24 @@ impl Curator {
     }
 }
 
+async fn agent_heartbeat(agent: web::Json<agent::Agent>, agents: web::Data<Mutex<AgentMap>>) -> impl Responder {
+    let mut agents = agents.lock().unwrap();
+    if let Some(agent) = agents.get_mut(&agent.name) {
+        agent.heartbeat_recevied();
+    }
+    HttpResponse::Ok()
+}
+
 async fn agent_connected(
     new_agent: web::Json<agent::Agent>,
-    agents: web::Data<Mutex<HashMap<String, Agent>>>,
+    agents: web::Data<Mutex<AgentMap>>,
 ) -> impl Responder {
-    let (tx, rx) = unbounded_channel();
     let mut agents = agents.lock().unwrap();
 
     let new_agent = new_agent.into_inner();
     let tasks = new_agent.tasks.clone();
 
-    let agent = Agent {
-        name: new_agent.name,
-        channel: tx,
-        tasks,
-    };
+    let (agent, rx) = Agent::new(new_agent.name, tasks);
 
     info!("New agent connected: {}", agent.name);
     agents.insert(agent.name.clone(), agent);
@@ -271,7 +319,7 @@ async fn list_executions(executions: web::Data<Mutex<Executions>>) -> impl Respo
     HttpResponse::Ok().json(body)
 }
 
-async fn list_agents(agents: web::Data<Mutex<HashMap<String, Agent>>>) -> impl Responder {
+async fn list_agents(agents: web::Data<Mutex<AgentMap>>) -> impl Responder {
     let agents = agents.lock().unwrap();
 
     let agents = agents
@@ -287,7 +335,7 @@ async fn list_agents(agents: web::Data<Mutex<HashMap<String, Agent>>>) -> impl R
 
 async fn run_task(
     run_task: web::Json<client::RunTask>,
-    agents: web::Data<Mutex<HashMap<String, Agent>>>,
+    agents: web::Data<Mutex<AgentMap>>,
     executions: web::Data<Mutex<Executions>>,
 ) -> impl Responder {
     let mut agents = agents.lock().unwrap();
