@@ -111,7 +111,7 @@ impl Agent {
     /// Hearbeats required to remove stalled agents becasue SSE doesn't allow to track client disconnection
     /// without sending messages to client. Moreover even sending messages to client doesn't provide time bounds
     /// for stale agent detection because local TCP stack can buffer outgoing messages for quite a while.
-    fn ping_recevied(&mut self) {
+    fn heartbeat_recevied(&mut self) {
         self.hb = Instant::now();
     }
 
@@ -129,6 +129,9 @@ impl Agent {
 
 #[derive(Default)]
 struct Executions(HashMap<Uuid, client::Execution>);
+
+const CLEANUP_INTERVAL_SEC: u64 = 2;
+const HEARTBEAT_TIMEOUT_SEC: u64 = 6;
 
 pub struct Curator {
     server: actix_server::Server,
@@ -149,7 +152,7 @@ impl Curator {
                     .app_data(agents.clone())
                     .app_data(executions.clone())
                     .route("/backend/events", web::post().to(agent_connected))
-                    .route("/backend/ping", web::post().to(agent_ping))
+                    .route("/backend/hb", web::post().to(agent_heartbeat))
                     .route("/backend/task/run", web::post().to(run_task))
                     .route("/backend/execution/report", web::post().to(report_task))
                     .route(
@@ -174,10 +177,10 @@ impl Curator {
             let agents = agents.clone();
             tokio::spawn(async move {
                 loop {
-                    delay_for(Duration::from_secs(2)).await;
+                    delay_for(Duration::from_secs(CLEANUP_INTERVAL_SEC)).await;
                     trace!("Running cleanup...");
                     let mut agents = agents.lock().unwrap();
-                    agents.retain(|_, agent| agent.hb.elapsed().as_secs() < 6);
+                    agents.retain(|_, agent| agent.hb.elapsed().as_secs() < HEARTBEAT_TIMEOUT_SEC);
                 }
             });
         }
@@ -202,10 +205,10 @@ impl Curator {
     }
 }
 
-async fn agent_ping(agent: web::Json<agent::Agent>, agents: web::Data<Mutex<AgentMap>>) -> impl Responder {
+async fn agent_heartbeat(agent: web::Json<agent::Agent>, agents: web::Data<Mutex<AgentMap>>) -> impl Responder {
     let mut agents = agents.lock().unwrap();
     if let Some(agent) = agents.get_mut(&agent.name) {
-        agent.ping_recevied();
+        agent.heartbeat_recevied();
     }
     HttpResponse::Ok()
 }

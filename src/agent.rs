@@ -293,7 +293,7 @@ impl AgentLoop {
 
             loop {
                 let mut on_message = client.next_event().boxed().fuse();
-                let mut ping_timeout = delay_for(Duration::from_secs(2)).boxed().fuse();
+                let mut heartbeat_timeout = delay_for(Duration::from_secs(2)).boxed().fuse();
 
                 select! {
                     // Handling new incoming message
@@ -313,9 +313,9 @@ impl AgentLoop {
                         }
                     },
 
-                    // pinging server back to report agent is alive
-                    _ = ping_timeout => {
-                        if let Err(e) = self.ping_server(&agent).await {
+                    // ping server back to report agent is alive
+                    _ = heartbeat_timeout => {
+                        if let Err(e) = self.heartbeat_server(&agent).await {
                             warn!("Unable to ping server: {}", e);
                             break;
                         }
@@ -331,11 +331,11 @@ impl AgentLoop {
         }
     }
 
-    async fn ping_server(&self, agent: &agent::Agent) -> Result<()> {
-        trace!("Ping server");
+    async fn heartbeat_server(&self, agent: &agent::Agent) -> Result<()> {
+        trace!("Sending heartbeat");
         let client = Client::new();
         let json = serde_json::to_string(&agent)?;
-        let report = Request::post(format!("{}/backend/ping", self.uri))
+        let report = Request::post(format!("{}/backend/hb", self.uri))
             .header(CONTENT_TYPE, "application/json")
             .body(Body::from(json));
         let response = client.request(report?).await?;
