@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use bollard::Docker;
 use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
@@ -28,6 +29,31 @@ use tokio::{
     try_join,
 };
 use uuid::Uuid;
+
+pub struct Toolchain {
+    pub image: String,
+    pub version: String,
+}
+
+impl From<(&str, &str)> for Toolchain {
+    fn from(input: (&str, &str)) -> Self {
+        Toolchain {
+            image: input.0.into(),
+            version: input.1.into(),
+        }
+    }
+}
+
+/// Discovery process implemented as follows:
+///
+/// * `/discover` executable is run over given container
+/// * executable should return a vector of [TaskDef] in `ndjson` format
+pub async fn run_docker_discovery(
+    docker: &Docker,
+    toolchains: &[Toolchain],
+) -> Result<Vec<TaskDef>> {
+    Ok(vec![])
+}
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
 pub type SseEvent = (Option<String>, String);

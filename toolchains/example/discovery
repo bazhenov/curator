@@ -1,0 +1,7 @@
+#!/bin/bash
+
+PIDS="$(ps -o pid | tail -n +1)"
+for PID in $(PIDS)
+do
+  echo "$PID"
+done

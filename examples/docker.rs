@@ -18,15 +18,11 @@ async fn main() -> Result<()> {
         ..Default::default()
     };
 
-    let container = docker
-        .create_container::<&str, _>(None, config)
-        .await?;
+    let container = docker.create_container::<&str, _>(None, config).await?;
 
     println!("Container id: {}", container.id);
 
-    docker
-        .start_container::<&str>(&container.id, None)
-        .await?;
+    docker.start_container::<&str>(&container.id, None).await?;
 
     let options = Some(LogsOptions::<String> {
         stdout: true,
