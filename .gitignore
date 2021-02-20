@@ -4,3 +4,4 @@
 *.iid
 /.cargo
 /frontend/.env
+/toolchains/*/cid

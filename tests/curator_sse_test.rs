@@ -5,14 +5,11 @@ use curator::prelude::*;
 use curator::protocol;
 use curator::server::Curator;
 
-use anyhow::Error;
 use bollard::{
     container::{Config, RemoveContainerOptions},
     Docker,
 };
 use curator::agent::{run_docker_discovery, Toolchain};
-use futures::executor::block_on;
-use tokio::runtime::Runtime;
 
 use rstest::*;
 

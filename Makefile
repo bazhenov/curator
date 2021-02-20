@@ -8,3 +8,9 @@
 
 images:
 	COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build
+
+toolchains/%/cid:
+	docker build --iidfile "$@" "$(@D)"
+
+run-toolchain-%: toolchains/%/cid
+	docker run --rm -it `cat "$<"`

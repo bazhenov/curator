@@ -1,7 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 
-PIDS="$(ps -o pid | tail -n +1)"
-for PID in $(PIDS)
+PIDS="$(ps -o pid | awk '{print $1}' | tail -n +2)"
+for PID in $PIDS
 do
-  echo "$PID"
+  cat << EOF
+{"id":"lsof.$PID","command":"lsof","args":["-p",$PID]}
+EOF
 done
