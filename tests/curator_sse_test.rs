@@ -1,14 +1,12 @@
 extern crate curator;
 
+use curator::agent::docker::Container;
 use curator::agent::SseClient;
 use curator::prelude::*;
 use curator::protocol;
 use curator::server::Curator;
 
-use bollard::{
-    container::{Config, RemoveContainerOptions},
-    Docker,
-};
+use bollard::Docker;
 use curator::agent::{run_docker_discovery, Toolchain};
 
 use rstest::*;
@@ -45,59 +43,15 @@ fn docker() -> Docker {
 #[rstest]
 #[actix_rt::test]
 async fn docker_discovery_test(docker: Docker) -> Result<()> {
-    let toolchains = vec![Toolchain::from(("alpine", "3.12"))];
+    let toolchains = vec![Toolchain::from((
+        "bazhenov.me/curator/toolchain-example",
+        "dev",
+    ))];
 
-    let container = Container::start(&docker).await?;
+    let container = Container::start(&docker, "openjdk:11.0-jdk", Some(vec!["date"])).await?;
     container.stop().await?;
 
-    //run_docker_discovery(&docker, &toolchains).await?;
+    run_docker_discovery(&docker, &toolchains).await?;
 
     Ok(())
-}
-
-struct Container<'a> {
-    docker: &'a Docker,
-    container_id: String,
-}
-
-impl<'a> Container<'a> {
-    async fn start(docker: &'a Docker) -> Result<Container<'a>> {
-        let config = Config {
-            image: Some("openjdk:11.0-jdk"),
-            cmd: Some(vec!["date"]),
-            ..Default::default()
-        };
-
-        let container = docker.create_container::<&str, _>(None, config);
-        let container_id = container.await?.id;
-        docker.start_container::<&str>(&container_id, None).await?;
-
-        Ok(Container {
-            docker,
-            container_id,
-        })
-    }
-
-    async fn stop(&self) -> Result<()> {
-        let options = RemoveContainerOptions {
-            force: true,
-            ..Default::default()
-        };
-        self.docker
-            .remove_container(&self.container_id, Some(options))
-            .await?;
-        Ok(())
-    }
-}
-
-impl<'a> Drop for Container<'a> {
-    fn drop(&mut self) {
-        // let options = RemoveContainerOptions {
-        //     force: true,
-        //     ..Default::default()
-        // };
-        // let future = self.docker
-        //     .remove_container(&self.container_id, Some(options));
-        // block_on(future).expect("Unable to stop container");
-    }
 }

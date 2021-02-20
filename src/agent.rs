@@ -44,9 +44,57 @@ impl From<(&str, &str)> for Toolchain {
     }
 }
 
+pub mod docker {
+    use crate::prelude::*;
+    use bollard::{
+        container::{Config, RemoveContainerOptions},
+        Docker,
+    };
+
+    pub struct Container<'a> {
+        docker: &'a Docker,
+        container_id: String,
+    }
+
+    impl<'a> Container<'a> {
+        pub async fn start(
+            docker: &'a Docker,
+            image: &str,
+            command: Option<Vec<&str>>,
+        ) -> Result<Container<'a>> {
+            let config = Config {
+                image: Some(image),
+                cmd: command,
+                ..Default::default()
+            };
+
+            let container = docker.create_container::<&str, _>(None, config);
+            let container_id = container.await?.id;
+            docker.start_container::<&str>(&container_id, None).await?;
+
+            Ok(Container {
+                docker,
+                container_id,
+            })
+        }
+
+        pub async fn stop(&self) -> Result<()> {
+            let options = RemoveContainerOptions {
+                force: true,
+                ..Default::default()
+            };
+            self.docker
+                .remove_container(&self.container_id, Some(options))
+                .await?;
+            Ok(())
+        }
+    }
+}
+
 /// Discovery process implemented as follows:
 ///
-/// * `/discover` executable is run over given container
+/// * each toolchain container `/discover` executable is run;
+/// * pid namespace is shared between toolchain and target containers;
 /// * executable should return a vector of [TaskDef] in `ndjson` format
 pub async fn run_docker_discovery(
     docker: &Docker,
