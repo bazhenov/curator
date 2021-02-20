@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use bollard::Docker;
+use docker::Container;
 use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
@@ -30,26 +31,19 @@ use tokio::{
 };
 use uuid::Uuid;
 
-pub struct Toolchain {
-    pub image: String,
-    pub version: String,
-}
-
-impl From<(&str, &str)> for Toolchain {
-    fn from(input: (&str, &str)) -> Self {
-        Toolchain {
-            image: input.0.into(),
-            version: input.1.into(),
-        }
-    }
-}
-
 pub mod docker {
     use crate::prelude::*;
     use bollard::{
-        container::{Config, RemoveContainerOptions},
+        container::{Config, RemoveContainerOptions, WaitContainerOptions},
         Docker,
     };
+    use futures::StreamExt;
+
+    #[derive(Error, Debug)]
+    enum Errors {
+        #[error("Container exit code code is non zero")]
+        ContainerNonZeroExitCode(i64),
+    }
 
     pub struct Container<'a> {
         docker: &'a Docker,
@@ -78,7 +72,15 @@ pub mod docker {
             })
         }
 
-        pub async fn stop(&self) -> Result<()> {
+        pub async fn check_status_code_and_remove(&self) -> Result<()> {
+            let options = WaitContainerOptions {
+                condition: "not-running",
+            };
+            let response = self
+                .docker
+                .wait_container(&self.container_id, Some(options))
+                .next()
+                .await;
             let options = RemoveContainerOptions {
                 force: true,
                 ..Default::default()
@@ -86,6 +88,14 @@ pub mod docker {
             self.docker
                 .remove_container(&self.container_id, Some(options))
                 .await?;
+
+            // Unwrapping wait_container() response only after deleteing the container, so no dangling containers
+            // are left in the system
+            let response = response.expect("wait_container() failed")?;
+            if response.status_code != 0 {
+                bail!(Errors::ContainerNonZeroExitCode(response.status_code));
+            }
+
             Ok(())
         }
     }
@@ -98,8 +108,14 @@ pub mod docker {
 /// * executable should return a vector of [TaskDef] in `ndjson` format
 pub async fn run_docker_discovery(
     docker: &Docker,
-    toolchains: &[Toolchain],
+    toolchain_images: &[&str],
 ) -> Result<Vec<TaskDef>> {
+    for image in toolchain_images {
+        let c = Container::start(docker, &image, Some(vec!["/discover"])).await?;
+
+        c.check_status_code_and_remove().await?;
+    }
+
     Ok(vec![])
 }
 

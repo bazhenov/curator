@@ -7,7 +7,7 @@ use curator::protocol;
 use curator::server::Curator;
 
 use bollard::Docker;
-use curator::agent::{run_docker_discovery, Toolchain};
+use curator::agent::run_docker_discovery;
 
 use rstest::*;
 
@@ -43,13 +43,10 @@ fn docker() -> Docker {
 #[rstest]
 #[actix_rt::test]
 async fn docker_discovery_test(docker: Docker) -> Result<()> {
-    let toolchains = vec![Toolchain::from((
-        "bazhenov.me/curator/toolchain-example",
-        "dev",
-    ))];
+    let toolchains = vec!["bazhenov.me/curator/toolchain-example:dev"];
 
     let container = Container::start(&docker, "openjdk:11.0-jdk", Some(vec!["date"])).await?;
-    container.stop().await?;
+    container.check_status_code_and_remove().await?;
 
     run_docker_discovery(&docker, &toolchains).await?;
 

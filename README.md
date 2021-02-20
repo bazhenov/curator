@@ -13,11 +13,11 @@ docker-compose up
 Making toolchain images:
 
 ```
-make toolchains/[name]/cid
+make toolchains/[name]
 ```
 
 Running toolchain:
 
 ```
-make run-toolchain-[name]
+docker run -it bazhenov.me/curator/toolchain-[name]:dev
 ```

@@ -9,8 +9,7 @@
 images:
 	COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build
 
-toolchains/%/cid:
-	docker build --iidfile "$@" "$(@D)"
-
-run-toolchain-%: toolchains/%/cid
-	docker run --rm -it `cat "$<"`
+toolchains/%:
+	$(eval IMAGE_ID = bazhenov.me/curator/toolchain-$(@F):dev)
+	docker build -t "$(IMAGE_ID)" "$@"
+	@echo Toolchain container available as $(IMAGE_ID)
