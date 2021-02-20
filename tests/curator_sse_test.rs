@@ -48,7 +48,8 @@ async fn docker_discovery_test(docker: Docker) -> Result<()> {
     let container = Container::start(&docker, "openjdk:11.0-jdk", Some(vec!["date"])).await?;
     container.check_status_code_and_remove().await?;
 
-    run_docker_discovery(&docker, &toolchains).await?;
+    let task_defs = run_docker_discovery(&docker, &toolchains).await?;
+    assert!(task_defs.len() > 0);
 
     Ok(())
 }

@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use bollard::Docker;
-use docker::Container;
 use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
@@ -32,12 +30,14 @@ use tokio::{
 use uuid::Uuid;
 
 pub mod docker {
+    use crate::agent::TaskDef;
     use crate::prelude::*;
     use bollard::{
-        container::{Config, RemoveContainerOptions, WaitContainerOptions},
+        container::{Config, LogOutput, LogsOptions, RemoveContainerOptions, WaitContainerOptions},
         Docker,
     };
-    use futures::StreamExt;
+    use futures::{stream::Stream, StreamExt};
+    use hyper::body::Bytes;
 
     #[derive(Error, Debug)]
     enum Errors {
@@ -72,6 +72,17 @@ pub mod docker {
             })
         }
 
+        pub async fn read_stdout(&self) -> impl Stream<Item = Result<LogOutput>> {
+            let options = Some(LogsOptions::<String> {
+                stdout: true,
+                ..Default::default()
+            });
+
+            self.docker
+                .logs(&self.container_id, options)
+                .map(|r| r.context("Failed reading container stdout"))
+        }
+
         pub async fn check_status_code_and_remove(&self) -> Result<()> {
             let options = WaitContainerOptions {
                 condition: "not-running",
@@ -99,24 +110,45 @@ pub mod docker {
             Ok(())
         }
     }
-}
 
-/// Discovery process implemented as follows:
-///
-/// * each toolchain container `/discover` executable is run;
-/// * pid namespace is shared between toolchain and target containers;
-/// * executable should return a vector of [TaskDef] in `ndjson` format
-pub async fn run_docker_discovery(
-    docker: &Docker,
-    toolchain_images: &[&str],
-) -> Result<Vec<TaskDef>> {
-    for image in toolchain_images {
-        let c = Container::start(docker, &image, Some(vec!["/discover"])).await?;
+    /// Discovery process implemented as follows:
+    ///
+    /// * each toolchain container `/discover` executable is run;
+    /// * pid namespace is shared between toolchain and target containers;
+    /// * executable should return a vector of [TaskDef] in `ndjson` format
+    pub async fn run_docker_discovery(
+        docker: &Docker,
+        toolchain_images: &[&str],
+    ) -> Result<Vec<TaskDef>> {
+        for image in toolchain_images {
+            let c = Container::start(docker, &image, Some(vec!["/discover"])).await?;
 
-        c.check_status_code_and_remove().await?;
+            c.check_status_code_and_remove().await?;
+        }
+
+        Ok(vec![])
     }
 
-    Ok(vec![])
+    async fn run_toolchain_discovery(
+        docker: &Docker,
+        container: &str,
+        toolchain_image: &str,
+    ) -> Result<Vec<TaskDef>> {
+        use tokio_util::{
+            codec::{FramedRead, LinesCodec},
+            io::StreamReader,
+        };
+
+        let c = Container::start(docker, &toolchain_image, Some(vec!["/discover"])).await?;
+
+        // let reader = StreamReader::new(c.read_stdout().await);
+
+        // let framed = FramedRead::new(reader, LinesCodec::new());
+
+        c.check_status_code_and_remove().await?;
+
+        Ok(vec![])
+    }
 }
 
 /// Sse event is the tuple: event name and event content (fields `event` and `data` respectively)
