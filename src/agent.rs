@@ -1,9 +1,10 @@
 use crate::prelude::*;
-use futures::{future::FutureExt, select};
+use futures::{future::FutureExt, select, stream::StreamExt};
 use hyper::{
     body::HttpBody as _,
     header::{ACCEPT, CONTENT_TYPE},
-    http, Body, Client, Request, Response,
+    http, Body, Request, Response,
+    client::{Client, HttpConnector},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
@@ -19,15 +20,15 @@ use std::{
 };
 use tempdir::TempDir;
 use tokio::{
-    io::BufReader,
-    prelude::*,
+    io::{BufReader, AsyncRead, AsyncBufReadExt},
     process::{Child, ChildStderr, ChildStdout, Command},
-    stream::StreamExt,
     sync::{mpsc, Notify},
-    time::delay_for,
+    time::sleep,
     try_join,
 };
 use uuid::Uuid;
+
+type HttpClient = Client<HttpConnector, Body>;
 
 pub mod docker {
     use crate::agent::TaskDef;
@@ -214,7 +215,7 @@ impl TaskDef {
 
 impl SseClient {
     pub async fn connect<T: Serialize>(uri: &str, body: T) -> Result<Self> {
-        let client = Client::new();
+        let client = HttpClient::new();
 
         let json = serde_json::to_string(&body)?;
         let req = Request::builder()
@@ -339,7 +340,7 @@ pub struct CloseHandle(Arc<Notify>);
 
 impl Drop for CloseHandle {
     fn drop(&mut self) {
-        self.0.notify();
+        self.0.notify_one();
     }
 }
 
@@ -405,7 +406,7 @@ impl AgentLoop {
                     Ok(client) => Some(client),
                     Err(e) => {
                         log_errors(&e);
-                        delay_for(Duration::from_secs(5)).await;
+                        sleep(Duration::from_secs(5)).await;
                         None
                     }
                 }
@@ -415,7 +416,7 @@ impl AgentLoop {
 
             loop {
                 let mut on_message = client.next_event().boxed().fuse();
-                let mut heartbeat_timeout = delay_for(Duration::from_secs(2)).boxed().fuse();
+                let mut heartbeat_timeout = sleep(Duration::from_secs(2)).boxed().fuse();
 
                 select! {
                     // Handling new incoming message
@@ -449,13 +450,13 @@ impl AgentLoop {
                     }
                 }
             }
-            delay_for(Duration::from_secs(1)).await;
+            sleep(Duration::from_secs(1)).await;
         }
     }
 
     async fn heartbeat_server(&self, agent: &agent::Agent) -> Result<()> {
         trace!("Sending heartbeat");
-        let client = Client::new();
+        let client = HttpClient::new();
         let json = serde_json::to_string(&agent)?;
         let report = Request::post(format!("{}/backend/hb", self.uri))
             .header(CONTENT_TYPE, "application/json")
@@ -530,7 +531,7 @@ impl AgentLoop {
     ) -> Result<()> {
         use ChildProgress::*;
         use ExecutionStatus::*;
-        let client = Client::new();
+        let client = HttpClient::new();
 
         while let Some(progress) = rx.recv().await {
             let report = match &progress {
@@ -588,7 +589,7 @@ impl AgentLoop {
     async fn run_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) -> Result<()> {
         use ChildProgress::*;
 
-        let (child, stdout, stderr, work_dir) = task.spawn()?;
+        let (mut child, stdout, stderr, work_dir) = task.spawn()?;
         // work_dir should live until child completion, otherwise temporary directory will be removed
         let path = work_dir.path();
 
@@ -608,7 +609,7 @@ impl AgentLoop {
 
         try_join!(stdout_handle, stderr_handle)
             .context("Unable to process process stdin/stderr")?;
-        let status = child.await.context("Unable to read process status")?;
+        let status = child.wait().await.context("Unable to read process status")?;
 
         let progress_report = if let Some(code) = status.code() {
             trace!("Process exited with code {}", code);
@@ -644,12 +645,11 @@ impl AgentLoop {
 async fn write_stream_to_file<R: AsyncRead + Unpin, N: std::fmt::Debug>(
     r: R,
     mut file: File,
-    mut channel: mpsc::Sender<N>,
+    channel: mpsc::Sender<N>,
     f: impl Fn(String) -> N,
 ) -> Result<()> {
     let mut reader = BufReader::new(r).lines();
-    while let Some(line) = reader.next().await {
-        let mut line = line?;
+    while let Some(mut line) = reader.next_line().await? {
         line.push('\n');
         file.write_all(line.as_bytes()).unwrap();
         channel.send(f(line)).await.unwrap();
