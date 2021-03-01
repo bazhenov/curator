@@ -13,7 +13,7 @@ use std::{
     process::exit,
     time::Duration,
 };
-use tokio::time::delay_for;
+use tokio::time::sleep;
 
 #[tokio::main]
 async fn main() {
@@ -68,7 +68,7 @@ async fn run() -> Result<()> {
             // loop will be closed immediately
             _agent_loop = Some(AgentLoop::run(&host, agent_name, tasks));
         }
-        delay_for(Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(5)).await;
     }
 }
 

@@ -14,12 +14,12 @@ use actix_web::{
     http::StatusCode, middleware::Logger, web, App, HttpResponse, HttpServer, Responder,
 };
 use bytes::Bytes;
-use futures::StreamExt;
-use serde::Deserialize;
-use tokio::{
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    time::delay_for,
+use futures::{
+    channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
+    StreamExt,
 };
+use serde::Deserialize;
+use tokio::time::sleep;
 use uuid::Uuid;
 
 use crate::{agent::SseEvent, prelude::*, protocol::*};
@@ -72,7 +72,7 @@ struct Agent {
 
 impl Agent {
     fn new(info: agent::Agent) -> (Self, UnboundedReceiver<io::Result<Bytes>>) {
-        let (tx, rx) = unbounded_channel();
+        let (tx, rx) = unbounded();
         (
             Self {
                 info,
@@ -123,7 +123,7 @@ impl Agent {
         Bytes: From<T>,
     {
         self.tx
-            .send(Ok(Bytes::from(data)))
+            .unbounded_send(Ok(Bytes::from(data)))
             .context("Failed while send message to SSE-channel")
             .map_err(Into::into)
     }
@@ -179,7 +179,7 @@ impl Curator {
             let agents = agents.clone();
             tokio::spawn(async move {
                 loop {
-                    delay_for(Duration::from_secs(CLEANUP_INTERVAL_SEC)).await;
+                    sleep(Duration::from_secs(CLEANUP_INTERVAL_SEC)).await;
                     trace!("Running cleanup...");
                     let mut agents = agents.lock().unwrap();
                     agents.retain(|_, agent| agent.hb.elapsed().as_secs() < HEARTBEAT_TIMEOUT_SEC);
@@ -236,7 +236,6 @@ async fn agent_connected(
         .header("Cache-Control", "no-cache")
         // X-Accel-Buffering required for disable buffering on a nginx reverse proxy
         .header("X-Accel-Buffering", "no")
-        .no_chunking()
         .streaming(rx)
 }
 

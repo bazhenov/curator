@@ -1,10 +1,10 @@
 use crate::prelude::*;
-use futures::{future::FutureExt, select, stream::StreamExt};
+use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
+    client::{Client, HttpConnector},
     header::{ACCEPT, CONTENT_TYPE},
     http, Body, Request, Response,
-    client::{Client, HttpConnector},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
@@ -20,7 +20,7 @@ use std::{
 };
 use tempdir::TempDir;
 use tokio::{
-    io::{BufReader, AsyncRead, AsyncBufReadExt},
+    io::{AsyncBufReadExt, AsyncRead, BufReader},
     process::{Child, ChildStderr, ChildStdout, Command},
     sync::{mpsc, Notify},
     time::sleep,
@@ -38,7 +38,6 @@ pub mod docker {
         Docker,
     };
     use futures::{stream::Stream, StreamExt};
-    use hyper::body::Bytes;
 
     #[derive(Error, Debug)]
     enum Errors {
@@ -492,7 +491,7 @@ impl AgentLoop {
     fn spawn_and_track_task(&self, task_id: String, execution_id: Uuid) {
         use ChildProgress::*;
 
-        let (mut tx, rx) = mpsc::channel(100);
+        let (tx, rx) = mpsc::channel(100);
         tokio::spawn(Self::report_execution_back(
             self.uri.to_owned(),
             execution_id,
@@ -586,7 +585,7 @@ impl AgentLoop {
         Ok(())
     }
 
-    async fn run_task(task: TaskDef, mut tx: mpsc::Sender<ChildProgress>) -> Result<()> {
+    async fn run_task(task: TaskDef, tx: mpsc::Sender<ChildProgress>) -> Result<()> {
         use ChildProgress::*;
 
         let (mut child, stdout, stderr, work_dir) = task.spawn()?;
@@ -609,7 +608,10 @@ impl AgentLoop {
 
         try_join!(stdout_handle, stderr_handle)
             .context("Unable to process process stdin/stderr")?;
-        let status = child.wait().await.context("Unable to read process status")?;
+        let status = child
+            .wait()
+            .await
+            .context("Unable to read process status")?;
 
         let progress_report = if let Some(code) = status.code() {
             trace!("Process exited with code {}", code);
