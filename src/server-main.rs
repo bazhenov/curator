@@ -15,6 +15,8 @@ use curator::{prelude::*, server::Curator};
 async fn main() -> Result<()> {
     env_logger::init();
 
+    // Because of we are 2 versions of tokio (0.2 and 1.0) one of the
+    // Runtime should be started manually
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
