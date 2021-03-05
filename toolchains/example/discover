@@ -4,6 +4,6 @@ PIDS="$(ps -o pid | awk '{print $1}' | tail -n +2)"
 for PID in $PIDS
 do
   cat << EOF
-{"id":"lsof.$PID","command":"lsof","args":["-p",$PID]}
+{"id":"lsof.$PID","command":"lsof","args":["-p","$PID"]}
 EOF
 done

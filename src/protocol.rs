@@ -112,10 +112,7 @@ impl ExecutionStatus {
     pub fn is_terminal(self) -> bool {
         use ExecutionStatus::*;
 
-        match self {
-            REJECTED | COMPLETED | FAILED => true,
-            _ => false,
-        }
+        matches!(self, REJECTED | COMPLETED | FAILED)
     }
 
     pub fn from_unix_exit_code(exit_code: i32) -> Self {

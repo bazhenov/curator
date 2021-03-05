@@ -1,17 +1,16 @@
 extern crate curator;
 
-use curator::agent::docker::Container;
 use curator::agent::SseClient;
 use curator::prelude::*;
 use curator::protocol;
 use curator::server::Curator;
 
 use bollard::Docker;
-use curator::agent::run_docker_discovery;
+use curator::agent::docker::run_toolchain_discovery;
 
 use rstest::*;
 
-#[actix_rt::test]
+#[tokio::test]
 async fn curator_sse_client() -> Result<()> {
     let server = Curator::start()?;
     let agent = protocol::agent::Agent::new("app", vec![]);
@@ -41,14 +40,14 @@ fn docker() -> Docker {
 }
 
 #[rstest]
-#[actix_rt::test]
+#[tokio::test]
 async fn docker_discovery_test(docker: Docker) -> Result<()> {
-    let toolchains = vec!["bazhenov.me/curator/toolchain-example:dev"];
+    let toolchain = "bazhenov.me/curator/toolchain-example:dev";
 
-    let container = Container::start(&docker, "openjdk:11.0-jdk", Some(vec!["date"])).await?;
-    container.check_status_code_and_remove().await?;
+    // let container = Container::start(&docker, "openjdk:11.0-jdk", Some(vec!["date"])).await?;
+    // container.check_status_code_and_remove().await?;
 
-    let task_defs = run_docker_discovery(&docker, &toolchains).await?;
+    let task_defs = run_toolchain_discovery(&docker, "", toolchain).await?;
     assert!(task_defs.len() > 0);
 
     Ok(())

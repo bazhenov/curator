@@ -38,6 +38,12 @@ pub mod docker {
         Docker,
     };
     use futures::{stream::Stream, StreamExt};
+    use hyper::body::Bytes;
+    use serde::de::DeserializeOwned;
+    use tokio_util::{
+        codec::{FramedRead, LinesCodec},
+        io::StreamReader,
+    };
 
     #[derive(Error, Debug)]
     enum Errors {
@@ -72,7 +78,7 @@ pub mod docker {
             })
         }
 
-        pub async fn read_stdout(&self) -> impl Stream<Item = Result<LogOutput>> {
+        pub fn read_logs(&self) -> impl Stream<Item = Result<LogOutput>> {
             let options = Some(LogsOptions::<String> {
                 stdout: true,
                 ..Default::default()
@@ -83,7 +89,7 @@ pub mod docker {
                 .map(|r| r.context("Failed reading container stdout"))
         }
 
-        pub async fn check_status_code_and_remove(&self) -> Result<()> {
+        pub async fn check_status_code_and_remove(&self) -> Result<i64> {
             let options = WaitContainerOptions {
                 condition: "not-running",
             };
@@ -107,7 +113,7 @@ pub mod docker {
                 bail!(Errors::ContainerNonZeroExitCode(response.status_code));
             }
 
-            Ok(())
+            Ok(response.status_code)
         }
     }
 
@@ -129,25 +135,42 @@ pub mod docker {
         Ok(vec![])
     }
 
-    async fn run_toolchain_discovery(
+    pub async fn run_toolchain_discovery(
         docker: &Docker,
-        container: &str,
+        _container: &str,
         toolchain_image: &str,
     ) -> Result<Vec<TaskDef>> {
-        use tokio_util::{
-            codec::{FramedRead, LinesCodec},
-            io::StreamReader,
-        };
-
         let c = Container::start(docker, &toolchain_image, Some(vec!["/discover"])).await?;
 
-        // let reader = StreamReader::new(c.read_stdout().await);
+        let stdout_stream = c.read_logs().filter_map(only_stdout);
 
-        // let framed = FramedRead::new(reader, LinesCodec::new());
+        let reader = StreamReader::new(stdout_stream);
+        let stdout = FramedRead::new(reader, LinesCodec::new());
+
+        let task_defs = stdout
+            .map(|e| e.context("Unable to read stdout from upstream container"))
+            .map(read_from_json)
+            .collect::<Vec<_>>()
+            .await;
 
         c.check_status_code_and_remove().await?;
 
-        Ok(vec![])
+        task_defs.into_iter().collect::<Result<Vec<_>>>()
+    }
+
+    fn read_from_json<T: DeserializeOwned>(line: Result<String>) -> Result<T> {
+        line.and_then(|l| serde_json::from_str::<T>(&l).context("Unable to read JSON"))
+    }
+
+    async fn only_stdout(batch: Result<LogOutput>) -> Option<IoResult<Bytes>> {
+        use std::io;
+        batch
+            .map(|i| match i {
+                LogOutput::StdOut { message } => Some(message),
+                _ => None,
+            })
+            .map_err(|_e| io::Error::new(io::ErrorKind::Other, "oh no!"))
+            .transpose()
     }
 }
 
