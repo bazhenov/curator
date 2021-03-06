@@ -29,3 +29,20 @@ services:
       - frontend
     ports:
       - "8080:8080"
+  
+  it-sample-container:
+    image: openjdk:11.0-jdk
+    command: sh -c "sleep 2"
+    labels:
+      io.kubernetes.pod.name: openjdk
+  
+  # Container with integrations tests
+  tests:
+    build:
+      context: .
+      target: builder
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: /opt/test-docker
+    depends_on:
+      - it-sample-container
