@@ -3,14 +3,27 @@ FROM rust:1.44.1-slim AS builder
 WORKDIR /opt
 
 ADD src ./src
+ADD tests ./tests
 ADD Cargo.toml ./Cargo.toml
 ADD Cargo.lock ./Cargo.lock
 
+# Building project including tests
 RUN --mount=type=cache,target=./target \
     --mount=type=cache,target=/usr/local/cargo/registry \
-  cargo build --release && \
+  cargo build --release --tests && \
   cp ./target/release/curator-server /opt && \
   cp ./target/release/curator-agent /opt
+
+# Copying production executables
+RUN --mount=type=cache,target=./target \
+  cp ./target/release/curator-server /opt && \
+  cp ./target/release/curator-agent /opt
+
+# Copying test executables
+# ?????????????????? stands for exactly 18 characters representing hashcode of tests-executables
+RUN --mount=type=cache,target=./target \
+  cp ./target/release/deps/docker-???????????????? /opt/test-docker && \
+  cp ./target/release/deps/curator_sse_test-???????????????? /opt/test-curator_sse_test
 
 FROM centos:centos8 AS curator-server
 WORKDIR /opt

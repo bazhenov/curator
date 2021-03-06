@@ -3,13 +3,22 @@ extern crate curator;
 use curator::prelude::*;
 
 use bollard::Docker;
-use curator::agent::docker::run_toolchain_discovery;
+use curator::docker::{list_running_containers, run_toolchain_discovery};
 
 use rstest::*;
 
 #[fixture]
 fn docker() -> Docker {
     Docker::connect_with_unix_defaults().expect("Unable to get Docker instance")
+}
+
+#[rstest]
+#[tokio::test]
+async fn list_containers(docker: Docker) -> Result<()> {
+    let containers = list_running_containers(&docker).await?;
+
+    assert!(containers.len() > 0);
+    Ok(())
 }
 
 #[rstest]

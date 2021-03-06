@@ -2,6 +2,7 @@
 extern crate anyhow;
 
 pub mod agent;
+pub mod docker;
 pub mod protocol;
 pub mod server;
 
