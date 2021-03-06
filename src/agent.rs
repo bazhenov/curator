@@ -34,7 +34,8 @@ pub mod docker {
     use crate::agent::TaskDef;
     use crate::prelude::*;
     use bollard::{
-        container::{Config, LogOutput, LogsOptions, RemoveContainerOptions, WaitContainerOptions},
+        container::{Config, LogOutput, LogsOptions, WaitContainerOptions},
+        service::HostConfig,
         Docker,
     };
     use futures::{stream::Stream, StreamExt};
@@ -62,9 +63,14 @@ pub mod docker {
             image: &str,
             command: Option<Vec<&str>>,
         ) -> Result<Container<'a>> {
+            let host_config = HostConfig {
+                auto_remove: Some(true),
+                ..Default::default()
+            };
             let config = Config {
                 image: Some(image),
                 cmd: command,
+                host_config: Some(host_config),
                 ..Default::default()
             };
 
@@ -89,7 +95,7 @@ pub mod docker {
                 .map(|r| r.context("Failed reading container stdout"))
         }
 
-        pub async fn check_status_code_and_remove(&self) -> Result<i64> {
+        pub async fn check_status_code(&self) -> Result<i64> {
             let options = WaitContainerOptions {
                 condition: "not-running",
             };
@@ -97,18 +103,9 @@ pub mod docker {
                 .docker
                 .wait_container(&self.container_id, Some(options))
                 .next()
-                .await;
-            let options = RemoveContainerOptions {
-                force: true,
-                ..Default::default()
-            };
-            self.docker
-                .remove_container(&self.container_id, Some(options))
-                .await?;
+                .await
+                .expect("wait_container() failed")?;
 
-            // Unwrapping wait_container() response only after deleteing the container, so no dangling containers
-            // are left in the system
-            let response = response.expect("wait_container() failed")?;
             if response.status_code != 0 {
                 bail!(Errors::ContainerNonZeroExitCode(response.status_code));
             }
@@ -129,7 +126,7 @@ pub mod docker {
         for image in toolchain_images {
             let c = Container::start(docker, &image, Some(vec!["/discover"])).await?;
 
-            c.check_status_code_and_remove().await?;
+            c.check_status_code().await?;
         }
 
         Ok(vec![])
@@ -153,7 +150,7 @@ pub mod docker {
             .collect::<Vec<_>>()
             .await;
 
-        c.check_status_code_and_remove().await?;
+        c.check_status_code().await?;
 
         task_defs.into_iter().collect::<Result<Vec<_>>>()
     }

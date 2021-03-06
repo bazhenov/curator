@@ -44,9 +44,6 @@ fn docker() -> Docker {
 async fn docker_discovery_test(docker: Docker) -> Result<()> {
     let toolchain = "bazhenov.me/curator/toolchain-example:dev";
 
-    // let container = Container::start(&docker, "openjdk:11.0-jdk", Some(vec!["date"])).await?;
-    // container.check_status_code_and_remove().await?;
-
     let task_defs = run_toolchain_discovery(&docker, "", toolchain).await?;
     assert!(task_defs.len() > 0);
 
