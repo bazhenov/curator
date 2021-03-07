@@ -12,22 +12,24 @@ fn docker() -> Docker {
     Docker::connect_with_unix_defaults().expect("Unable to get Docker instance")
 }
 
+/// This test relies on docker-compose `it-sample-container` service container.
+///
+/// For this test to work properly on host machine you need to start sample container first:
+/// ```
+/// docker-compose run it-sample-container
+/// ```
 #[rstest]
 #[tokio::test]
-async fn list_containers(docker: Docker) -> Result<()> {
+async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
     let containers = list_running_containers(&docker).await?;
+    assert!(!containers.is_empty());
 
-    assert!(containers.len() > 0);
-    Ok(())
-}
-
-#[rstest]
-#[tokio::test]
-async fn docker_discovery_test(docker: Docker) -> Result<()> {
     let toolchain = "bazhenov.me/curator/toolchain-example:dev";
+    let task_defs = run_toolchain_discovery(&docker, &containers[0], toolchain).await?;
 
-    let task_defs = run_toolchain_discovery(&docker, "", toolchain).await?;
-    assert!(task_defs.len() > 0);
+    println!("{:?}", task_defs);
+
+    assert_eq!(task_defs.len(), 1);
 
     Ok(())
 }

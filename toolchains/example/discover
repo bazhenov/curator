@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PIDS="$(ps -o pid | awk '{print $1}' | tail -n +2)"
+PIDS="$(ps -g 1 -o pid=)"
 for PID in $PIDS
 do
   cat << EOF

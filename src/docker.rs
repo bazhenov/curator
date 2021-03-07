@@ -1,7 +1,7 @@
 //! Docker integration module
-//! 
+//!
 //! Docker integration module provides following capabilities:
-//! 
+//!
 //! * listing target container;
 //! * discovery tasks;
 //! * running task for a given container
@@ -15,21 +15,24 @@ use bollard::{
 use futures::{stream::Stream, StreamExt};
 use hyper::body::Bytes;
 use serde::de::DeserializeOwned;
+use std::collections::hash_map::HashMap;
 use tokio_util::{
     codec::{FramedRead, LinesCodec},
     io::StreamReader,
 };
-use std::collections::hash_map::HashMap;
 
 #[derive(Error, Debug)]
 enum Errors {
     #[error("Container exit code code is non zero")]
     ContainerNonZeroExitCode(i64),
+
+    #[error("Invalid container id given: {0}")]
+    InvalidContainerId(String),
 }
 
 pub struct Container<'a> {
     docker: &'a Docker,
-    container_id: String,
+    pub id: String,
 }
 
 impl<'a> Container<'a> {
@@ -38,8 +41,18 @@ impl<'a> Container<'a> {
         image: &str,
         command: Option<Vec<&str>>,
     ) -> Result<Container<'a>> {
+        Self::start_with_pid_mode(docker, image, command, None).await
+    }
+
+    pub async fn start_with_pid_mode(
+        docker: &'a Docker,
+        image: &str,
+        command: Option<Vec<&str>>,
+        pid_mode: Option<String>,
+    ) -> Result<Container<'a>> {
         let host_config = HostConfig {
             auto_remove: Some(true),
+            pid_mode,
             ..Default::default()
         };
         let config = Config {
@@ -50,13 +63,10 @@ impl<'a> Container<'a> {
         };
 
         let container = docker.create_container::<&str, _>(None, config);
-        let container_id = container.await?.id;
-        docker.start_container::<&str>(&container_id, None).await?;
+        let id = container.await?.id;
+        docker.start_container::<&str>(&id, None).await?;
 
-        Ok(Container {
-            docker,
-            container_id,
-        })
+        Ok(Container { docker, id })
     }
 
     pub fn read_logs(&self) -> impl Stream<Item = Result<LogOutput>> {
@@ -66,7 +76,7 @@ impl<'a> Container<'a> {
         });
 
         self.docker
-            .logs(&self.container_id, options)
+            .logs(&self.id, options)
             .map(|r| r.context("Failed reading container stdout"))
     }
 
@@ -76,21 +86,21 @@ impl<'a> Container<'a> {
         };
         let response = self
             .docker
-            .wait_container(&self.container_id, Some(options))
+            .wait_container(&self.id, Some(options))
             .next()
             .await
             .expect("wait_container() failed")?;
 
-        if response.status_code != 0 {
-            bail!(Errors::ContainerNonZeroExitCode(response.status_code));
-        }
-
+        ensure!(
+            response.status_code == 0,
+            Errors::ContainerNonZeroExitCode(response.status_code)
+        );
         Ok(response.status_code)
     }
 }
 
 /// Running container discovery process.
-/// 
+///
 /// Discovery process implemented as follows:
 /// * each toolchain container `/discover` executable is run;
 /// * pid namespace is shared between toolchain and target containers;
@@ -109,7 +119,7 @@ pub async fn run_docker_discovery(
 }
 
 /// Lists running containers.
-/// 
+///
 /// Only containers with `io.kubernetes.pod.name` labels are listed.
 pub async fn list_running_containers(docker: &Docker) -> Result<Vec<String>> {
     let mut filters = HashMap::new();
@@ -131,10 +141,20 @@ pub async fn list_running_containers(docker: &Docker) -> Result<Vec<String>> {
 
 pub async fn run_toolchain_discovery(
     docker: &Docker,
-    _container: &str,
+    container_id: &str,
     toolchain_image: &str,
 ) -> Result<Vec<TaskDef>> {
-    let c = Container::start(docker, &toolchain_image, Some(vec!["/discover"])).await?;
+    ensure!(
+        !container_id.is_empty(),
+        Errors::InvalidContainerId(container_id.into())
+    );
+    let c = Container::start_with_pid_mode(
+        docker,
+        &toolchain_image,
+        Some(vec!["/discover"]),
+        Some(format!("container:{}", container_id)),
+    )
+    .await?;
 
     let stdout_stream = c.read_logs().filter_map(only_stdout);
 
