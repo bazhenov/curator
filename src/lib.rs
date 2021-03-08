@@ -55,28 +55,6 @@ pub mod tests {
     use serde_json::Value;
     use std::fmt::Debug;
 
-    #[test]
-    fn logging() {
-        match outer() {
-            Ok(_) => {
-                println!("Ok");
-            }
-            Err(e) => {
-                eprintln!("{}", format_error_chain(&e));
-            }
-        }
-    }
-
-    fn outer() -> Result<()> {
-        Ok(inner().context("Failed while inner")?)
-    }
-
-    fn inner() -> Result<()> {
-        use std::fs::File;
-        File::open("./not-found")?;
-        Ok(())
-    }
-
     /// Checks serializing/deserializing cycle of value and json
     pub fn assert_json_eq<T>(value: T, json: Value) -> Result<()>
     where
