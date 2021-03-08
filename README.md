@@ -1,23 +1,30 @@
-Building images:
+## Building images
 
 ```
-make images
+$ make images
 ```
 
-Running the system (server, test agent and frontend):
+## Running integration tests
 
 ```
-docker-compose up
+$ docker-compose run it-tests
+$ docker-compose down -t 0
 ```
 
-Making toolchain images:
+## Running the system
 
 ```
-make toolchains/[name]
+$ docker-compose up
 ```
 
-Running toolchain:
+## Making toolchain images
 
 ```
-docker run -it bazhenov.me/curator/toolchain-[name]:dev
+$ make toolchains/[name]
+```
+
+## Running toolchain
+
+```
+$ docker run -it bazhenov.me/curator/toolchain-[name]:dev
 ```

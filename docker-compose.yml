@@ -30,15 +30,8 @@ services:
     ports:
       - "8080:8080"
   
-  it-sample-container:
-    image: openjdk:11.0-jdk
-    command: sh -c "read line"
-    tty: true
-    labels:
-      io.kubernetes.pod.name: openjdk
-  
   # Container with integrations tests
-  tests:
+  it-tests:
     build:
       context: .
       target: builder
@@ -47,3 +40,10 @@ services:
     command: /opt/test-docker
     depends_on:
       - it-sample-container
+
+  it-sample-container:
+    image: alpine:3.12
+    command: sh -c "read line"
+    tty: true
+    labels:
+      io.kubernetes.pod.name: alpine
