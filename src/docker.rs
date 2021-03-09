@@ -40,20 +40,23 @@ pub struct Container<'a> {
 }
 
 impl<'a> Container<'a> {
-    pub async fn start(
+    pub async fn start<T: AsRef<str>>(
         docker: &'a Docker,
         image: &str,
-        command: Option<Vec<&str>>,
+        command: Option<&[T]>,
     ) -> Result<Container<'a>> {
         Self::start_with_pid_mode(docker, image, command, None).await
     }
 
-    pub async fn start_with_pid_mode(
+    pub async fn start_with_pid_mode<T: AsRef<str>>(
         docker: &'a Docker,
         image: &str,
-        command: Option<Vec<&str>>,
-        pid_mode: Option<String>,
+        command: Option<&[T]>,
+        pid_mode: Option<T>,
     ) -> Result<Container<'a>> {
+        let pid_mode = pid_mode.map(|value| value.as_ref().into());
+        let command = command.map(|slice| slice.iter().map(|v| v.as_ref()).collect());
+
         let host_config = HostConfig {
             pid_mode,
             ..Default::default()
@@ -153,8 +156,8 @@ pub async fn run_toolchain_discovery(
     let c = Container::start_with_pid_mode(
         docker,
         &toolchain_image,
-        Some(vec!["/discover"]),
-        Some(format!("container:{}", container_id)),
+        Some(&["/discover"]),
+        Some(&format!("container:{}", container_id)),
     )
     .await?;
 
@@ -187,39 +190,45 @@ pub async fn run_toolchain_task(
         !container_id.is_empty(),
         Errors::InvalidContainerId(container_id.into())
     );
+    let mut command = vec![&task.command];
+    command.extend(&task.args);
     let container = Container::start_with_pid_mode(
         docker,
         &toolchain_image,
-        Some(vec![&task.command]),
-        Some(format!("container:{}", container_id)),
+        Some(&command),
+        Some(&format!("container:{}", container_id)),
     )
     .await?;
 
-    let mut logs = container.read_logs();
-    
-    // TODO correct Result handling here
-    tokio::spawn(async move {
-        while let Some(record) = logs.next().await {
-            match record.unwrap() {
-                LogOutput::StdOut { message } => {
-                    if let Some(stdout) = &stdout {
-                        stdout.send(message).await;
-                    }
-                }
-                LogOutput::StdErr { message } => {
-                    if let Some(stderr) = &stderr {
-                        stderr.send(message).await;
-                    }
-                }
-                _ => {}
-            }
-        }
-    });
-
+    let redirect_process = tokio::spawn(redirect_output(container.read_logs(), stdout, stderr));
     let status_code = container.wait().await?;
+    redirect_process.await??;
     container.remove().await?;
 
     Ok((status_code, None))
+}
+
+async fn redirect_output(
+    mut logs: impl Stream<Item = Result<LogOutput>> + Unpin,
+    stdout: Option<mpsc::Sender<Bytes>>,
+    stderr: Option<mpsc::Sender<Bytes>>,
+) -> Result<()> {
+    while let Some(record) = logs.next().await {
+        match record? {
+            LogOutput::StdOut { message } => {
+                if let Some(stdout) = &stdout {
+                    stdout.send(message).await?;
+                }
+            }
+            LogOutput::StdErr { message } => {
+                if let Some(stderr) = &stderr {
+                    stderr.send(message).await?;
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 fn read_from_json<T: DeserializeOwned>(line: Result<String>) -> Result<T> {

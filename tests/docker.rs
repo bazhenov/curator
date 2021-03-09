@@ -7,8 +7,11 @@ use curator::{
     agent::TaskDef,
     docker::{list_running_containers, run_toolchain_discovery, run_toolchain_task},
 };
+use tokio::sync::mpsc;
 
 use rstest::*;
+
+const TOOLCHAIN: &str = "bazhenov.me/curator/toolchain-example:dev";
 
 #[fixture]
 fn docker() -> Docker {
@@ -27,8 +30,7 @@ async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
     let containers = list_running_containers(&docker).await?;
     assert!(!containers.is_empty());
 
-    let toolchain = "bazhenov.me/curator/toolchain-example:dev";
-    let task_defs = run_toolchain_discovery(&docker, &containers[0], toolchain).await?;
+    let task_defs = run_toolchain_discovery(&docker, &containers[0], TOOLCHAIN).await?;
 
     assert_eq!(task_defs.len(), 1);
 
@@ -41,16 +43,42 @@ async fn run_toolchain(docker: Docker) -> Result<()> {
     let containers = list_running_containers(&docker).await?;
     assert!(!containers.is_empty());
 
-    let toolchain = "bazhenov.me/curator/toolchain-example:dev";
+    let command = String::from("sh");
+    let args = vec!["-c", "echo 'Hello'"]
+        .into_iter()
+        .map(String::from)
+        .collect();
     let task = TaskDef {
-        id: "".into(),
-        command: "date".into(),
+        id: String::from(""),
+        command,
+        args,
         ..Default::default()
     };
-    let (status, artifacts) =
-        run_toolchain_task(&docker, &containers[0], toolchain, &task, None, None).await?;
+
+    let (sender, receiver) = mpsc::channel(1);
+    let stdout_content = tokio::spawn(collect(receiver));
+
+    let (status, _) = run_toolchain_task(
+        &docker,
+        &containers[0],
+        TOOLCHAIN,
+        &task,
+        Some(sender),
+        None,
+    )
+    .await?;
 
     assert_eq!(status, 0);
+    assert_eq!("Hello\n", stdout_content.await?);
 
     Ok(())
+}
+
+async fn collect<T: AsRef<[u8]>>(mut receiver: mpsc::Receiver<T>) -> String {
+    let mut result = String::new();
+
+    while let Some(chunk) = receiver.recv().await {
+        result.push_str(&String::from_utf8_lossy(chunk.as_ref()));
+    }
+    result
 }
