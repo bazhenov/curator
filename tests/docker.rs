@@ -3,7 +3,10 @@ extern crate curator;
 use curator::prelude::*;
 
 use bollard::Docker;
-use curator::docker::{list_running_containers, run_toolchain_discovery};
+use curator::{
+    agent::TaskDef,
+    docker::{list_running_containers, run_toolchain_discovery, run_toolchain_task},
+};
 
 use rstest::*;
 
@@ -27,9 +30,27 @@ async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
     let toolchain = "bazhenov.me/curator/toolchain-example:dev";
     let task_defs = run_toolchain_discovery(&docker, &containers[0], toolchain).await?;
 
-    println!("{:?}", task_defs);
-
     assert_eq!(task_defs.len(), 1);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn run_toolchain(docker: Docker) -> Result<()> {
+    let containers = list_running_containers(&docker).await?;
+    assert!(!containers.is_empty());
+
+    let toolchain = "bazhenov.me/curator/toolchain-example:dev";
+    let task = TaskDef {
+        id: "".into(),
+        command: "date".into(),
+        ..Default::default()
+    };
+    let (status, artifacts) =
+        run_toolchain_task(&docker, &containers[0], toolchain, &task, None, None).await?;
+
+    assert_eq!(status, 0);
 
     Ok(())
 }

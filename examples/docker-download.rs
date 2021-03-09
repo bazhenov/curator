@@ -21,7 +21,9 @@ async fn main() -> Result<()> {
         .create(true)
         .open("./target/export.tar")?;
 
-    write_stream_to_file(stream, file).await
+    write_stream_to_file(stream, file).await?;
+
+    container.remove().await
 }
 
 async fn write_stream_to_file<T: AsRef<[u8]>>(

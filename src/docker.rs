@@ -8,14 +8,18 @@
 use crate::agent::TaskDef;
 use crate::prelude::*;
 use bollard::{
-    container::{Config, ListContainersOptions, LogOutput, LogsOptions, WaitContainerOptions},
+    container::{
+        Config, ListContainersOptions, LogOutput, LogsOptions, RemoveContainerOptions,
+        WaitContainerOptions,
+    },
     service::HostConfig,
     Docker,
 };
 use futures::{stream::Stream, StreamExt};
 use hyper::body::Bytes;
 use serde::de::DeserializeOwned;
-use std::collections::hash_map::HashMap;
+use std::{collections::hash_map::HashMap, fs::File};
+use tokio::sync::mpsc;
 use tokio_util::{
     codec::{FramedRead, LinesCodec},
     io::StreamReader,
@@ -51,7 +55,6 @@ impl<'a> Container<'a> {
         pid_mode: Option<String>,
     ) -> Result<Container<'a>> {
         let host_config = HostConfig {
-            auto_remove: Some(true),
             pid_mode,
             ..Default::default()
         };
@@ -80,7 +83,7 @@ impl<'a> Container<'a> {
             .map(|r| r.context("Failed reading container stdout"))
     }
 
-    pub async fn check_status_code(&self) -> Result<i64> {
+    pub async fn wait(&self) -> Result<i64> {
         let options = WaitContainerOptions {
             condition: "not-running",
         };
@@ -97,25 +100,18 @@ impl<'a> Container<'a> {
         );
         Ok(response.status_code)
     }
-}
 
-/// Running container discovery process.
-///
-/// Discovery process implemented as follows:
-/// * each toolchain container `/discover` executable is run;
-/// * pid namespace is shared between toolchain and target containers;
-/// * executable should return a vector of [TaskDef] in `ndjson` format (each line is it's own json payload)
-pub async fn run_docker_discovery(
-    docker: &Docker,
-    toolchain_images: &[&str],
-) -> Result<Vec<TaskDef>> {
-    for image in toolchain_images {
-        let c = Container::start(docker, &image, Some(vec!["/discover"])).await?;
+    pub async fn remove(self) -> Result<()> {
+        let options = Some(RemoveContainerOptions {
+            force: true,
+            ..Default::default()
+        });
 
-        c.check_status_code().await?;
+        self.docker
+            .remove_container(&self.id, options)
+            .await
+            .context("Unable to remove container")
     }
-
-    Ok(vec![])
 }
 
 /// Lists running containers.
@@ -139,6 +135,12 @@ pub async fn list_running_containers(docker: &Docker) -> Result<Vec<String>> {
     Ok(container_ids)
 }
 
+/// Running container discovery process.
+///
+/// Discovery process implemented as follows:
+/// * toolchain container `/discover` executable is run;
+/// * pid namespace is shared between toolchain and target containers;
+/// * executable should return a vector of [TaskDef] in `ndjson` format (each line is it's own json payload)
 pub async fn run_toolchain_discovery(
     docker: &Docker,
     container_id: &str,
@@ -167,9 +169,57 @@ pub async fn run_toolchain_discovery(
         .collect::<Vec<_>>()
         .await;
 
-    c.check_status_code().await?;
+    c.wait().await?;
+    c.remove().await?;
 
     task_defs.into_iter().collect::<Result<Vec<_>>>()
+}
+
+pub async fn run_toolchain_task(
+    docker: &Docker,
+    container_id: &str,
+    toolchain_image: &str,
+    task: &TaskDef,
+    stdout: Option<mpsc::Sender<Bytes>>,
+    stderr: Option<mpsc::Sender<Bytes>>,
+) -> Result<(i64, Option<File>)> {
+    ensure!(
+        !container_id.is_empty(),
+        Errors::InvalidContainerId(container_id.into())
+    );
+    let container = Container::start_with_pid_mode(
+        docker,
+        &toolchain_image,
+        Some(vec![&task.command]),
+        Some(format!("container:{}", container_id)),
+    )
+    .await?;
+
+    let mut logs = container.read_logs();
+    
+    // TODO correct Result handling here
+    tokio::spawn(async move {
+        while let Some(record) = logs.next().await {
+            match record.unwrap() {
+                LogOutput::StdOut { message } => {
+                    if let Some(stdout) = &stdout {
+                        stdout.send(message).await;
+                    }
+                }
+                LogOutput::StdErr { message } => {
+                    if let Some(stderr) = &stderr {
+                        stderr.send(message).await;
+                    }
+                }
+                _ => {}
+            }
+        }
+    });
+
+    let status_code = container.wait().await?;
+    container.remove().await?;
+
+    Ok((status_code, None))
 }
 
 fn read_from_json<T: DeserializeOwned>(line: Result<String>) -> Result<T> {
