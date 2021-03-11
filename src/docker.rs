@@ -18,7 +18,7 @@ use bollard::{
 use futures::{stream::Stream, StreamExt};
 use hyper::body::Bytes;
 use serde::de::DeserializeOwned;
-use std::{collections::hash_map::HashMap, fs::File};
+use std::{collections::hash_map::HashMap, fs::File, io::Write};
 use tokio::sync::mpsc;
 use tokio_util::{
     codec::{FramedRead, LinesCodec},
@@ -178,14 +178,15 @@ pub async fn run_toolchain_discovery(
     task_defs.into_iter().collect::<Result<Vec<_>>>()
 }
 
-pub async fn run_toolchain_task(
+pub async fn run_toolchain_task<W: Write>(
     docker: &Docker,
     container_id: &str,
     toolchain_image: &str,
     task: &TaskDef,
     stdout: Option<mpsc::Sender<Bytes>>,
     stderr: Option<mpsc::Sender<Bytes>>,
-) -> Result<(i64, Option<File>)> {
+    artifacts: Option<&mut W>,
+) -> Result<i64> {
     ensure!(
         !container_id.is_empty(),
         Errors::InvalidContainerId(container_id.into())
@@ -205,7 +206,7 @@ pub async fn run_toolchain_task(
     redirect_process.await??;
     container.remove().await?;
 
-    Ok((status_code, None))
+    Ok(status_code)
 }
 
 async fn redirect_output(

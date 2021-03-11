@@ -50,6 +50,7 @@ enum Errors {
 #[derive(Deserialize, Hash, PartialEq, Eq, Clone, Debug, Default)]
 pub struct TaskDef {
     pub id: String,
+    // TODO it would be nice to merge command and args
     pub command: String,
     #[serde(default)]
     pub args: Vec<String>,

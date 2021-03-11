@@ -1,36 +1,41 @@
 extern crate curator;
 
-use curator::prelude::*;
-
 use bollard::Docker;
+use curator::prelude::*;
 use curator::{
     agent::TaskDef,
     docker::{list_running_containers, run_toolchain_discovery, run_toolchain_task},
 };
+use rstest::*;
+use std::borrow::Cow;
+use std::io::Cursor;
+use tar::Archive;
 use tokio::sync::mpsc;
 
-use rstest::*;
+/// Those test relies on docker-compose `it-sample-container` service container.
+///
+/// For tests to work properly on host machine you need to start sample container first:
+/// ```
+/// docker-compose run it-sample-container
+/// ```
 
 const TOOLCHAIN: &str = "bazhenov.me/curator/toolchain-example:dev";
+
+macro_rules! str_vec {
+    ($($x:expr),*) => (vec![$($x.to_string()),*]);
+}
 
 #[fixture]
 fn docker() -> Docker {
     Docker::connect_with_unix_defaults().expect("Unable to get Docker instance")
 }
 
-/// This test relies on docker-compose `it-sample-container` service container.
-///
-/// For this test to work properly on host machine you need to start sample container first:
-/// ```
-/// docker-compose run it-sample-container
-/// ```
 #[rstest]
 #[tokio::test]
 async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
-    let containers = list_running_containers(&docker).await?;
-    assert!(!containers.is_empty());
+    let container = get_sample_container(&docker).await?;
 
-    let task_defs = run_toolchain_discovery(&docker, &containers[0], TOOLCHAIN).await?;
+    let task_defs = run_toolchain_discovery(&docker, &container, TOOLCHAIN).await?;
 
     assert_eq!(task_defs.len(), 1);
 
@@ -39,15 +44,45 @@ async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
 
 #[rstest]
 #[tokio::test]
-async fn run_toolchain(docker: Docker) -> Result<()> {
-    let containers = list_running_containers(&docker).await?;
-    assert!(!containers.is_empty());
+async fn run_toolchain_for_exit_code_and_stdout(docker: Docker) -> Result<()> {
+    let (status, _, stdout) =
+        run_test_toolchain(&docker, str_vec!["sh", "-c", "echo 'Hello'"]).await?;
 
-    let command = String::from("sh");
-    let args = vec!["-c", "echo 'Hello'"]
-        .into_iter()
-        .map(String::from)
-        .collect();
+    assert_eq!(status, 0);
+    assert_eq!("Hello\n", stdout);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn run_toolchain_for_artifact(docker: Docker) -> Result<()> {
+    let (status, artifacts, _) =
+        run_test_toolchain(&docker, str_vec!["sh", "-c", "touch test.txt"]).await?;
+
+    assert_eq!(status, 0);
+
+    let mut archive = Archive::new(artifacts);
+
+    let entries = archive
+        .entries()?
+        .map(|e| e?.path().map(Cow::into_owned))
+        .collect::<IoResult<Vec<_>>>()?;
+
+    println!("{:?}", entries);
+
+    assert_eq!(entries.len(), 1);
+
+    Ok(())
+}
+
+async fn run_test_toolchain(
+    docker: &Docker,
+    mut args: Vec<String>,
+) -> Result<(i64, Cursor<Vec<u8>>, String)> {
+    let container = get_sample_container(&docker).await?;
+
+    let command = args.remove(0);
     let task = TaskDef {
         id: String::from(""),
         command,
@@ -57,21 +92,27 @@ async fn run_toolchain(docker: Docker) -> Result<()> {
 
     let (sender, receiver) = mpsc::channel(1);
     let stdout_content = tokio::spawn(collect(receiver));
+    let mut artifacts = Cursor::new(vec![]);
 
-    let (status, _) = run_toolchain_task(
+    let status_code = run_toolchain_task(
         &docker,
-        &containers[0],
+        &container,
         TOOLCHAIN,
         &task,
         Some(sender),
         None,
+        Some(&mut artifacts),
     )
     .await?;
+    artifacts.set_position(0);
 
-    assert_eq!(status, 0);
-    assert_eq!("Hello\n", stdout_content.await?);
+    Ok((status_code, artifacts, stdout_content.await?))
+}
 
-    Ok(())
+async fn get_sample_container(docker: &Docker) -> Result<String> {
+    let mut containers = list_running_containers(&docker).await?;
+    assert!(!containers.is_empty());
+    Ok(containers.remove(0))
 }
 
 async fn collect<T: AsRef<[u8]>>(mut receiver: mpsc::Receiver<T>) -> String {
