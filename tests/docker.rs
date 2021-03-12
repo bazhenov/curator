@@ -7,8 +7,7 @@ use curator::{
     docker::{list_running_containers, run_toolchain_discovery, run_toolchain_task},
 };
 use rstest::*;
-use std::borrow::Cow;
-use std::io::Cursor;
+use std::{borrow::Cow, io::Cursor, path::PathBuf};
 use tar::Archive;
 use tokio::sync::mpsc;
 
@@ -62,16 +61,16 @@ async fn run_toolchain_for_artifact(docker: Docker) -> Result<()> {
 
     assert_eq!(status, 0);
 
-    let mut archive = Archive::new(artifacts);
-
-    let entries = archive
+    let entries = Archive::new(artifacts)
         .entries()?
         .map(|e| e?.path().map(Cow::into_owned))
         .collect::<IoResult<Vec<_>>>()?;
 
-    println!("{:?}", entries);
-
-    assert_eq!(entries.len(), 1);
+    let expected_paths = ["curator/", "curator/test.txt"]
+        .iter()
+        .map(PathBuf::from)
+        .collect::<Vec<_>>();
+    assert_eq!(entries, expected_paths);
 
     Ok(())
 }

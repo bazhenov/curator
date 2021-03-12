@@ -9,8 +9,8 @@ use crate::agent::TaskDef;
 use crate::prelude::*;
 use bollard::{
     container::{
-        Config, ListContainersOptions, LogOutput, LogsOptions, RemoveContainerOptions,
-        WaitContainerOptions,
+        Config, DownloadFromContainerOptions, ListContainersOptions, LogOutput, LogsOptions,
+        RemoveContainerOptions, WaitContainerOptions,
     },
     service::HostConfig,
     Docker,
@@ -18,12 +18,14 @@ use bollard::{
 use futures::{stream::Stream, StreamExt};
 use hyper::body::Bytes;
 use serde::de::DeserializeOwned;
-use std::{collections::hash_map::HashMap, fs::File, io::Write};
+use std::{collections::hash_map::HashMap, io::Write};
 use tokio::sync::mpsc;
 use tokio_util::{
     codec::{FramedRead, LinesCodec},
     io::StreamReader,
 };
+
+pub const AGENT_WORKDIR: &str = "/var/run/curator";
 
 #[derive(Error, Debug)]
 enum Errors {
@@ -65,6 +67,7 @@ impl<'a> Container<'a> {
             image: Some(image),
             cmd: command,
             host_config: Some(host_config),
+            working_dir: Some(AGENT_WORKDIR),
             ..Default::default()
         };
 
@@ -73,6 +76,21 @@ impl<'a> Container<'a> {
         docker.start_container::<&str>(&id, None).await?;
 
         Ok(Container { docker, id })
+    }
+
+    /// Download files from a given path.
+    ///
+    /// Create a tar archive from a files at a given path inside the container and writes this archive to
+    /// the target.
+    pub async fn download(&self, path: &str, target: &mut impl Write) -> Result<()> {
+        let options = DownloadFromContainerOptions { path };
+        let mut stream = self.docker.download_from_container(&self.id, Some(options));
+
+        while let Some(batch) = stream.next().await {
+            target.write_all(&batch?)?;
+        }
+
+        Ok(())
     }
 
     pub fn read_logs(&self) -> impl Stream<Item = Result<LogOutput>> {
@@ -204,6 +222,9 @@ pub async fn run_toolchain_task<W: Write>(
     let redirect_process = tokio::spawn(redirect_output(container.read_logs(), stdout, stderr));
     let status_code = container.wait().await?;
     redirect_process.await??;
+    if let Some(artifacts) = artifacts {
+        container.download(AGENT_WORKDIR, artifacts).await?;
+    }
     container.remove().await?;
 
     Ok(status_code)
