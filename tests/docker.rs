@@ -26,7 +26,7 @@ macro_rules! str_vec {
 
 #[fixture]
 fn docker() -> Docker {
-    Docker::connect_with_unix_defaults().expect("Unable to get Docker instance")
+    Docker::connect_with_local_defaults().expect("Unable to get Docker instance")
 }
 
 #[rstest]
