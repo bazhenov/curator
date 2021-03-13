@@ -1,5 +1,5 @@
-use curator::prelude::*;
 use bollard::Docker;
+use curator::prelude::*;
 use futures::stream::StreamExt;
 
 #[tokio::main]

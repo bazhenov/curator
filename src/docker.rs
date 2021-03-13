@@ -24,6 +24,7 @@ use tokio_util::{
     codec::{FramedRead, LinesCodec},
     io::StreamReader,
 };
+use Errors::*;
 
 pub const AGENT_WORKDIR: &str = "/var/run/curator";
 
@@ -34,6 +35,12 @@ enum Errors {
 
     #[error("Invalid container id given: {0}")]
     InvalidContainerId(String),
+
+    #[error("Unable to start new container")]
+    UnableToStartNewContainer,
+
+    #[error("Unable to remove container: {0}")]
+    UnableToRemoveContainer(String),
 }
 
 pub struct Container<'a> {
@@ -117,7 +124,7 @@ impl<'a> Container<'a> {
 
         ensure!(
             response.status_code == 0,
-            Errors::ContainerNonZeroExitCode(response.status_code)
+            ContainerNonZeroExitCode(response.status_code)
         );
         Ok(response.status_code)
     }
@@ -131,7 +138,7 @@ impl<'a> Container<'a> {
         self.docker
             .remove_container(&self.id, options)
             .await
-            .context("Unable to remove container")
+            .context(UnableToRemoveContainer(self.id))
     }
 }
 
@@ -169,17 +176,18 @@ pub async fn run_toolchain_discovery(
 ) -> Result<Vec<TaskDef>> {
     ensure!(
         !container_id.is_empty(),
-        Errors::InvalidContainerId(container_id.into())
+        InvalidContainerId(container_id.into())
     );
-    let c = Container::start_with_pid_mode(
+    let pid_mode = format!("container:{}", container_id);
+    let container = Container::start_with_pid_mode(
         docker,
         &toolchain_image,
         Some(&["/discover"]),
-        Some(&format!("container:{}", container_id)),
-    )
-    .await?;
+        Some(&pid_mode),
+    );
+    let container = container.await.context(UnableToStartNewContainer)?;
 
-    let stdout_stream = c.read_logs().filter_map(only_stdout);
+    let stdout_stream = container.read_logs().filter_map(only_stdout);
 
     let reader = StreamReader::new(stdout_stream);
     let stdout = FramedRead::new(reader, LinesCodec::new());
@@ -190,8 +198,8 @@ pub async fn run_toolchain_discovery(
         .collect::<Vec<_>>()
         .await;
 
-    c.wait().await?;
-    c.remove().await?;
+    container.wait().await?;
+    container.remove().await?;
 
     task_defs.into_iter().collect::<Result<Vec<_>>>()
 }
@@ -207,17 +215,14 @@ pub async fn run_toolchain_task<W: Write>(
 ) -> Result<i64> {
     ensure!(
         !container_id.is_empty(),
-        Errors::InvalidContainerId(container_id.into())
+        InvalidContainerId(container_id.into())
     );
     let mut command = vec![&task.command];
     command.extend(&task.args);
-    let container = Container::start_with_pid_mode(
-        docker,
-        &toolchain_image,
-        Some(&command),
-        Some(&format!("container:{}", container_id)),
-    )
-    .await?;
+    let pid_mode = format!("container:{}", container_id);
+    let container =
+        Container::start_with_pid_mode(docker, &toolchain_image, Some(&command), Some(&pid_mode));
+    let container = container.await.context(UnableToStartNewContainer)?;
 
     let redirect_process = tokio::spawn(redirect_output(container.read_logs(), stdout, stderr));
     let status_code = container.wait().await?;
