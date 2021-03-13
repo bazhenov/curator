@@ -6,14 +6,14 @@ use curator::{
 };
 use futures::stream::{Stream, StreamExt};
 use log::warn;
-use std::{fmt, marker::Unpin};
+use std::fmt;
 use termion::{
     clear,
     color::{Fg, Green, Yellow},
     style::{Bold, Reset},
 };
-use tokio::time::{interval, Duration};
-use tokio_stream::wrappers::IntervalStream;
+use tokio::{sync::watch, time::sleep, time::Duration};
+use tokio_stream::wrappers::WatchStream;
 
 const TOOLCHAIN: &str = "bazhenov.me/curator/toolchain-example:dev";
 
@@ -28,15 +28,16 @@ async fn main() -> Result<()> {
     env_logger::init();
     let docker = Docker::connect_with_local_defaults()?;
 
-    let mut task_set_stream = start_discovery(&docker);
+    let mut task_set_stream = start_discovery(docker);
     while let Some(task_set) = task_set_stream.next().await {
-        print!("{}{}", clear::All, task_set?);
+        print!("{}{}", clear::All, task_set);
     }
     Ok(())
 }
 
 /// Task set is the set of all the tasks found in the system
 /// on a given round of discovery
+#[derive(Debug, Clone)]
 struct TaskSet(Vec<(String, Vec<TaskDef>)>);
 
 impl TaskSet {
@@ -106,10 +107,16 @@ async fn build_task_set(docker: &Docker) -> Result<TaskSet> {
     Ok(TaskSet(result))
 }
 
-fn start_discovery<'a>(docker: &'a Docker) -> impl Stream<Item = Result<TaskSet>> + Unpin + 'a {
-    let interval = interval(Duration::from_secs(1));
-    let stream = IntervalStream::new(interval);
+fn start_discovery(docker: Docker) -> impl Stream<Item = TaskSet> {
+    let (tx, rx) = watch::channel(TaskSet(vec![]));
+    tokio::spawn(discovery_loop(docker, tx));
+    WatchStream::new(rx)
+}
 
-    let stream = stream.then(move |_| async move { build_task_set(docker).await });
-    Box::pin(stream)
+async fn discovery_loop(docker: Docker, tx: watch::Sender<TaskSet>) -> Result<()> {
+    loop {
+        let task_set = build_task_set(&docker).await?;
+        tx.send(task_set)?;
+        sleep(Duration::from_secs(1)).await;
+    }
 }
