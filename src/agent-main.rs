@@ -2,21 +2,28 @@ extern crate clap;
 extern crate ctrlc;
 extern crate curator;
 
-use clap::App;
+use bollard::Docker;
+use clap::{App, AppSettings, ArgMatches, SubCommand};
 use curator::{
-    agent::{discover, AgentLoop},
+    agent::{discover, start_discovery, AgentLoop, TaskSet},
     prelude::*,
 };
+use futures::stream::StreamExt;
 use std::{
     collections::hash_map::DefaultHasher,
+    fmt,
     hash::{Hash, Hasher},
     process::exit,
     time::Duration,
 };
+use termion::{
+    color::{Fg, Green, Yellow},
+    style::{Bold, Reset},
+};
 use tokio::time::sleep;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     env_logger::init();
 
     ctrlc::set_handler(move || {
@@ -38,14 +45,32 @@ async fn run() -> Result<()> {
     let matches = App::new("Curator Agent")
         .version("0.1.0")
         .author("Denis Bazhenov <dotsid@gmail.com>")
-        .about("Agent application for Curator server")
-        .arg_from_usage("-h, --host=<host> 'Curator server host'")
-        .arg_from_usage("-n, --name=<name> 'Agent name'")
+        .setting(AppSettings::SubcommandRequired)
+        .subcommand(
+            SubCommand::with_name("run")
+                .about("Agent application for Curator server")
+                .arg_from_usage("<host> -h, --host=<host> 'Curator server host'")
+                .arg_from_usage("<name> -n, --name=<name> 'Agent name'"),
+        )
+        .subcommand(
+            SubCommand::with_name("watch")
+                .about("Run watch loop for a given toolchains")
+                .arg_from_usage(
+                    "<toolchains> -t, --toolchain=<toolchain>... 'Toolchain image name'",
+                ),
+        )
         .get_matches();
 
-    let host = matches.value_of("host").unwrap();
+    match matches.subcommand() {
+        ("run", Some(opts)) => run_command(opts).await,
+        ("watch", Some(opts)) => watch_command(opts).await,
+        _ => unimplemented!(),
+    }
+}
 
-    let agent_name = matches.value_of("name").unwrap();
+async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
+    let host = opts.value_of("host").unwrap();
+    let agent_name = opts.value_of("name").unwrap();
 
     let mut tasks_hash: Option<_> = None;
     let mut _agent_loop: Option<_> = None;
@@ -72,8 +97,64 @@ async fn run() -> Result<()> {
     }
 }
 
+async fn watch_command(opts: &ArgMatches<'_>) -> Result<()> {
+    let docker = Docker::connect_with_local_defaults()?;
+    let toolchains = opts
+        .values_of("toolchains")
+        .context("No toolchains were given")?
+        .map(|s| s.to_owned())
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>();
+
+    let mut task_set_stream = start_discovery(docker, toolchains);
+    while let Some(task_set) = task_set_stream.next().await {
+        println!("{}", TaskSetDisplay(task_set));
+    }
+    Ok(())
+}
+
 fn hash_values<T: Hash>(values: &[T]) -> u64 {
     let mut hasher = DefaultHasher::new();
     values.iter().for_each(|t| t.hash(&mut hasher));
     hasher.finish()
+}
+
+struct TaskSetDisplay(TaskSet);
+
+impl fmt::Display for TaskSetDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter) -> std::result::Result<(), fmt::Error> {
+        if !self.0.is_empty() {
+            writeln!(f, "Running containers:")?;
+            for (container_id, tasks) in &self.0 {
+                writeln!(
+                    f,
+                    " + {color}{style}{id}{reset}",
+                    id = container_id,
+                    style = Bold,
+                    color = Fg(Green),
+                    reset = Reset,
+                )?;
+                if !tasks.is_empty() {
+                    for task in tasks {
+                        writeln!(f, "    - {:?}", task)?;
+                    }
+                } else {
+                    writeln!(
+                        f,
+                        "      {color}No tasks found{reset}",
+                        color = Fg(Yellow),
+                        reset = Reset,
+                    )?;
+                }
+            }
+        } else {
+            writeln!(
+                f,
+                "{color}No containers found{reset}",
+                color = Fg(Yellow),
+                reset = Reset,
+            )?;
+        }
+        Ok(())
+    }
 }

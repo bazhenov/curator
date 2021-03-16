@@ -14,7 +14,7 @@ pub mod prelude {
     pub use super::protocol::*;
     pub use super::shared;
     pub use super::Shared;
-    pub use anyhow::{Context, Result};
+    pub use anyhow::{ensure, Context, Result};
     pub use thiserror::Error;
     pub type IoResult<T> = std::result::Result<T, std::io::Error>;
 
