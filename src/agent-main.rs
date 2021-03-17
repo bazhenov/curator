@@ -67,8 +67,8 @@ async fn run() -> Result<()> {
 }
 
 async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
-    let host = opts.value_of("host").unwrap();
-    let agent_name = opts.value_of("name").unwrap();
+    let host = opts.value_of("host").context("No host provided")?;
+    let agent_name = opts.value_of("name").context("No name provided")?;
 
     let mut tasks_hash: Option<_> = None;
     let mut _agent_loop: Option<_> = None;
