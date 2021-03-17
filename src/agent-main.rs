@@ -116,10 +116,12 @@ fn hash_values<T: Hash>(values: &[T]) -> u64 {
     hasher.finish()
 }
 
+type FmtResult<T> = std::result::Result<T, fmt::Error>;
+
 struct TaskSetDisplay(TaskSet);
 
 impl fmt::Display for TaskSetDisplay {
-    fn fmt(&self, f: &mut fmt::Formatter) -> std::result::Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> FmtResult<()> {
         if !self.0.is_empty() {
             for task in &self.0 {
                 writeln!(f, "  - {:?}", task)?;
