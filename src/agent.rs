@@ -169,7 +169,7 @@ async fn discovery_loop(
     }
 }
 
-async fn build_task_set(docker: &Docker, toolchains: &[impl AsRef<str>]) -> Result<TaskSet> {
+pub async fn build_task_set(docker: &Docker, toolchains: &[impl AsRef<str>]) -> Result<TaskSet> {
     let mut result = vec![];
     for id in &list_running_containers(&docker).await? {
         for toolchain in toolchains {

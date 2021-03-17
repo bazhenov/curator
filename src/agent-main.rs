@@ -5,10 +5,9 @@ extern crate curator;
 use bollard::Docker;
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 use curator::{
-    agent::{discover, start_discovery, AgentLoop, TaskSet},
+    agent::{build_task_set, discover, AgentLoop, TaskSet},
     prelude::*,
 };
-use futures::stream::StreamExt;
 use std::{
     collections::hash_map::DefaultHasher,
     fmt,
@@ -53,8 +52,8 @@ async fn run() -> Result<()> {
                 .arg_from_usage("<name> -n, --name=<name> 'Agent name'"),
         )
         .subcommand(
-            SubCommand::with_name("watch")
-                .about("Run watch loop for a given toolchains")
+            SubCommand::with_name("tasks")
+                .about("Run discovery for a given toolchains")
                 .arg_from_usage(
                     "<toolchains> -t, --toolchain=<toolchain>... 'Toolchain image name'",
                 ),
@@ -63,7 +62,7 @@ async fn run() -> Result<()> {
 
     match matches.subcommand() {
         ("run", Some(opts)) => run_command(opts).await,
-        ("watch", Some(opts)) => watch_command(opts).await,
+        ("tasks", Some(opts)) => tasks_command(opts).await,
         _ => unimplemented!(),
     }
 }
@@ -97,7 +96,7 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
     }
 }
 
-async fn watch_command(opts: &ArgMatches<'_>) -> Result<()> {
+async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
     let docker = Docker::connect_with_local_defaults()?;
     let toolchains = opts
         .values_of("toolchains")
@@ -106,10 +105,8 @@ async fn watch_command(opts: &ArgMatches<'_>) -> Result<()> {
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>();
 
-    let mut task_set_stream = start_discovery(docker, toolchains);
-    while let Some(task_set) = task_set_stream.next().await {
-        println!("{}", TaskSetDisplay(task_set));
-    }
+    let task_set = build_task_set(&docker, &toolchains).await?;
+    print!("{}", TaskSetDisplay(task_set));
     Ok(())
 }
 
