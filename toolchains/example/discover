@@ -4,6 +4,6 @@ PIDS="$(ps -g 1 -o pid=)"
 for PID in $PIDS
 do
   cat << EOF
-{"id":"lsof.$PID","command":"lsof","args":["-p","$PID"]}
+{"id":"lsof.$PID","command":["lsof","-p","$PID"]}
 EOF
 done

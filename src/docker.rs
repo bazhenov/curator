@@ -19,7 +19,6 @@ use bollard::{
 };
 use futures::{stream::Stream, StreamExt};
 use hyper::body::Bytes;
-use serde::de::DeserializeOwned;
 use std::{collections::hash_map::HashMap, io::Write, time::Duration};
 use tokio::{
     sync::{mpsc, watch},
@@ -59,6 +58,9 @@ enum Errors {
 
     #[error("Discovery failed on container: {0}")]
     DiscoveryFailed(String),
+
+    #[error("Incorrect TaskDef json-payload")]
+    InvalidTaskDefJson,
 }
 
 pub struct Container<'a> {
@@ -208,11 +210,12 @@ pub async fn run_toolchain_discovery(
     let stdout_stream = container.read_logs().filter_map(only_stdout);
 
     let reader = StreamReader::new(stdout_stream);
-    let stdout = FramedRead::new(reader, LinesCodec::new());
+    let stdout = FramedRead::new(reader, LinesCodec::new())
+        .map(|e| e.context("Unable to read stdout from upstream container"));
 
     let task_defs = stdout
-        .map(|e| e.context("Unable to read stdout from upstream container"))
-        .map(read_from_json)
+        .map(parse_json)
+        .map(|json| build_task_def(json, container_id, toolchain_image))
         .collect::<Vec<_>>()
         .await;
 
@@ -278,8 +281,29 @@ async fn redirect_output(
     Ok(())
 }
 
-fn read_from_json<T: DeserializeOwned>(line: Result<String>) -> Result<T> {
-    line.and_then(|l| serde_json::from_str::<T>(&l).context("Unable to read JSON"))
+fn parse_json(line: Result<String>) -> Result<serde_json::Value> {
+    line.and_then(|l| serde_json::from_str(&l).context("Unable to read JSON"))
+}
+
+/// Adds correct container and toolchain to provided JSON
+///
+/// Each [TaskDef] instance should have `container_id` and `toolchain` properties. This
+/// methods adds those properties to json returned from discovery script. So there is no way
+/// discovery script can abuse or accidentally provide incorrect values for those properties.
+fn build_task_def(
+    json: Result<serde_json::Value>,
+    container_id: &str,
+    toolchain: &str,
+) -> Result<TaskDef> {
+    use serde_json::{json, Value};
+
+    if let Value::Object(mut payload) = json? {
+        payload.insert("container_id".to_owned(), json!(container_id));
+        payload.insert("toolchain".to_owned(), json!(toolchain));
+        serde_json::from_value(Value::Object(payload)).context(InvalidTaskDefJson)
+    } else {
+        bail!(InvalidTaskDefJson)
+    }
 }
 
 async fn only_stdout(batch: Result<LogOutput>) -> Option<IoResult<Bytes>> {
@@ -319,7 +343,7 @@ pub async fn build_task_set(docker: &Docker, toolchains: &[impl AsRef<str>]) -> 
                 .await
                 .context(DiscoveryFailed(id.clone()));
             match tasks {
-                Ok(tasks) => result.push((id.clone(), tasks)),
+                Ok(tasks) => result.extend(tasks),
                 Err(e) => warn!("{:?}", e),
             }
         }

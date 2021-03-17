@@ -6,7 +6,7 @@ use hyper::{
     header::{ACCEPT, CONTENT_TYPE},
     http, Body, Request, Response,
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeSet, HashMap},
     ffi::OsStr,
@@ -51,6 +51,8 @@ enum Errors {
 pub struct TaskDef {
     pub id: String,
     pub command: Vec<String>,
+    pub container_id: String,
+    pub toolchain: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
@@ -89,7 +91,7 @@ impl TaskDef {
 
 /// Task set is the set of all the tasks found in the system
 /// on a given round of discovery
-pub type TaskSet = Vec<(String, Vec<TaskDef>)>;
+pub type TaskSet = Vec<TaskDef>;
 
 impl SseClient {
     pub async fn connect<T: Serialize>(uri: &str, body: T) -> Result<Self> {
@@ -178,40 +180,6 @@ impl Lines {
             Ok(None)
         }
     }
-}
-
-pub async fn discover(path: impl AsRef<Path>) -> Result<Vec<TaskDef>> {
-    use std::os::unix::fs::PermissionsExt;
-    let mut tasks = vec![];
-
-    for entry in std::fs::read_dir(path)? {
-        let entry = entry?;
-        let metadata = entry.metadata()?;
-
-        if let Some(name) = entry.path().file_name() {
-            let is_executable = metadata.permissions().mode() & 0o111 > 0;
-            let name_match = name.to_str().and_then(|name| name.find(".discovery."));
-            trace!("Checking: {:?} exec: {}", entry, is_executable);
-            if metadata.is_file() && is_executable && name_match.is_some() {
-                tasks.append(&mut gather_tasks(entry.path())?);
-            }
-        }
-    }
-    Ok(tasks)
-}
-
-fn gather_tasks<T: DeserializeOwned>(script: PathBuf) -> Result<Vec<T>> {
-    use std::process::Command;
-
-    let output = Command::new(script)
-        .stdout(Stdio::piped())
-        .spawn()?
-        .wait_with_output()?;
-    let stdout = String::from_utf8(output.stdout)?;
-    Ok(stdout
-        .lines()
-        .flat_map(|l| serde_json::from_str::<T>(&l))
-        .collect())
 }
 
 pub struct CloseHandle(Arc<Notify>);
@@ -601,7 +569,6 @@ mod tests {
     use crate::tests::*;
     use maplit::btreeset;
     use serde_json::json;
-    use std::fs;
     use tempfile::TempDir;
 
     fn init() {
@@ -633,6 +600,8 @@ mod tests {
         assert_json_reads(
             TaskDef {
                 id: "foo".into(),
+                container_id: "e2adfa57360d".into(),
+                toolchain: "toolchain:dev".into(),
                 command: vec!["who".into(), "-a".into()],
                 description: Some("Calling who command".into()),
                 tags: btreeset! {"who".into(), "unix".into()},
@@ -640,35 +609,13 @@ mod tests {
             },
             json!({
                 "id": "foo",
+                "container_id": "e2adfa57360d",
+                "toolchain": "toolchain:dev",
                 "command": ["who", "-a"],
                 "tags": ["who", "unix"],
                 "description": "Calling who command"
             }),
         )
-    }
-
-    #[tokio::test]
-    async fn check_discovery_process() -> Result<()> {
-        use fs::File;
-        use std::os::unix::fs::PermissionsExt;
-        init();
-
-        let tmp = TempDir::new()?;
-        let path = tmp.path().join("test.discovery.sh");
-        let mut permissions = {
-            let mut file = File::create(&path)?;
-            writeln!(file, "#!/usr/bin/env sh")?;
-            writeln!(file, r#"echo '{{"id": "date", "command": "date"}}'"#)?;
-            file.metadata()?.permissions()
-        };
-        permissions.set_mode(permissions.mode() | 0o100);
-        fs::set_permissions(&path, permissions)?;
-
-        let tasks = discover(tmp.path()).await?;
-        assert_eq!(tasks.len(), 1);
-        let first_task = tasks.iter().next().unwrap();
-        assert_eq!(first_task.id, "date");
-        Ok(())
     }
 
     #[test]

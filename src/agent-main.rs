@@ -5,22 +5,21 @@ extern crate curator;
 use bollard::Docker;
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 use curator::{
-    agent::{discover, AgentLoop, TaskSet},
-    docker::build_task_set,
+    agent::{AgentLoop, TaskSet},
+    docker::{build_task_set, start_discovery},
     prelude::*,
 };
+use futures::stream::StreamExt;
 use std::{
     collections::hash_map::DefaultHasher,
     fmt,
     hash::{Hash, Hasher},
     process::exit,
-    time::Duration,
 };
 use termion::{
-    color::{Fg, Green, Yellow},
-    style::{Bold, Reset},
+    color::{Fg, Yellow},
+    style::Reset,
 };
-use tokio::time::sleep;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -74,11 +73,12 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
     let mut tasks_hash: Option<_> = None;
     let mut _agent_loop: Option<_> = None;
 
-    loop {
-        let tasks = discover("./").await?;
+    let docker = Docker::connect_with_local_defaults()?;
+    let toolchains = vec!["bazhenov.me/curator/toolchain-example:dev".into()];
+    let mut stream = start_discovery(docker, toolchains);
 
+    while let Some(tasks) = stream.next().await {
         let hash = Some(hash_values(&tasks));
-
         let has_changes = tasks_hash != hash;
         tasks_hash = hash;
 
@@ -92,8 +92,9 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
             // loop will be closed immediately
             _agent_loop = Some(AgentLoop::run(&host, agent_name, tasks));
         }
-        sleep(Duration::from_secs(5)).await;
     }
+
+    Ok(())
 }
 
 async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
@@ -111,7 +112,7 @@ async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
 
 fn hash_values<T: Hash>(values: &[T]) -> u64 {
     let mut hasher = DefaultHasher::new();
-    values.iter().for_each(|t| t.hash(&mut hasher));
+    values.hash(&mut hasher);
     hasher.finish()
 }
 
@@ -120,33 +121,13 @@ struct TaskSetDisplay(TaskSet);
 impl fmt::Display for TaskSetDisplay {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::result::Result<(), fmt::Error> {
         if !self.0.is_empty() {
-            writeln!(f, "Running containers:")?;
-            for (container_id, tasks) in &self.0 {
-                writeln!(
-                    f,
-                    " + {color}{style}{id}{reset}",
-                    id = container_id,
-                    style = Bold,
-                    color = Fg(Green),
-                    reset = Reset,
-                )?;
-                if !tasks.is_empty() {
-                    for task in tasks {
-                        writeln!(f, "    - {:?}", task)?;
-                    }
-                } else {
-                    writeln!(
-                        f,
-                        "      {color}No tasks found{reset}",
-                        color = Fg(Yellow),
-                        reset = Reset,
-                    )?;
-                }
+            for task in &self.0 {
+                writeln!(f, "  - {:?}", task)?;
             }
         } else {
             writeln!(
                 f,
-                "{color}No containers found{reset}",
+                "{color}No tasks found{reset}",
                 color = Fg(Yellow),
                 reset = Reset,
             )?;
