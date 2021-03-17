@@ -26,7 +26,16 @@ use tokio_util::{
 };
 use Errors::*;
 
-pub const AGENT_WORKDIR: &str = "/var/run/curator";
+/// Workdir for toolchain tasks.
+///
+/// All toolchain tasks will be executed with this path as a workid and all files
+/// left in this directory will be treated as a task artifacts.
+///
+/// This path should be created in toolchain container upfront when building toolchain container
+pub const TOOLCHAIN_WORKDIR: &str = "/var/run/curator";
+
+/// Fully qualified path to the discovery script
+pub const DISCOVER_SCRIPT_PATH: &str = "/discover";
 
 #[derive(Error, Debug)]
 enum Errors {
@@ -74,7 +83,7 @@ impl<'a> Container<'a> {
             image: Some(image),
             cmd: command,
             host_config: Some(host_config),
-            working_dir: Some(AGENT_WORKDIR),
+            working_dir: Some(TOOLCHAIN_WORKDIR),
             ..Default::default()
         };
 
@@ -182,7 +191,7 @@ pub async fn run_toolchain_discovery(
     let container = Container::start_with_pid_mode(
         docker,
         &toolchain_image,
-        Some(&["/discover"]),
+        Some(&[DISCOVER_SCRIPT_PATH]),
         Some(&pid_mode),
     );
     let container = container.await.context(UnableToStartNewContainer)?;
@@ -230,7 +239,7 @@ pub async fn run_toolchain_task<W: Write>(
     let status_code = container.wait().await?;
     redirect_process.await??;
     if let Some(artifacts) = artifacts {
-        container.download(AGENT_WORKDIR, artifacts).await?;
+        container.download(TOOLCHAIN_WORKDIR, artifacts).await?;
     }
     container.remove().await?;
 
