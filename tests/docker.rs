@@ -77,15 +77,13 @@ async fn run_toolchain_for_artifact(docker: Docker) -> Result<()> {
 
 async fn run_test_toolchain(
     docker: &Docker,
-    mut args: Vec<String>,
+    command: Vec<String>,
 ) -> Result<(i64, Cursor<Vec<u8>>, String)> {
     let container = get_sample_container(&docker).await?;
 
-    let command = args.remove(0);
     let task = TaskDef {
         id: String::from(""),
         command,
-        args,
         ..Default::default()
     };
 

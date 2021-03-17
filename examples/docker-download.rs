@@ -8,7 +8,7 @@ use std::{fs::OpenOptions, io::Write};
 async fn main() -> Result<()> {
     let docker = Docker::connect_with_unix_defaults()?;
 
-    let container = Container::start(&docker, "alpine:3.12", Some(vec!["sleep", "5"])).await?;
+    let container = Container::start(&docker, "alpine:3.12", Some(&vec!["sleep", "5"])).await?;
     println!("Container id: {}", container.id);
 
     let options = DownloadFromContainerOptions { path: "/etc" };
