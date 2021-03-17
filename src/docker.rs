@@ -217,11 +217,13 @@ pub async fn run_toolchain_task<W: Write>(
         !container_id.is_empty(),
         InvalidContainerId(container_id.into())
     );
-    let mut command = vec![&task.command];
-    command.extend(&task.args);
     let pid_mode = format!("container:{}", container_id);
-    let container =
-        Container::start_with_pid_mode(docker, &toolchain_image, Some(&command), Some(&pid_mode));
+    let container = Container::start_with_pid_mode(
+        docker,
+        &toolchain_image,
+        Some(&task.command),
+        Some(pid_mode),
+    );
     let container = container.await.context(UnableToStartNewContainer)?;
 
     let redirect_process = tokio::spawn(redirect_output(container.read_logs(), stdout, stderr));

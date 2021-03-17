@@ -58,10 +58,7 @@ enum Errors {
 #[derive(Deserialize, Hash, PartialEq, Eq, Clone, Debug, Default)]
 pub struct TaskDef {
     pub id: String,
-    // TODO it would be nice to merge command and args
-    pub command: String,
-    #[serde(default)]
-    pub args: Vec<String>,
+    pub command: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
@@ -75,14 +72,12 @@ impl TaskDef {
      */
     fn spawn(&self) -> Result<(Child, ChildStdout, ChildStderr, TempDir)> {
         let work_dir = TempDir::new("curator_agent")?;
-        let mut cmd = Command::new(&self.command);
-        trace!(
-            "Spawning command: {} with args {:?}",
-            &self.command,
-            &self.args
-        );
+        let command = &self.command[0];
+        let args = &self.command[1..];
+        let mut cmd = Command::new(command);
+        trace!("Spawning command: {} with args {:?}", command, args);
         let mut child = cmd
-            .args(&self.args)
+            .args(args)
             .current_dir(&work_dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -680,16 +675,14 @@ mod tests {
         assert_json_reads(
             TaskDef {
                 id: "foo".into(),
-                command: "who".into(),
-                args: vec!["-a".into()],
+                command: vec!["who".into(), "-a".into()],
                 description: Some("Calling who command".into()),
                 tags: btreeset! {"who".into(), "unix".into()},
                 ..Default::default()
             },
             json!({
                 "id": "foo",
-                "command": "who",
-                "args": ["-a"],
+                "command": ["who", "-a"],
                 "tags": ["who", "unix"],
                 "description": "Calling who command"
             }),
@@ -737,14 +730,11 @@ mod tests {
         Ok(())
     }
 
-    fn create_task(command: &str, args: &[&str]) -> TaskDef {
-        let command = command.to_string();
-
-        let args = args.iter().map(|s| String::from(*s)).collect::<Vec<_>>();
+    fn create_task(command: &[&str]) -> TaskDef {
+        let command = command.iter().map(|s| String::from(*s)).collect::<Vec<_>>();
         TaskDef {
             id: "id".to_string(),
             command,
-            args,
             ..Default::default()
         }
     }
@@ -753,10 +743,10 @@ mod tests {
     async fn check_run_command_has_isolated_directory() -> Result<()> {
         init();
 
-        let task = create_task("pwd", &[]);
+        let task = create_task(&["pwd"]);
         let (stdout1, _) = execute(task).await?;
 
-        let task = create_task("pwd", &[]);
+        let task = create_task(&["pwd"]);
         let (stdout2, _) = execute(task).await?;
 
         assert_ne!(
@@ -771,7 +761,7 @@ mod tests {
     async fn check_stdout_works_correctly() -> Result<()> {
         init();
 
-        let (stdout, _) = execute(create_task("sh", &["-c", "echo 1; echo 2"])).await?;
+        let (stdout, _) = execute(create_task(&["sh", "-c", "echo 1; echo 2"])).await?;
         assert_eq!("1\n2\n", stdout);
 
         Ok(())
