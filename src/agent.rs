@@ -49,12 +49,30 @@ enum Errors {
 
 #[derive(Deserialize, Hash, PartialEq, Eq, Clone, Debug, Default)]
 pub struct TaskDef {
+    /// Task id
+    ///
+    /// Task id is the global identifier used to address task in the system (across all running agents)
     pub id: String,
+
+    /// Command to be executed in toolchain container
+    ///
+    /// First part is the absolute path to executable and all following are the arguments:
+    ///
+    /// ```
+    /// vec!["/sbin/lsof", "-p", "1"]
+    /// ```
     pub command: Vec<String>,
+
+    /// Target container id
     pub container_id: String,
+
+    /// Toolchain container image name
     pub toolchain: String,
+
+    /// Human readable task description
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+
     #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
     pub tags: BTreeSet<String>,
 }
