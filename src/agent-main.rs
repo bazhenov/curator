@@ -28,8 +28,7 @@ async fn main() -> Result<()> {
     ctrlc::set_handler(move || {
         println!("Got Ctrl-C! Shuting down...");
         exit(1);
-    })
-    .expect("Unable to install Ctrl-C handler");
+    })?;
 
     match run().await {
         Err(e) => {
@@ -101,7 +100,6 @@ async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
     let toolchains = opts
         .values_of("toolchains")
         .context("No toolchains were given")?
-        .map(|s| s.to_owned())
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>();
 
