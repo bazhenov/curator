@@ -1,9 +1,5 @@
-use crate::{
-    docker::{list_running_containers, run_toolchain_discovery},
-    prelude::*,
-};
-use bollard::Docker;
-use futures::{future::FutureExt, select, stream::Stream};
+use crate::prelude::*;
+use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
     client::{Client, HttpConnector},
@@ -26,11 +22,10 @@ use tempdir::TempDir;
 use tokio::{
     io::{AsyncBufReadExt, AsyncRead, BufReader},
     process::{Child, ChildStderr, ChildStdout, Command},
-    sync::{mpsc, watch, Notify},
+    sync::{mpsc, Notify},
     time::sleep,
     try_join,
 };
-use tokio_stream::wrappers::WatchStream;
 use uuid::Uuid;
 
 type HttpClient = Client<HttpConnector, Body>;
@@ -50,9 +45,6 @@ enum Errors {
 
     #[error("Unexpected status code: {}", .0)]
     UnexpectedStatusCode(http::StatusCode),
-
-    #[error("Discovery failed on container: {0}")]
-    DiscoveryFailed(String),
 }
 
 #[derive(Deserialize, Hash, PartialEq, Eq, Clone, Debug, Default)]
@@ -144,40 +136,6 @@ impl SseClient {
             }
         }
     }
-}
-
-pub fn start_discovery(docker: Docker, toolchains: Vec<String>) -> impl Stream<Item = TaskSet> {
-    let (tx, rx) = watch::channel(vec![]);
-    tokio::spawn(discovery_loop(docker, tx, toolchains));
-    WatchStream::new(rx)
-}
-
-async fn discovery_loop(
-    docker: Docker,
-    tx: watch::Sender<TaskSet>,
-    toolchains: Vec<String>,
-) -> Result<()> {
-    loop {
-        let task_set = build_task_set(&docker, &toolchains).await?;
-        tx.send(task_set)?;
-        sleep(Duration::from_secs(1)).await;
-    }
-}
-
-pub async fn build_task_set(docker: &Docker, toolchains: &[impl AsRef<str>]) -> Result<TaskSet> {
-    let mut result = vec![];
-    for id in &list_running_containers(&docker).await? {
-        for toolchain in toolchains {
-            let tasks = run_toolchain_discovery(&docker, &id, toolchain.as_ref())
-                .await
-                .context(Errors::DiscoveryFailed(id.clone()));
-            match tasks {
-                Ok(tasks) => result.push((id.clone(), tasks)),
-                Err(e) => warn!("{:?}", e),
-            }
-        }
-    }
-    Ok(result)
 }
 
 /// Lines buffered iterator

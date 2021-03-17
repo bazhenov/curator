@@ -5,7 +5,8 @@ extern crate curator;
 use bollard::Docker;
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 use curator::{
-    agent::{build_task_set, discover, AgentLoop, TaskSet},
+    agent::{discover, AgentLoop, TaskSet},
+    docker::build_task_set,
     prelude::*,
 };
 use std::{

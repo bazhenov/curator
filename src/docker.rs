@@ -5,8 +5,10 @@
 //! * listing target container;
 //! * discovery tasks;
 //! * running task for a given container
-use crate::agent::TaskDef;
-use crate::prelude::*;
+use crate::{
+    agent::{TaskDef, TaskSet},
+    prelude::*,
+};
 use bollard::{
     container::{
         Config, DownloadFromContainerOptions, ListContainersOptions, LogOutput, LogsOptions,
@@ -18,8 +20,12 @@ use bollard::{
 use futures::{stream::Stream, StreamExt};
 use hyper::body::Bytes;
 use serde::de::DeserializeOwned;
-use std::{collections::hash_map::HashMap, io::Write};
-use tokio::sync::mpsc;
+use std::{collections::hash_map::HashMap, io::Write, time::Duration};
+use tokio::{
+    sync::{mpsc, watch},
+    time::sleep,
+};
+use tokio_stream::wrappers::WatchStream;
 use tokio_util::{
     codec::{FramedRead, LinesCodec},
     io::StreamReader,
@@ -50,6 +56,9 @@ enum Errors {
 
     #[error("Unable to remove container: {0}")]
     UnableToRemoveContainer(String),
+
+    #[error("Discovery failed on container: {0}")]
+    DiscoveryFailed(String),
 }
 
 pub struct Container<'a> {
@@ -282,4 +291,38 @@ async fn only_stdout(batch: Result<LogOutput>) -> Option<IoResult<Bytes>> {
         })
         .map_err(|_e| io::Error::new(io::ErrorKind::Other, "oh no!"))
         .transpose()
+}
+
+pub fn start_discovery(docker: Docker, toolchains: Vec<String>) -> impl Stream<Item = TaskSet> {
+    let (tx, rx) = watch::channel(vec![]);
+    tokio::spawn(discovery_loop(docker, tx, toolchains));
+    WatchStream::new(rx)
+}
+
+async fn discovery_loop(
+    docker: Docker,
+    tx: watch::Sender<TaskSet>,
+    toolchains: Vec<String>,
+) -> Result<()> {
+    loop {
+        let task_set = build_task_set(&docker, &toolchains).await?;
+        tx.send(task_set)?;
+        sleep(Duration::from_secs(1)).await;
+    }
+}
+
+pub async fn build_task_set(docker: &Docker, toolchains: &[impl AsRef<str>]) -> Result<TaskSet> {
+    let mut result = vec![];
+    for id in &list_running_containers(&docker).await? {
+        for toolchain in toolchains {
+            let tasks = run_toolchain_discovery(&docker, &id, toolchain.as_ref())
+                .await
+                .context(DiscoveryFailed(id.clone()));
+            match tasks {
+                Ok(tasks) => result.push((id.clone(), tasks)),
+                Err(e) => warn!("{:?}", e),
+            }
+        }
+    }
+    Ok(result)
 }
