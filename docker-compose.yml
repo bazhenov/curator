@@ -9,7 +9,7 @@ services:
   agent:
     build:
       context: .
-      target: curator-agent-dev
+      target: curator-agent
     environment:
       - RUST_LOG=curator=info
       - CURATOR_HOST=backend:8080
