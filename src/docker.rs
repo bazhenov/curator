@@ -31,6 +31,8 @@ use tokio_util::{
 };
 use Errors::*;
 
+type BollardError = bollard::errors::Error;
+
 /// Workdir for toolchain tasks.
 ///
 /// All toolchain tasks will be executed with this path as a workid and all files
@@ -42,16 +44,13 @@ pub const TOOLCHAIN_WORKDIR: &str = "/var/run/curator";
 /// Fully qualified path to the discovery script
 pub const DISCOVER_SCRIPT_PATH: &str = "/discover";
 
-#[derive(Error, Debug)]
-enum Errors {
+#[derive(Error, Debug, PartialEq)]
+pub enum Errors {
     #[error("Container exit code code is non zero")]
     ContainerNonZeroExitCode(i64),
 
     #[error("Invalid container id given: {0}")]
     InvalidContainerId(String),
-
-    #[error("Unable to start new container")]
-    UnableToStartNewContainer,
 
     #[error("Unable to remove container: {0}")]
     UnableToRemoveContainer(String),
@@ -61,6 +60,9 @@ enum Errors {
 
     #[error("Incorrect TaskDef json-payload")]
     InvalidTaskDefJson,
+
+    #[error("Docker image not found")]
+    ImageNotFound,
 }
 
 pub struct Container<'a> {
@@ -99,7 +101,7 @@ impl<'a> Container<'a> {
         };
 
         let container = docker.create_container::<&str, _>(None, config);
-        let id = container.await?.id;
+        let id = container.await.map_err(map_bollard_errors)?.id;
         docker.start_container::<&str>(&id, None).await?;
 
         Ok(Container { docker, id })
@@ -205,7 +207,7 @@ pub async fn run_toolchain_discovery(
         Some(&[DISCOVER_SCRIPT_PATH]),
         Some(&pid_mode),
     );
-    let container = container.await.context(UnableToStartNewContainer)?;
+    let container = container.await?;
 
     let stdout_stream = container.read_logs().filter_map(only_stdout);
 
@@ -245,7 +247,7 @@ pub async fn run_toolchain_task<W: Write>(
         Some(&task.command),
         Some(pid_mode),
     );
-    let container = container.await.context(UnableToStartNewContainer)?;
+    let container = container.await?;
 
     let redirect_process = tokio::spawn(redirect_output(container.read_logs(), stdout, stderr));
     let status_code = container.wait().await?;
@@ -256,6 +258,17 @@ pub async fn run_toolchain_task<W: Write>(
     container.remove().await?;
 
     Ok(status_code)
+}
+
+/// Maps some of the bollard errors to more meaningful error codes that
+/// application can handle explicitly
+fn map_bollard_errors(error: BollardError) -> AnyhowError {
+    if let BollardError::DockerResponseNotFoundError { message } = &error {
+        if message.contains("No such image") {
+            return AnyhowError::new(error).context(ImageNotFound);
+        }
+    }
+    error.into()
 }
 
 async fn redirect_output(

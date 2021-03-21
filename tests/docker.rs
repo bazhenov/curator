@@ -20,10 +20,6 @@ use tokio::sync::mpsc;
 
 const TOOLCHAIN: &str = "bazhenov.me/curator/toolchain-example:dev";
 
-macro_rules! str_vec {
-    ($($x:expr),*) => (vec![$($x.to_string()),*]);
-}
-
 #[fixture]
 fn docker() -> Docker {
     Docker::connect_with_local_defaults().expect("Unable to get Docker instance")
@@ -44,8 +40,7 @@ async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
 #[rstest]
 #[tokio::test]
 async fn run_toolchain_for_exit_code_and_stdout(docker: Docker) -> Result<()> {
-    let (status, _, stdout) =
-        run_test_toolchain(&docker, str_vec!["sh", "-c", "echo 'Hello'"]).await?;
+    let (status, _, stdout) = run_test_toolchain(&docker, &["sh", "-c", "echo 'Hello'"]).await?;
 
     assert_eq!(status, 0);
     assert_eq!("Hello\n", stdout);
@@ -57,7 +52,7 @@ async fn run_toolchain_for_exit_code_and_stdout(docker: Docker) -> Result<()> {
 #[tokio::test]
 async fn run_toolchain_for_artifact(docker: Docker) -> Result<()> {
     let (status, artifacts, _) =
-        run_test_toolchain(&docker, str_vec!["sh", "-c", "touch test.txt"]).await?;
+        run_test_toolchain(&docker, &["sh", "-c", "touch test.txt"]).await?;
 
     assert_eq!(status, 0);
 
@@ -75,15 +70,33 @@ async fn run_toolchain_for_artifact(docker: Docker) -> Result<()> {
     Ok(())
 }
 
-async fn run_test_toolchain(
+#[rstest]
+#[tokio::test]
+async fn not_existent_toolchain_image(docker: Docker) -> Result<()> {
+    use curator::docker::Errors as DockerErrors;
+
+    let result = run_toolchain(&docker, &["date"], "intentionally-not-existent-toolchain").await;
+
+    if let Err(cause) = result {
+        if let Ok(cause) = cause.downcast::<DockerErrors>() {
+            assert_eq!(cause, DockerErrors::ImageNotFound);
+            return Ok(());
+        }
+    }
+
+    panic!("ImageNotFound error should be generated");
+}
+
+async fn run_toolchain(
     docker: &Docker,
-    command: Vec<String>,
+    command: &[&str],
+    toolchain: &str,
 ) -> Result<(i64, Cursor<Vec<u8>>, String)> {
     let container = get_sample_container(&docker).await?;
 
     let task = TaskDef {
         id: String::from(""),
-        command,
+        command: command.iter().map(|s| String::from(*s)).collect(),
         ..Default::default()
     };
 
@@ -94,7 +107,7 @@ async fn run_test_toolchain(
     let status_code = run_toolchain_task(
         &docker,
         &container,
-        TOOLCHAIN,
+        toolchain,
         &task,
         Some(sender),
         None,
@@ -104,6 +117,13 @@ async fn run_test_toolchain(
     artifacts.set_position(0);
 
     Ok((status_code, artifacts, stdout_content.await?))
+}
+
+async fn run_test_toolchain(
+    docker: &Docker,
+    command: &[&str],
+) -> Result<(i64, Cursor<Vec<u8>>, String)> {
+    run_toolchain(docker, command, TOOLCHAIN).await
 }
 
 async fn get_sample_container(docker: &Docker) -> Result<String> {
