@@ -230,13 +230,12 @@ pub async fn run_toolchain_discovery(
 
 pub async fn run_toolchain_task<W: Write>(
     docker: &Docker,
-    container_id: &str,
-    toolchain_image: &str,
     task: &TaskDef,
     stdout: Option<mpsc::Sender<Bytes>>,
     stderr: Option<mpsc::Sender<Bytes>>,
     artifacts: Option<&mut W>,
 ) -> Result<i64> {
+    let container_id = &task.container_id;
     ensure!(
         !container_id.is_empty(),
         InvalidContainerId(container_id.into())
@@ -244,7 +243,7 @@ pub async fn run_toolchain_task<W: Write>(
     let pid_mode = format!("container:{}", container_id);
     let container = Container::start_with_pid_mode(
         docker,
-        &toolchain_image,
+        &task.toolchain,
         Some(&task.command),
         Some(pid_mode),
     );

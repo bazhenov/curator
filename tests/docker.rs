@@ -92,11 +92,13 @@ async fn run_toolchain(
     command: &[&str],
     toolchain: &str,
 ) -> Result<(i64, Cursor<Vec<u8>>, String)> {
-    let container = get_sample_container(&docker).await?;
+    let container_id = get_sample_container(&docker).await?;
 
     let task = TaskDef {
         id: String::from(""),
         command: command.iter().map(|s| String::from(*s)).collect(),
+        container_id,
+        toolchain: toolchain.into(),
         ..Default::default()
     };
 
@@ -104,16 +106,8 @@ async fn run_toolchain(
     let stdout_content = tokio::spawn(collect(receiver));
     let mut artifacts = Cursor::new(vec![]);
 
-    let status_code = run_toolchain_task(
-        &docker,
-        &container,
-        toolchain,
-        &task,
-        Some(sender),
-        None,
-        Some(&mut artifacts),
-    )
-    .await?;
+    let status_code =
+        run_toolchain_task(&docker, &task, Some(sender), None, Some(&mut artifacts)).await?;
     artifacts.set_position(0);
 
     Ok((status_code, artifacts, stdout_content.await?))

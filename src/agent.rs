@@ -1,4 +1,5 @@
-use crate::prelude::*;
+use crate::{docker::run_toolchain_task, prelude::*};
+use bollard::Docker;
 use futures::{future::FutureExt, select};
 use hyper::{
     body::HttpBody as _,
@@ -219,10 +220,11 @@ pub struct AgentLoop {
     uri: String,
     tasks: HashMap<String, TaskDef>,
     close_handle: Arc<Notify>,
+    docker: Docker,
 }
 
 impl AgentLoop {
-    pub fn run(host: &str, name: &str, tasks: Vec<TaskDef>) -> CloseHandle {
+    pub fn run(host: &str, name: &str, tasks: Vec<TaskDef>) -> Result<CloseHandle> {
         let name = name.into();
 
         let tasks = tasks.into_iter().map(|i| (i.id.clone(), i)).collect();
@@ -232,6 +234,7 @@ impl AgentLoop {
             uri: format!("http://{}", host),
             tasks,
             close_handle: close_handle.clone(),
+            docker: Docker::connect_with_local_defaults()?,
         };
 
         tokio::spawn(async move {
@@ -240,7 +243,7 @@ impl AgentLoop {
             }
         });
 
-        close_handle.into()
+        Ok(close_handle.into())
     }
 
     async fn _run(&mut self) -> Result<()> {
@@ -367,6 +370,8 @@ impl AgentLoop {
 
         if let Some(task) = self.tasks.get(&task_id) {
             let task = task.clone();
+
+            //run_toolchain_task::<std::fs::File>(&self.docker, &task, None, None, None);
             tokio::spawn(async move {
                 if let Err(e) = Self::run_task(task, tx.clone()).await {
                     let reason = format!(

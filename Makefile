@@ -10,7 +10,7 @@ images:
 	COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build
 
 run:
-	docker-compose up backend agent frontend router
+	docker-compose up backend agent frontend app
 
 toolchains/%:
 	$(eval IMAGE_ID = bazhenov.me/curator/toolchain-$(@F):dev)
