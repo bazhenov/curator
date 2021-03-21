@@ -1,4 +1,4 @@
-.PHONY = images
+.PHONY = images run
 
 # Enable LLD as a linker. It's 3-5 times faster on Linux but basically broken on macOS:
 # https://github.com/rust-lang/rust/issues/39915
@@ -8,6 +8,9 @@
 
 images:
 	COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build
+
+run:
+	docker-compose up backend agent frontend router
 
 toolchains/%:
 	$(eval IMAGE_ID = bazhenov.me/curator/toolchain-$(@F):dev)

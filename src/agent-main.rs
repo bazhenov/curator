@@ -75,7 +75,7 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
 
     let docker = Docker::connect_with_local_defaults()?;
     let toolchains = vec!["bazhenov.me/curator/toolchain-example:dev".into()];
-    let mut stream = start_discovery(docker, toolchains);
+    let (mut stream, loop_handle) = start_discovery(docker, toolchains);
 
     while let Some(tasks) = stream.next().await {
         let hash = Some(hash_values(&tasks));
@@ -94,7 +94,7 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
         }
     }
 
-    Ok(())
+    loop_handle.await?
 }
 
 async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {

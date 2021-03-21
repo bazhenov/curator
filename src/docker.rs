@@ -22,6 +22,7 @@ use hyper::body::Bytes;
 use std::{collections::hash_map::HashMap, io::Write, time::Duration};
 use tokio::{
     sync::{mpsc, watch},
+    task::JoinHandle,
     time::sleep,
 };
 use tokio_stream::wrappers::WatchStream;
@@ -326,14 +327,17 @@ async fn only_stdout(batch: Result<LogOutput>) -> Option<IoResult<Bytes>> {
             LogOutput::StdOut { message } => Some(message),
             _ => None,
         })
-        .map_err(|_e| io::Error::new(io::ErrorKind::Other, "oh no!"))
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
         .transpose()
 }
 
-pub fn start_discovery(docker: Docker, toolchains: Vec<String>) -> impl Stream<Item = TaskSet> {
+pub fn start_discovery(
+    docker: Docker,
+    toolchains: Vec<String>,
+) -> (impl Stream<Item = TaskSet>, JoinHandle<Result<()>>) {
     let (tx, rx) = watch::channel(vec![]);
-    tokio::spawn(discovery_loop(docker, tx, toolchains));
-    WatchStream::new(rx)
+    let join_handle = tokio::spawn(discovery_loop(docker, tx, toolchains));
+    (WatchStream::new(rx), join_handle)
 }
 
 async fn discovery_loop(

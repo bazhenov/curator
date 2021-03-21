@@ -5,22 +5,26 @@ services:
       context: .
       target: curator-server
     environment:
-      - RUST_LOG=curator=info
+      - RUST_LOG=info
+
   agent:
     build:
       context: .
       target: curator-agent
     environment:
-      - RUST_LOG=curator=info
-      - CURATOR_HOST=backend:8080
-      - AGENT_NAME=single
+      - RUST_LOG=curator=warn
     depends_on:
       - backend
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: run --host backend:8080 --name single
+
   frontend:
     build:
       context: ./frontend
       target: frontend
-  router:
+
+  app:
     build:
       context: ./frontend
       target: router
