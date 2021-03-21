@@ -356,6 +356,8 @@ impl AgentLoop {
     fn spawn_and_track_task(&self, task_id: String, execution_id: Uuid) {
         use ChildProgress::*;
 
+        trace!("Task requested: {}, execution: {}", task_id, execution_id);
+
         let (tx, rx) = mpsc::channel(100);
         tokio::spawn(Self::report_execution_back(
             self.uri.to_owned(),
