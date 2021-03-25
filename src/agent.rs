@@ -2,7 +2,7 @@ use crate::{docker::run_toolchain_task, prelude::*};
 use bollard::Docker;
 use futures::{future::FutureExt, select};
 use hyper::{
-    body::HttpBody as _,
+    body::{HttpBody as _, Bytes},
     client::{Client, HttpConnector},
     header::{ACCEPT, CONTENT_TYPE},
     http, Body, Request, Response,
@@ -347,27 +347,13 @@ impl AgentLoop {
         task: TaskDef,
         tx: mpsc::Sender<ChildProgress>,
     ) -> Result<()> {
-        use hyper::body::Bytes;
         use ChildProgress::*;
 
-        let (stdout_tx, mut stdout_rx) = mpsc::channel::<Bytes>(1);
-        let (stderr_tx, mut stderr_rx) = mpsc::channel::<Bytes>(1);
+        let (stdout_tx, stdout_rx) = mpsc::channel::<Bytes>(1);
+        let (stderr_tx, stderr_rx) = mpsc::channel::<Bytes>(1);
 
-        let local_tx = tx.clone();
-        tokio::spawn(async move {
-            while let Some(msg) = stdout_rx.recv().await {
-                let string = String::from_utf8(msg.to_vec()).unwrap();
-                local_tx.send(Stdout(string)).await.unwrap();
-            }
-        });
-
-        let local_tx = tx.clone();
-        tokio::spawn(async move {
-            while let Some(msg) = stderr_rx.recv().await {
-                let string = String::from_utf8(msg.to_vec()).unwrap();
-                local_tx.send(Stdout(string)).await.unwrap();
-            }
-        });
+        let stdout_handle = tokio::spawn(Self::copy_bytes(stdout_rx, tx.clone()));
+        let stderr_handle = tokio::spawn(Self::copy_bytes(stderr_rx, tx.clone()));
         let status = run_toolchain_task::<std::fs::File>(
             &docker,
             &task,
@@ -376,8 +362,20 @@ impl AgentLoop {
             None,
         )
         .await?;
+        stdout_handle.await??;
+        stderr_handle.await??;
         tx.send(Finished(status)).await?;
 
+        Ok(())
+    }
+
+    async fn copy_bytes(mut rx: mpsc::Receiver<Bytes>, tx: mpsc::Sender<ChildProgress>) -> Result<()> {
+        use ChildProgress::*;
+
+        while let Some(msg) = rx.recv().await {
+            let string = String::from_utf8(msg.to_vec())?;
+            tx.send(Stdout(string)).await?;
+        }
         Ok(())
     }
 

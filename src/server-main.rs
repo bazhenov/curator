@@ -19,8 +19,7 @@ async fn main() -> Result<()> {
     // Runtime should be started manually
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()
-        .unwrap()
+        .build()?
         .block_on(start_server())?;
     Ok(())
 }
