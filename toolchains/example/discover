@@ -7,3 +7,7 @@ do
 {"id":"lsof.$PID","command":["lsof","-p","$PID"]}
 EOF
 done
+
+cat << EOF
+{"id":"date","command":["date"]}
+EOF
