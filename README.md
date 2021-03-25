@@ -14,7 +14,7 @@ $ docker-compose down -t 0
 ## Running the system
 
 ```
-$ docker-compose up
+$ make run
 ```
 
 ## Making toolchain images
