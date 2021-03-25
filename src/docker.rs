@@ -19,7 +19,7 @@ use bollard::{
 };
 use futures::{stream::Stream, StreamExt};
 use hyper::body::Bytes;
-use std::{collections::hash_map::HashMap, io::Write, time::Duration};
+use std::{collections::hash_map::HashMap, convert::TryFrom, io::Write, time::Duration};
 use tokio::{
     sync::{mpsc, watch},
     task::JoinHandle,
@@ -234,7 +234,7 @@ pub async fn run_toolchain_task<W: Write>(
     stdout: Option<mpsc::Sender<Bytes>>,
     stderr: Option<mpsc::Sender<Bytes>>,
     artifacts: Option<&mut W>,
-) -> Result<i64> {
+) -> Result<i32> {
     let container_id = &task.container_id;
     ensure!(
         !container_id.is_empty(),
@@ -257,7 +257,7 @@ pub async fn run_toolchain_task<W: Write>(
     }
     container.remove().await?;
 
-    Ok(status_code)
+    Ok(i32::try_from(status_code)?)
 }
 
 /// Maps some of the bollard errors to more meaningful error codes that

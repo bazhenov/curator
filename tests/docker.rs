@@ -91,7 +91,7 @@ async fn run_toolchain(
     docker: &Docker,
     command: &[&str],
     toolchain: &str,
-) -> Result<(i64, Cursor<Vec<u8>>, String)> {
+) -> Result<(i32, Cursor<Vec<u8>>, String)> {
     let container_id = get_sample_container(&docker).await?;
 
     let task = TaskDef {
@@ -116,7 +116,7 @@ async fn run_toolchain(
 async fn run_test_toolchain(
     docker: &Docker,
     command: &[&str],
-) -> Result<(i64, Cursor<Vec<u8>>, String)> {
+) -> Result<(i32, Cursor<Vec<u8>>, String)> {
     run_toolchain(docker, command, TOOLCHAIN).await
 }
 

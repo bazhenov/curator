@@ -10,22 +10,16 @@ use hyper::{
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeSet, HashMap},
-    ffi::OsStr,
-    fs::{read, File},
+    fs::read,
     io::{Cursor, Seek, SeekFrom, Write},
     path::Path,
     path::PathBuf,
-    process::Stdio,
     sync::Arc,
     time::Duration,
 };
-use tempdir::TempDir;
 use tokio::{
-    io::{AsyncBufReadExt, AsyncRead, BufReader},
-    process::{Child, ChildStderr, ChildStdout, Command},
     sync::{mpsc, Notify},
     time::sleep,
-    try_join,
 };
 use uuid::Uuid;
 
@@ -76,36 +70,6 @@ pub struct TaskDef {
 
     #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
     pub tags: BTreeSet<String>,
-}
-
-impl TaskDef {
-    /**
-     * Returns child process and it's working directory.
-     * All content of working directory is dropped when `TempDir` is destroyed
-     */
-    fn spawn(&self) -> Result<(Child, ChildStdout, ChildStderr, TempDir)> {
-        let work_dir = TempDir::new("curator_agent")?;
-        let command = &self.command[0];
-        let args = &self.command[1..];
-        let mut cmd = Command::new(command);
-        trace!("Spawning command: {} with args {:?}", command, args);
-        let mut child = cmd
-            .args(args)
-            .current_dir(&work_dir)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .context("Unable to spawn process")?;
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| format_err!("Unable to get stdout"))?;
-        let stderr = child
-            .stderr
-            .take()
-            .ok_or_else(|| format_err!("Unable to get stderr"))?;
-        Ok((child, stdout, stderr, work_dir))
-    }
 }
 
 /// Task set is the set of all the tasks found in the system
@@ -370,23 +334,53 @@ impl AgentLoop {
 
         if let Some(task) = self.tasks.get(&task_id) {
             let task = task.clone();
+            let docker = self.docker.clone();
 
-            //run_toolchain_task::<std::fs::File>(&self.docker, &task, None, None, None);
-            tokio::spawn(async move {
-                if let Err(e) = Self::run_task(task, tx.clone()).await {
-                    let reason = format!(
-                        "Task {} failed to start: {}",
-                        &task_id,
-                        format_error_chain(&e)
-                    );
-                    tx.send(FailedToStart(reason)).await.unwrap();
-                }
-            });
+            tokio::spawn(Self::do_run_toolchain_task(docker, task, tx));
         } else {
             warn!("Task {} not found", &task_id);
             let reason = format!("Task {} not found", &task_id);
-            tokio::spawn(async move { tx.send(FailedToStart(reason)).await.unwrap() });
+            tx.try_send(FailedToStart(reason)).unwrap();
         }
+    }
+
+    async fn do_run_toolchain_task(
+        docker: Docker,
+        task: TaskDef,
+        tx: mpsc::Sender<ChildProgress>,
+    ) -> Result<()> {
+        use hyper::body::Bytes;
+        use ChildProgress::*;
+
+        let (stdout_tx, mut stdout_rx) = mpsc::channel::<Bytes>(100);
+        let (stderr_tx, mut stderr_rx) = mpsc::channel::<Bytes>(100);
+
+        let local_tx = tx.clone();
+        tokio::spawn(async move {
+            while let Some(msg) = stdout_rx.recv().await {
+                let string = String::from_utf8(msg.to_vec()).unwrap();
+                local_tx.send(Stdout(string)).await.unwrap();
+            }
+        });
+
+        let local_tx = tx.clone();
+        tokio::spawn(async move {
+            while let Some(msg) = stderr_rx.recv().await {
+                let string = String::from_utf8(msg.to_vec()).unwrap();
+                local_tx.send(Stdout(string)).await.unwrap();
+            }
+        });
+        let status = run_toolchain_task::<std::fs::File>(
+            &docker,
+            &task,
+            Some(stdout_tx),
+            Some(stderr_tx),
+            None,
+        )
+        .await?;
+        tx.send(Finished(status)).await?;
+
+        Ok(())
     }
 
     async fn report_execution_back(uri: String, id: Uuid, rx: mpsc::Receiver<ChildProgress>) {
@@ -456,79 +450,6 @@ impl AgentLoop {
 
         Ok(())
     }
-
-    async fn run_task(task: TaskDef, tx: mpsc::Sender<ChildProgress>) -> Result<()> {
-        use ChildProgress::*;
-
-        let (mut child, stdout, stderr, work_dir) = task.spawn()?;
-        // work_dir should live until child completion, otherwise temporary directory will be removed
-        let path = work_dir.path();
-
-        let stdout_handle = write_stream_to_file(
-            stdout,
-            File::create(path.join("stdout.log"))?,
-            tx.clone(),
-            Stdout,
-        );
-
-        let stderr_handle = write_stream_to_file(
-            stderr,
-            File::create(path.join("stderr.log"))?,
-            tx.clone(),
-            Stdout,
-        );
-
-        try_join!(stdout_handle, stderr_handle)
-            .context("Unable to process process stdin/stderr")?;
-        let status = child
-            .wait()
-            .await
-            .context("Unable to read process status")?;
-
-        let progress_report = if let Some(code) = status.code() {
-            trace!("Process exited with code {}", code);
-            Finished(code)
-        } else {
-            warn!("Process interripted");
-            Interrupted
-        };
-        tx.send(progress_report).await?;
-
-        let path = "./result.tar.gz";
-        trace!(
-            "Gathering artifacts for directory: {}",
-            work_dir.path().display()
-        );
-        Command::new("tar")
-            .args(&[
-                OsStr::new("-C"),
-                work_dir.path().as_os_str(),
-                OsStr::new("-czf"),
-                OsStr::new(path),
-                OsStr::new("."),
-            ])
-            .spawn()?
-            .wait_with_output()
-            .await?;
-        drop(work_dir);
-        tx.send(ArtifactsReady(path.into())).await?;
-        Ok(())
-    }
-}
-
-async fn write_stream_to_file<R: AsyncRead + Unpin, N: std::fmt::Debug>(
-    r: R,
-    mut file: File,
-    channel: mpsc::Sender<N>,
-    f: impl Fn(String) -> N,
-) -> Result<()> {
-    let mut reader = BufReader::new(r).lines();
-    while let Some(mut line) = reader.next_line().await? {
-        line.push('\n');
-        file.write_all(line.as_bytes()).unwrap();
-        channel.send(f(line)).await.unwrap();
-    }
-    Ok(())
 }
 
 fn report_request(uri: &str, report: agent::ExecutionReport) -> Result<Request<Body>> {
@@ -594,7 +515,6 @@ mod tests {
     use crate::tests::*;
     use maplit::btreeset;
     use serde_json::json;
-    use tempfile::TempDir;
 
     fn init() {
         let _ = env_logger::builder().is_test(true).try_init();
@@ -641,82 +561,5 @@ mod tests {
                 "description": "Calling who command"
             }),
         )
-    }
-
-    #[test]
-    fn artifact_should_remove_its_file() -> Result<()> {
-        let tmp = TempDir::new()?;
-        let path = tmp.path().join("test.bin");
-        File::create(&path)?;
-
-        {
-            let _artifact = Artifact(path.clone());
-        }
-        assert!(
-            !path.exists(),
-            "File should be removed after artifact leaving scope"
-        );
-
-        Ok(())
-    }
-
-    fn create_task(command: &[&str]) -> TaskDef {
-        let command = command.iter().map(|s| String::from(*s)).collect::<Vec<_>>();
-        TaskDef {
-            id: "id".to_string(),
-            command,
-            ..Default::default()
-        }
-    }
-
-    #[tokio::test]
-    async fn check_run_command_has_isolated_directory() -> Result<()> {
-        init();
-
-        let task = create_task(&["pwd"]);
-        let (stdout1, _) = execute(task).await?;
-
-        let task = create_task(&["pwd"]);
-        let (stdout2, _) = execute(task).await?;
-
-        assert_ne!(
-            stdout1, stdout2,
-            "Each execution should have each own private working directory"
-        );
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn check_stdout_works_correctly() -> Result<()> {
-        init();
-
-        let (stdout, _) = execute(create_task(&["sh", "-c", "echo 1; echo 2"])).await?;
-        assert_eq!("1\n2\n", stdout);
-
-        Ok(())
-    }
-
-    async fn execute(task: TaskDef) -> Result<(String, i32)> {
-        use ChildProgress::*;
-
-        let (tx, mut rx) = mpsc::channel(1);
-
-        let task = tokio::spawn(AgentLoop::run_task(task, tx));
-
-        let mut stdout = String::new();
-        while let Some(msg) = rx.recv().await {
-            match msg {
-                Stdout(ref s) => stdout.push_str(s),
-                Finished(exit_code) => {
-                    task.await??;
-                    return Ok((stdout, exit_code));
-                }
-                FailedToStart(reason) => panic!("Unable to start process: {}", reason),
-                Interrupted => panic!("Interrupted"),
-                ArtifactsReady(_) => {}
-            }
-        }
-        panic!("No finished message was found in stream");
     }
 }
