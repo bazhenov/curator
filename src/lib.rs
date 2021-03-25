@@ -16,6 +16,7 @@ pub mod prelude {
     pub use super::Shared;
     pub use anyhow::Error as AnyhowError;
     pub use anyhow::{ensure, Context, Result};
+    pub use log_derive::logfn;
     pub use thiserror::Error;
     pub type IoResult<T> = std::result::Result<T, std::io::Error>;
 

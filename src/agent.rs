@@ -201,15 +201,12 @@ impl AgentLoop {
             docker: Docker::connect_with_local_defaults()?,
         };
 
-        tokio::spawn(async move {
-            if let Err(e) = agent_loop._run().await {
-                log_errors(&e);
-            }
-        });
+        tokio::spawn(async move { agent_loop._run().await });
 
         Ok(close_handle.into())
     }
 
+    #[logfn(ok = "Trace", err = "Error")]
     async fn _run(&mut self) -> Result<()> {
         let tasks = self
             .tasks
@@ -344,6 +341,7 @@ impl AgentLoop {
         }
     }
 
+    #[logfn(ok = "Trace", err = "Error")]
     async fn do_run_toolchain_task(
         docker: Docker,
         task: TaskDef,
@@ -352,8 +350,8 @@ impl AgentLoop {
         use hyper::body::Bytes;
         use ChildProgress::*;
 
-        let (stdout_tx, mut stdout_rx) = mpsc::channel::<Bytes>(100);
-        let (stderr_tx, mut stderr_rx) = mpsc::channel::<Bytes>(100);
+        let (stdout_tx, mut stdout_rx) = mpsc::channel::<Bytes>(1);
+        let (stderr_tx, mut stderr_rx) = mpsc::channel::<Bytes>(1);
 
         let local_tx = tx.clone();
         tokio::spawn(async move {
@@ -383,13 +381,8 @@ impl AgentLoop {
         Ok(())
     }
 
-    async fn report_execution_back(uri: String, id: Uuid, rx: mpsc::Receiver<ChildProgress>) {
-        if let Err(e) = Self::do_report_execution_back(uri, id, rx).await {
-            error!("Reporting task failed: {}", e);
-        }
-    }
-
-    async fn do_report_execution_back(
+    #[logfn(ok = "Trace", err = "Error")]
+    async fn report_execution_back(
         uri: String,
         id: Uuid,
         mut rx: mpsc::Receiver<ChildProgress>,

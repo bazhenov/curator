@@ -30,15 +30,10 @@ async fn main() -> Result<()> {
         exit(1);
     })?;
 
-    match run().await {
-        Err(e) => {
-            log_errors(&e);
-            exit(1);
-        }
-        Ok(_) => exit(0),
-    }
+    run().await
 }
 
+#[logfn(ok = "Trace", err = "Error")]
 async fn run() -> Result<()> {
     let matches = App::new("Curator Agent")
         .version("0.1.0")

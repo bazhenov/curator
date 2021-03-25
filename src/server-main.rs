@@ -25,6 +25,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[logfn(ok = "Trace", err = "Error")]
 async fn start_server() -> Result<()> {
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();

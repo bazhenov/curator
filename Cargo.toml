@@ -39,6 +39,7 @@ clap = "2.33.0"
 tempdir = "0.3.7"
 ctrlc = { version = "3.1.4", features = ["termination"] }
 bollard = "0.10"
+log-derive = "0.4.1"
 
 [dev-dependencies]
 tempfile = "3.1.0"
