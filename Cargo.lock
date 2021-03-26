@@ -626,6 +626,7 @@ name = "curator"
 version = "0.1.0"
 dependencies = [
  "actix-files",
+ "actix-rt",
  "actix-server",
  "actix-web",
  "anyhow",

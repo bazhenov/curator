@@ -32,7 +32,7 @@ async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
 
     let task_defs = run_toolchain_discovery(&docker, &container, TOOLCHAIN).await?;
 
-    assert_eq!(task_defs.len(), 1);
+    assert!(task_defs.len() > 0);
 
     Ok(())
 }

@@ -5,8 +5,17 @@ use curator::prelude::*;
 use curator::protocol;
 use curator::server::Curator;
 
-#[tokio::test]
+#[actix_rt::test]
 async fn curator_sse_client() -> Result<()> {
+    // Because of we are 2 versions of tokio (0.2 and 1.0) one of the
+    // Runtime should be started manually
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(start_server())
+}
+
+async fn start_server() -> Result<()> {
     let server = Curator::start()?;
     let agent = protocol::agent::Agent::new("app", vec![]);
     {
@@ -25,6 +34,7 @@ async fn curator_sse_client() -> Result<()> {
         // remove client first, otherwise server will wait for graceful shutdown
     }
 
-    server.stop(true).await;
+    //server.stop(true).await;
+
     Ok(())
 }

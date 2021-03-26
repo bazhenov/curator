@@ -6,14 +6,9 @@ pub mod docker;
 pub mod protocol;
 pub mod server;
 
-use std::sync::Arc;
-use std::sync::Mutex;
-
 pub mod prelude {
     pub use super::errors::*;
     pub use super::protocol::*;
-    pub use super::shared;
-    pub use super::Shared;
     pub use anyhow::Error as AnyhowError;
     pub use anyhow::{ensure, Context, Result};
     pub use log_derive::logfn;
@@ -21,12 +16,6 @@ pub mod prelude {
     pub type IoResult<T> = std::result::Result<T, std::io::Error>;
 
     pub use log::{debug, error, info, trace, warn};
-}
-
-pub type Shared<T> = Arc<Mutex<T>>;
-
-pub fn shared<T>(obj: T) -> Shared<T> {
-    Arc::new(Mutex::new(obj))
 }
 
 pub mod errors {

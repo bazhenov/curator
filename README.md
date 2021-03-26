@@ -7,8 +7,7 @@ $ make images
 ## Running integration tests
 
 ```
-$ docker-compose run it-tests
-$ docker-compose down -t 0
+$ make run-tests
 ```
 
 ## Running the system

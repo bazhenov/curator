@@ -41,7 +41,7 @@ services:
       target: builder
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: /opt/test-docker
+    command: sh -c "/opt/test-curator && /opt/test-docker && /opt/test-curator_sse_test"
     depends_on:
       - it-sample-container
 

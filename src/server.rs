@@ -62,6 +62,11 @@ impl ResponseError for ServerError {
 /// Controller specific Result-type. Error type can be turned into HTTP error
 type ServerResult<T> = std::result::Result<T, ServerError>;
 type AgentMap = HashMap<String, Agent>;
+type Shared<T> = web::Data<Mutex<T>>;
+
+fn shared<T>(obj: T) -> Shared<T> {
+    web::Data::new(Mutex::new(obj))
+}
 
 struct Agent {
     info: agent::Agent,
@@ -137,14 +142,14 @@ const HEARTBEAT_TIMEOUT_SEC: u64 = 6;
 
 pub struct Curator {
     server: actix_server::Server,
-    agents: web::Data<Mutex<AgentMap>>,
+    agents: Shared<AgentMap>,
 }
 
 impl Curator {
     pub fn start() -> Result<Self> {
         let agents: AgentMap = HashMap::new();
-        let agents = web::Data::new(Mutex::new(agents));
-        let executions = web::Data::new(Mutex::new(Executions::default()));
+        let agents = shared(agents);
+        let executions = shared(Executions::default());
 
         let app = {
             let agents = agents.clone();
@@ -177,14 +182,7 @@ impl Curator {
 
         {
             let agents = agents.clone();
-            tokio::spawn(async move {
-                loop {
-                    sleep(Duration::from_secs(CLEANUP_INTERVAL_SEC)).await;
-                    trace!("Running cleanup...");
-                    let mut agents = agents.lock().unwrap();
-                    agents.retain(|_, agent| agent.hb.elapsed().as_secs() < HEARTBEAT_TIMEOUT_SEC);
-                }
-            });
+            tokio::spawn(cleanup_agents(agents));
         }
 
         Ok(Self { server, agents })
@@ -204,6 +202,20 @@ impl Curator {
 
     pub async fn stop(&self, graceful: bool) {
         self.server.stop(graceful).await
+    }
+}
+
+/// Remove stale agents
+/// 
+/// Stae agents are agents which doesn't confirm presence using heartbeat in a predefined
+/// timeout
+async fn cleanup_agents(agents: Shared<AgentMap>) {
+    loop {
+        sleep(Duration::from_secs(CLEANUP_INTERVAL_SEC)).await;
+        trace!("Running cleanup...");
+        if let Ok(mut agents) = agents.lock() {
+            agents.retain(|_, agent| agent.hb.elapsed().as_secs() < HEARTBEAT_TIMEOUT_SEC);
+        }
     }
 }
 
