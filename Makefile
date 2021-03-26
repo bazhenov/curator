@@ -10,7 +10,7 @@ images:
 	COMPOSE_DOCKER_CLI_BUILD=1 docker-compose build
 
 run:
-	docker-compose up backend agent frontend app
+	docker-compose up backend agent frontend router
 
 run-tests:
 	docker-compose run it-tests

@@ -5,7 +5,7 @@ services:
       context: .
       target: curator-server
     environment:
-      - RUST_LOG=info
+      - RUST_LOG=curator=warn
 
   agent:
     build:
@@ -24,7 +24,7 @@ services:
       context: ./frontend
       target: frontend
 
-  app:
+  router:
     build:
       context: ./frontend
       target: router
