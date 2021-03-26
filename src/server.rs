@@ -206,7 +206,7 @@ impl Curator {
 }
 
 /// Remove stale agents
-/// 
+///
 /// Stae agents are agents which doesn't confirm presence using heartbeat in a predefined
 /// timeout
 async fn cleanup_agents(agents: Shared<AgentMap>) {

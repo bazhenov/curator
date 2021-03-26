@@ -2,7 +2,7 @@ use crate::{docker::run_toolchain_task, prelude::*};
 use bollard::Docker;
 use futures::{future::FutureExt, select};
 use hyper::{
-    body::{HttpBody as _, Bytes},
+    body::{Bytes, HttpBody as _},
     client::{Client, HttpConnector},
     header::{ACCEPT, CONTENT_TYPE},
     http, Body, Request, Response,
@@ -369,7 +369,10 @@ impl AgentLoop {
         Ok(())
     }
 
-    async fn copy_bytes(mut rx: mpsc::Receiver<Bytes>, tx: mpsc::Sender<ChildProgress>) -> Result<()> {
+    async fn copy_bytes(
+        mut rx: mpsc::Receiver<Bytes>,
+        tx: mpsc::Sender<ChildProgress>,
+    ) -> Result<()> {
         use ChildProgress::*;
 
         while let Some(msg) = rx.recv().await {

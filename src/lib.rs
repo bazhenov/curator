@@ -9,8 +9,7 @@ pub mod server;
 pub mod prelude {
     pub use super::errors::*;
     pub use super::protocol::*;
-    pub use anyhow::Error as AnyhowError;
-    pub use anyhow::{ensure, Context, Result};
+    pub use anyhow::{bail, ensure, Context, Error as AnyhowError, Result};
     pub use log_derive::logfn;
     pub use thiserror::Error;
     pub type IoResult<T> = std::result::Result<T, std::io::Error>;

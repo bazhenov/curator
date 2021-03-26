@@ -30,11 +30,6 @@ async fn main() -> Result<()> {
         exit(1);
     })?;
 
-    run().await
-}
-
-#[logfn(ok = "Trace", err = "Error")]
-async fn run() -> Result<()> {
     let matches = App::new("Curator Agent")
         .version("0.1.0")
         .author("Denis Bazhenov <dotsid@gmail.com>")
@@ -102,6 +97,7 @@ async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
 
     let task_set = build_task_set(&docker, &toolchains).await?;
     print!("{}", TaskSetDisplay(task_set));
+
     Ok(())
 }
 

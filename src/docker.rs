@@ -358,10 +358,7 @@ pub async fn build_task_set(docker: &Docker, toolchains: &[impl AsRef<str>]) -> 
             let tasks = run_toolchain_discovery(&docker, &id, toolchain.as_ref())
                 .await
                 .context(DiscoveryFailed(id.clone()));
-            match tasks {
-                Ok(tasks) => result.extend(tasks),
-                Err(e) => warn!("{:?}", e),
-            }
+            result.extend(tasks?);
         }
     }
     Ok(result)
