@@ -201,6 +201,7 @@ pub async fn run_toolchain_discovery(
         !container_id.is_empty(),
         InvalidContainerId(container_id.into())
     );
+    trace!("Running discovery. Toolchain: {}, container: {}", toolchain_image, &container_id[0..12]);
     let pid_mode = format!("container:{}", container_id);
     let container = Container::start_with_pid_mode(
         docker,
