@@ -1,4 +1,4 @@
-use crate::{docker::run_toolchain_task, prelude::*};
+use crate::{docker, prelude::*};
 use bollard::Docker;
 use futures::{future::FutureExt, select};
 use hyper::{
@@ -263,7 +263,7 @@ impl AgentLoop {
 
                     // ping server back to report agent is alive
                     _ = heartbeat_timeout => {
-                        if let Err(e) = self.heartbeat_server(&agent).await {
+                        if let Err(e) = self.send_heartbeat(&agent).await {
                             warn!("Unable to ping server: {}", e);
                             break;
                         }
@@ -279,7 +279,7 @@ impl AgentLoop {
         }
     }
 
-    async fn heartbeat_server(&self, agent: &agent::Agent) -> Result<()> {
+    async fn send_heartbeat(&self, agent: &agent::Agent) -> Result<()> {
         trace!("Sending heartbeat");
         let client = HttpClient::new();
         let json = serde_json::to_string(&agent)?;
@@ -320,122 +320,111 @@ impl AgentLoop {
         trace!("Task requested: {}, execution: {}", task_id, execution_id);
 
         let (tx, rx) = mpsc::channel(100);
-        tokio::spawn(Self::report_execution_back(
-            self.uri.to_owned(),
-            execution_id,
-            rx,
-        ));
+        tokio::spawn(reporting_task(self.uri.to_owned(), execution_id, rx));
 
         if let Some(task) = self.tasks.get(&task_id) {
             let task = task.clone();
             let docker = self.docker.clone();
 
-            tokio::spawn(Self::do_run_toolchain_task(docker, task, tx, execution_id));
+            tokio::spawn(execute_task(docker, task, tx, execution_id));
         } else {
             warn!("Task {} not found", &task_id);
             let reason = format!("Task {} not found", &task_id);
             tx.try_send(FailedToStart(reason)).unwrap();
         }
     }
+}
 
-    #[logfn(ok = "Trace", err = "Error")]
-    async fn do_run_toolchain_task(
-        docker: Docker,
-        task: TaskDef,
-        tx: mpsc::Sender<TaskProgress>,
-        execution_id: Uuid,
-    ) -> Result<()> {
-        use TaskProgress::*;
+async fn copy_bytes(mut rx: mpsc::Receiver<Bytes>, tx: mpsc::Sender<TaskProgress>) -> Result<()> {
+    use TaskProgress::*;
 
-        let (stdout_tx, stdout_rx) = mpsc::channel::<Bytes>(1);
-        let (stderr_tx, stderr_rx) = mpsc::channel::<Bytes>(1);
-
-        let stdout_handle = tokio::spawn(Self::copy_bytes(stdout_rx, tx.clone()));
-        let stderr_handle = tokio::spawn(Self::copy_bytes(stderr_rx, tx.clone()));
-        let artifact_path = temp_dir().join(format!("{}.tar", execution_id));
-        let status = run_toolchain_task(
-            &docker,
-            &task,
-            Some(stdout_tx),
-            Some(stderr_tx),
-            Some(File::create(&artifact_path)?),
-        )
-        .await?;
-        stdout_handle.await??;
-        stderr_handle.await??;
-        tx.send(Finished(status)).await?;
-        tx.send(ArtifactsReady(Artifact(artifact_path))).await?;
-
-        Ok(())
+    while let Some(msg) = rx.recv().await {
+        let string = String::from_utf8(msg.to_vec())?;
+        tx.send(Stdout(string)).await?;
     }
+    Ok(())
+}
 
-    async fn copy_bytes(
-        mut rx: mpsc::Receiver<Bytes>,
-        tx: mpsc::Sender<TaskProgress>,
-    ) -> Result<()> {
-        use TaskProgress::*;
+#[logfn(ok = "Trace", err = "Error")]
+async fn execute_task(
+    docker: Docker,
+    task: TaskDef,
+    tx: mpsc::Sender<TaskProgress>,
+    execution_id: Uuid,
+) -> Result<()> {
+    use TaskProgress::*;
 
-        while let Some(msg) = rx.recv().await {
-            let string = String::from_utf8(msg.to_vec())?;
-            tx.send(Stdout(string)).await?;
-        }
-        Ok(())
-    }
+    let (stdout_tx, stdout_rx) = mpsc::channel::<Bytes>(1);
+    let (stderr_tx, stderr_rx) = mpsc::channel::<Bytes>(1);
 
-    #[logfn(ok = "Trace", err = "Error")]
-    async fn report_execution_back(
-        uri: String,
-        id: Uuid,
-        mut rx: mpsc::Receiver<TaskProgress>,
-    ) -> Result<()> {
-        use ExecutionStatus::*;
-        use TaskProgress::*;
-        let client = HttpClient::new();
+    let stdout_handle = tokio::spawn(copy_bytes(stdout_rx, tx.clone()));
+    let stderr_handle = tokio::spawn(copy_bytes(stderr_rx, tx.clone()));
+    let artifact_path = temp_dir().join(format!("{}.tar", execution_id));
+    let status = docker::run_task(
+        &docker,
+        &task,
+        Some(stdout_tx),
+        Some(stderr_tx),
+        Some(File::create(&artifact_path)?),
+    )
+    .await?;
+    stdout_handle.await??;
+    stderr_handle.await??;
+    tx.send(Finished(status)).await?;
+    tx.send(ArtifactsReady(Artifact(artifact_path))).await?;
 
-        while let Some(progress) = rx.recv().await {
-            let report = match &progress {
-                Stdout(line) => report_request(
-                    &uri,
-                    agent::ExecutionReport {
-                        id,
-                        status: RUNNING,
-                        stdout_append: Some(line.to_string()),
-                    },
-                ),
-                Finished(exit_code) => report_request(
-                    &uri,
-                    agent::ExecutionReport {
-                        id,
-                        status: ExecutionStatus::from_unix_exit_code(*exit_code),
-                        stdout_append: None,
-                    },
-                ),
-                FailedToStart(reason) => report_request(
-                    &uri,
-                    agent::ExecutionReport {
-                        id,
-                        status: REJECTED,
-                        stdout_append: Some(reason.to_string()),
-                    },
-                ),
-                ArtifactsReady(path) => attach_artifacts_request(&uri, id, path),
-            };
+    Ok(())
+}
 
-            let response = client.request(report?).await?;
-            if !response.status().is_success() {
-                bail!(format_err!(
-                    "Error while reporting back to Curator HTTP/{}",
-                    response.status()
-                ));
-            }
+#[logfn(ok = "Trace", err = "Error")]
+async fn reporting_task(uri: String, id: Uuid, mut rx: mpsc::Receiver<TaskProgress>) -> Result<()> {
+    use ExecutionStatus::*;
+    use TaskProgress::*;
+    let client = HttpClient::new();
 
-            // progress-message could have additional resources allocated (artifact files on a FS)
-            // which should be dropped only after reporting to server is finished
-            drop(progress);
+    while let Some(progress) = rx.recv().await {
+        let report = match &progress {
+            Stdout(line) => report_request(
+                &uri,
+                agent::ExecutionReport {
+                    id,
+                    status: RUNNING,
+                    stdout_append: Some(line.to_string()),
+                },
+            ),
+            Finished(exit_code) => report_request(
+                &uri,
+                agent::ExecutionReport {
+                    id,
+                    status: ExecutionStatus::from_unix_exit_code(*exit_code),
+                    stdout_append: None,
+                },
+            ),
+            FailedToStart(reason) => report_request(
+                &uri,
+                agent::ExecutionReport {
+                    id,
+                    status: REJECTED,
+                    stdout_append: Some(reason.to_string()),
+                },
+            ),
+            ArtifactsReady(path) => attach_artifacts_request(&uri, id, path),
+        };
+
+        let response = client.request(report?).await?;
+        if !response.status().is_success() {
+            bail!(format_err!(
+                "Error while reporting back to Curator HTTP/{}",
+                response.status()
+            ));
         }
 
-        Ok(())
+        // progress-message could have additional resources allocated (artifact files on a FS)
+        // which should be dropped only after reporting to server is finished
+        drop(progress);
     }
+
+    Ok(())
 }
 
 fn report_request(uri: &str, report: agent::ExecutionReport) -> Result<Request<Body>> {

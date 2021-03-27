@@ -234,7 +234,7 @@ pub async fn run_discovery(
     task_defs.into_iter().collect::<Result<Vec<_>>>()
 }
 
-pub async fn run_toolchain_task<W: Write>(
+pub async fn run_task<W: Write>(
     docker: &Docker,
     task: &TaskDef,
     stdout: Option<mpsc::Sender<Bytes>>,

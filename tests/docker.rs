@@ -4,7 +4,7 @@ use bollard::Docker;
 use curator::prelude::*;
 use curator::{
     agent::TaskDef,
-    docker::{list_running_containers, run_discovery, run_toolchain_task},
+    docker::{list_running_containers, run_discovery, self},
 };
 use rstest::*;
 use std::{borrow::Cow, io::Cursor, path::PathBuf};
@@ -21,16 +21,16 @@ use tokio::sync::mpsc;
 const TOOLCHAIN: &str = "bazhenov.me/curator/toolchain-example:dev";
 
 #[fixture]
-fn docker() -> Docker {
+fn dock() -> Docker {
     Docker::connect_with_local_defaults().expect("Unable to get Docker instance")
 }
 
 #[rstest]
 #[tokio::test]
-async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
-    let container = get_sample_container(&docker).await?;
+async fn list_containers_and_run_discovery(dock: Docker) -> Result<()> {
+    let container = get_sample_container(&dock).await?;
 
-    let task_defs = run_discovery(&docker, &container, TOOLCHAIN).await?;
+    let task_defs = run_discovery(&dock, &container, TOOLCHAIN).await?;
 
     assert!(task_defs.len() > 0);
 
@@ -39,8 +39,8 @@ async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
 
 #[rstest]
 #[tokio::test]
-async fn run_toolchain_for_exit_code_and_stdout(docker: Docker) -> Result<()> {
-    let (status, _, stdout) = run_test_toolchain(&docker, &["sh", "-c", "echo 'Hello'"]).await?;
+async fn run_toolchain_for_exit_code_and_stdout(dock: Docker) -> Result<()> {
+    let (status, _, stdout) = run_test_toolchain(&dock, &["sh", "-c", "echo 'Hello'"]).await?;
 
     assert_eq!(status, 0);
     assert_eq!("Hello\n", stdout);
@@ -50,9 +50,9 @@ async fn run_toolchain_for_exit_code_and_stdout(docker: Docker) -> Result<()> {
 
 #[rstest]
 #[tokio::test]
-async fn run_toolchain_for_artifact(docker: Docker) -> Result<()> {
+async fn run_toolchain_for_artifact(dock: Docker) -> Result<()> {
     let (status, artifacts, _) =
-        run_test_toolchain(&docker, &["sh", "-c", "touch test.txt"]).await?;
+        run_test_toolchain(&dock, &["sh", "-c", "touch test.txt"]).await?;
 
     assert_eq!(status, 0);
 
@@ -72,10 +72,10 @@ async fn run_toolchain_for_artifact(docker: Docker) -> Result<()> {
 
 #[rstest]
 #[tokio::test]
-async fn not_existent_toolchain_image(docker: Docker) -> Result<()> {
+async fn not_existent_toolchain_image(dock: Docker) -> Result<()> {
     use curator::docker::Errors as DockerErrors;
 
-    let result = run_toolchain(&docker, &["date"], "intentionally-not-existent-toolchain").await;
+    let result = run_toolchain(&dock, &["date"], "intentionally-not-existent-toolchain").await;
 
     if let Err(cause) = result {
         if let Ok(cause) = cause.downcast::<DockerErrors>() {
@@ -107,7 +107,7 @@ async fn run_toolchain(
     let mut artifacts = Cursor::new(vec![]);
 
     let status_code =
-        run_toolchain_task(&docker, &task, Some(sender), None, Some(&mut artifacts)).await?;
+        docker::run_task(&docker, &task, Some(sender), None, Some(&mut artifacts)).await?;
     artifacts.set_position(0);
 
     Ok((status_code, artifacts, stdout_content.await?))
