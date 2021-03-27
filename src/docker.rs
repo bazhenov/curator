@@ -201,7 +201,11 @@ pub async fn run_toolchain_discovery(
         !container_id.is_empty(),
         InvalidContainerId(container_id.into())
     );
-    trace!("Running discovery. Toolchain: {}, container: {}", toolchain_image, &container_id[0..12]);
+    trace!(
+        "Running discovery. Toolchain: {}, container: {}",
+        toolchain_image,
+        &container_id[0..12]
+    );
     let pid_mode = format!("container:{}", container_id);
     let container = Container::start_with_pid_mode(
         docker,
@@ -234,7 +238,7 @@ pub async fn run_toolchain_task<W: Write>(
     task: &TaskDef,
     stdout: Option<mpsc::Sender<Bytes>>,
     stderr: Option<mpsc::Sender<Bytes>>,
-    artifacts: Option<&mut W>,
+    artifacts: Option<W>,
 ) -> Result<i32> {
     let container_id = &task.container_id;
     ensure!(
@@ -253,8 +257,10 @@ pub async fn run_toolchain_task<W: Write>(
     let redirect_process = tokio::spawn(redirect_output(container.read_logs(), stdout, stderr));
     let status_code = container.wait().await?;
     redirect_process.await??;
-    if let Some(artifacts) = artifacts {
-        container.download(TOOLCHAIN_WORKDIR, artifacts).await?;
+    if let Some(mut artifacts) = artifacts {
+        container
+            .download(TOOLCHAIN_WORKDIR, &mut artifacts)
+            .await?;
     }
     container.remove().await?;
 

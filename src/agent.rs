@@ -10,7 +10,8 @@ use hyper::{
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeSet, HashMap},
-    fs::read,
+    env::temp_dir,
+    fs::{read, File},
     io::{Cursor, Seek, SeekFrom, Write},
     path::Path,
     path::PathBuf,
@@ -318,7 +319,7 @@ impl AgentLoop {
     }
 
     fn spawn_and_track_task(&self, task_id: String, execution_id: Uuid) {
-        use ChildProgress::*;
+        use TaskProgress::*;
 
         trace!("Task requested: {}, execution: {}", task_id, execution_id);
 
@@ -333,7 +334,7 @@ impl AgentLoop {
             let task = task.clone();
             let docker = self.docker.clone();
 
-            tokio::spawn(Self::do_run_toolchain_task(docker, task, tx));
+            tokio::spawn(Self::do_run_toolchain_task(docker, task, tx, execution_id));
         } else {
             warn!("Task {} not found", &task_id);
             let reason = format!("Task {} not found", &task_id);
@@ -345,35 +346,38 @@ impl AgentLoop {
     async fn do_run_toolchain_task(
         docker: Docker,
         task: TaskDef,
-        tx: mpsc::Sender<ChildProgress>,
+        tx: mpsc::Sender<TaskProgress>,
+        execution_id: Uuid,
     ) -> Result<()> {
-        use ChildProgress::*;
+        use TaskProgress::*;
 
         let (stdout_tx, stdout_rx) = mpsc::channel::<Bytes>(1);
         let (stderr_tx, stderr_rx) = mpsc::channel::<Bytes>(1);
 
         let stdout_handle = tokio::spawn(Self::copy_bytes(stdout_rx, tx.clone()));
         let stderr_handle = tokio::spawn(Self::copy_bytes(stderr_rx, tx.clone()));
-        let status = run_toolchain_task::<std::fs::File>(
+        let artifact_path = temp_dir().join(format!("{}.tar", execution_id));
+        let status = run_toolchain_task(
             &docker,
             &task,
             Some(stdout_tx),
             Some(stderr_tx),
-            None,
+            Some(File::create(&artifact_path)?),
         )
         .await?;
         stdout_handle.await??;
         stderr_handle.await??;
         tx.send(Finished(status)).await?;
+        tx.send(ArtifactsReady(Artifact(artifact_path))).await?;
 
         Ok(())
     }
 
     async fn copy_bytes(
         mut rx: mpsc::Receiver<Bytes>,
-        tx: mpsc::Sender<ChildProgress>,
+        tx: mpsc::Sender<TaskProgress>,
     ) -> Result<()> {
-        use ChildProgress::*;
+        use TaskProgress::*;
 
         while let Some(msg) = rx.recv().await {
             let string = String::from_utf8(msg.to_vec())?;
@@ -386,10 +390,10 @@ impl AgentLoop {
     async fn report_execution_back(
         uri: String,
         id: Uuid,
-        mut rx: mpsc::Receiver<ChildProgress>,
+        mut rx: mpsc::Receiver<TaskProgress>,
     ) -> Result<()> {
-        use ChildProgress::*;
         use ExecutionStatus::*;
+        use TaskProgress::*;
         let client = HttpClient::new();
 
         while let Some(progress) = rx.recv().await {
@@ -416,14 +420,6 @@ impl AgentLoop {
                         id,
                         status: REJECTED,
                         stdout_append: Some(reason.to_string()),
-                    },
-                ),
-                Interrupted => report_request(
-                    &uri,
-                    agent::ExecutionReport {
-                        id,
-                        status: FAILED,
-                        stdout_append: Some("Interrupted by signal".to_owned()),
                     },
                 ),
                 ArtifactsReady(path) => attach_artifacts_request(&uri, id, path),
@@ -484,17 +480,10 @@ impl AsRef<Path> for Artifact {
     }
 }
 
-impl From<&str> for Artifact {
-    fn from(path: &str) -> Self {
-        Self(PathBuf::from(path))
-    }
-}
-
 #[derive(Debug)]
-enum ChildProgress {
+enum TaskProgress {
     Stdout(String),
     Finished(i32),
-    Interrupted,
     FailedToStart(String),
 
     /// Generated when artifact is ready. Artifact implement `Drop`, so
