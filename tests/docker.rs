@@ -4,7 +4,7 @@ use bollard::Docker;
 use curator::prelude::*;
 use curator::{
     agent::TaskDef,
-    docker::{list_running_containers, run_discovery, self},
+    docker::{self, list_running_containers, run_discovery},
 };
 use rstest::*;
 use std::{borrow::Cow, io::Cursor, path::PathBuf};
@@ -51,8 +51,7 @@ async fn run_toolchain_for_exit_code_and_stdout(dock: Docker) -> Result<()> {
 #[rstest]
 #[tokio::test]
 async fn run_toolchain_for_artifact(dock: Docker) -> Result<()> {
-    let (status, artifacts, _) =
-        run_test_toolchain(&dock, &["sh", "-c", "touch test.txt"]).await?;
+    let (status, artifacts, _) = run_test_toolchain(&dock, &["sh", "-c", "touch test.txt"]).await?;
 
     assert_eq!(status, 0);
 

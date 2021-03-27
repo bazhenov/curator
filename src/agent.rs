@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeSet, HashMap},
     env::temp_dir,
-    fs::{read, File},
+    fs::{remove_file, File},
     io::{Cursor, Seek, SeekFrom, Write},
     path::Path,
     path::PathBuf,
@@ -19,9 +19,11 @@ use std::{
     time::Duration,
 };
 use tokio::{
+    fs::File as TokioFile,
     sync::{mpsc, Notify},
     time::sleep,
 };
+use tokio_util::io::ReaderStream;
 use uuid::Uuid;
 
 type HttpClient = Client<HttpConnector, Body>;
@@ -408,7 +410,7 @@ async fn reporting_task(uri: String, id: Uuid, mut rx: mpsc::Receiver<TaskProgre
                     stdout_append: Some(reason.to_string()),
                 },
             ),
-            ArtifactsReady(path) => attach_artifacts_request(&uri, id, path),
+            ArtifactsReady(path) => attach_artifacts_request(&uri, id, path).await,
         };
 
         let response = client.request(report?).await?;
@@ -435,10 +437,15 @@ fn report_request(uri: &str, report: agent::ExecutionReport) -> Result<Request<B
         .map_err(|e| Errors::HttpClient(e).into())
 }
 
-fn attach_artifacts_request(uri: &str, id: Uuid, path: impl AsRef<Path>) -> Result<Request<Body>> {
+async fn attach_artifacts_request(
+    uri: &str,
+    id: Uuid,
+    path: impl AsRef<Path>,
+) -> Result<Request<Body>> {
+    let reader = ReaderStream::new(TokioFile::open(path).await?);
     Request::post(format!("{}/backend/execution/attach?id={}", uri, id))
         .header(CONTENT_TYPE, "application/x-tgz")
-        .body(Body::from(read(path)?))
+        .body(Body::wrap_stream(reader))
         .map_err(|e| Errors::HttpClient(e).into())
 }
 
@@ -447,11 +454,9 @@ struct Artifact(PathBuf);
 
 impl Drop for Artifact {
     fn drop(&mut self) {
-        use std::fs;
-
-        if let Err(e) = fs::remove_file(&self.0) {
+        if let Err(e) = remove_file(&self.0) {
             warn!(
-                "Unable to remove artifact file: {}. Reason: {}",
+                "Unable to remove artifact: {}. Reason: {}",
                 self.0.display(),
                 e
             );
