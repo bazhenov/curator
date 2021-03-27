@@ -5,8 +5,8 @@ extern crate curator;
 use bollard::Docker;
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 use curator::{
-    agent::{AgentLoop, TaskSet},
-    docker::{build_task_set, start_discovery},
+    agent::AgentLoop,
+    docker::{discover_tasks, list_running_containers, start_discovery, TaskSet},
     prelude::*,
 };
 use futures::stream::StreamExt;
@@ -37,14 +37,17 @@ async fn main() -> Result<()> {
         .subcommand(
             SubCommand::with_name("run")
                 .about("Agent application for Curator server")
-                .arg_from_usage("<host> -h, --host=<host> 'Curator server host'")
-                .arg_from_usage("<name> -n, --name=<name> 'Agent name'"),
+                .arg_from_usage("-h, --host=<host> 'Curator server host'")
+                .arg_from_usage("-n, --name=<name> 'Agent name'"),
         )
         .subcommand(
             SubCommand::with_name("tasks")
                 .about("Run discovery for a given toolchains")
                 .arg_from_usage(
                     "<toolchains> -t, --toolchain=<toolchain>... 'Toolchain image name'",
+                )
+                .arg_from_usage(
+                    "-c, --container=[container] 'Container id or name to run discovery on'",
                 ),
         )
         .get_matches();
@@ -94,8 +97,14 @@ async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
         .context("No toolchains were given")?
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>();
+    let container_id = opts.value_of("container");
 
-    let task_set = build_task_set(&docker, &toolchains).await?;
+    let task_set = if let Some(container_id) = container_id {
+        discover_tasks(&docker, &toolchains, &[container_id]).await?
+    } else {
+        let container_ids = list_running_containers(&docker).await?;
+        discover_tasks(&docker, &toolchains, &container_ids).await?
+    };
     print!("{}", TaskSetDisplay(task_set));
 
     Ok(())

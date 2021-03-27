@@ -4,7 +4,7 @@ use bollard::Docker;
 use curator::prelude::*;
 use curator::{
     agent::TaskDef,
-    docker::{list_running_containers, run_toolchain_discovery, run_toolchain_task},
+    docker::{list_running_containers, run_discovery, run_toolchain_task},
 };
 use rstest::*;
 use std::{borrow::Cow, io::Cursor, path::PathBuf};
@@ -30,7 +30,7 @@ fn docker() -> Docker {
 async fn list_containers_and_run_discovery(docker: Docker) -> Result<()> {
     let container = get_sample_container(&docker).await?;
 
-    let task_defs = run_toolchain_discovery(&docker, &container, TOOLCHAIN).await?;
+    let task_defs = run_discovery(&docker, &container, TOOLCHAIN).await?;
 
     assert!(task_defs.len() > 0);
 

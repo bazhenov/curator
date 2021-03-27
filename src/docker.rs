@@ -5,10 +5,7 @@
 //! * listing target container;
 //! * discovery tasks;
 //! * running task for a given container
-use crate::{
-    agent::{TaskDef, TaskSet},
-    prelude::*,
-};
+use crate::{agent::TaskDef, prelude::*};
 use bollard::{
     container::{
         Config, DownloadFromContainerOptions, ListContainersOptions, LogOutput, LogsOptions,
@@ -33,6 +30,10 @@ use tokio_util::{
 use Errors::*;
 
 type BollardError = bollard::errors::Error;
+
+/// Task set is the set of all the tasks found in the system
+/// on a given round of discovery
+pub type TaskSet = Vec<TaskDef>;
 
 /// Workdir for toolchain tasks.
 ///
@@ -192,7 +193,7 @@ pub async fn list_running_containers(docker: &Docker) -> Result<Vec<String>> {
 /// * toolchain container `/discover` executable is run;
 /// * pid namespace is shared between toolchain and target containers;
 /// * executable should return a vector of [TaskDef] in `ndjson` format (each line is it's own json payload)
-pub async fn run_toolchain_discovery(
+pub async fn run_discovery(
     docker: &Docker,
     container_id: &str,
     toolchain_image: &str,
@@ -352,19 +353,25 @@ async fn discovery_loop(
     toolchains: Vec<String>,
 ) -> Result<()> {
     loop {
-        let task_set = build_task_set(&docker, &toolchains).await?;
+        let containers = list_running_containers(&docker).await?;
+        let task_set = discover_tasks(&docker, &toolchains, &containers).await?;
         tx.send(task_set)?;
         sleep(Duration::from_secs(1)).await;
     }
 }
 
-pub async fn build_task_set(docker: &Docker, toolchains: &[impl AsRef<str>]) -> Result<TaskSet> {
+/// Build [TaskSet] for a given list of containers and toolchains
+pub async fn discover_tasks<T: AsRef<str>, C: AsRef<str>>(
+    docker: &Docker,
+    toolchains: &[T],
+    containers: &[C],
+) -> Result<TaskSet> {
     let mut result = vec![];
-    for id in &list_running_containers(&docker).await? {
+    for container in containers {
         for toolchain in toolchains {
-            let tasks = run_toolchain_discovery(&docker, &id, toolchain.as_ref())
+            let tasks = run_discovery(docker, container.as_ref(), toolchain.as_ref())
                 .await
-                .context(DiscoveryFailed(id.clone()));
+                .with_context(|| DiscoveryFailed(container.as_ref().to_string()));
             result.extend(tasks?);
         }
     }

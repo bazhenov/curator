@@ -73,10 +73,6 @@ pub struct TaskDef {
     pub tags: BTreeSet<String>,
 }
 
-/// Task set is the set of all the tasks found in the system
-/// on a given round of discovery
-pub type TaskSet = Vec<TaskDef>;
-
 impl SseClient {
     pub async fn connect<T: Serialize>(uri: &str, body: T) -> Result<Self> {
         let client = HttpClient::new();
