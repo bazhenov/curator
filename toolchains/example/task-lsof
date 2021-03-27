@@ -1,0 +1,3 @@
+#!/bin/sh
+
+lsof -p $1 | tee lsof.txt
