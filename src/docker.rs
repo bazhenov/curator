@@ -11,12 +11,18 @@ use bollard::{
         Config, DownloadFromContainerOptions, ListContainersOptions, LogOutput, LogsOptions,
         RemoveContainerOptions, WaitContainerOptions,
     },
+    image::{CreateImageOptions, ListImagesOptions},
     service::HostConfig,
     Docker,
 };
 use futures::{stream::Stream, StreamExt};
 use hyper::body::Bytes;
-use std::{collections::hash_map::HashMap, convert::TryFrom, io::Write, time::Duration};
+use std::{
+    collections::{hash_map::HashMap, hash_set::HashSet},
+    convert::TryFrom,
+    io::Write,
+    time::Duration,
+};
 use tokio::{
     sync::{mpsc, watch},
     task::JoinHandle,
@@ -376,4 +382,51 @@ pub async fn discover_tasks<T: AsRef<str>, C: AsRef<str>>(
         }
     }
     Ok(result)
+}
+
+/// Pulls toolchain images if they are not locally available.
+pub async fn ensure_toolchain_images_exists(
+    docker: &Docker,
+    toolchains: &[impl AsRef<str>],
+) -> Result<()> {
+    let mut filters = HashMap::new();
+    filters.insert("dangling", vec!["false"]);
+    let options = ListImagesOptions {
+        filters,
+        ..Default::default()
+    };
+    let present_images = docker.list_images(Some(options)).await?;
+
+    let present_images = present_images
+        .iter()
+        .flat_map(|i| &i.repo_tags)
+        .map(|s| s.as_str())
+        .collect::<HashSet<_>>();
+
+    let toolchains = toolchains
+        .iter()
+        .map(|t| t.as_ref())
+        .collect::<HashSet<_>>();
+
+    for missing_image in toolchains.difference(&present_images) {
+        pull_image(docker, missing_image).await?;
+    }
+
+    Ok(())
+}
+
+/// Pulls given image from remote repository
+pub async fn pull_image(docker: &Docker, from_image: &str) -> Result<()> {
+    info!("Pulling image: {}", from_image);
+    let options = CreateImageOptions {
+        from_image,
+        ..Default::default()
+    };
+    let mut stream = docker.create_image(Some(options), None, None);
+
+    while let Some(info) = stream.next().await {
+        info?;
+    }
+
+    Ok(())
 }

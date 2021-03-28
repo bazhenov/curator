@@ -6,7 +6,10 @@ use bollard::Docker;
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 use curator::{
     agent::AgentLoop,
-    docker::{discover_tasks, list_running_containers, start_discovery, TaskSet},
+    docker::{
+        discover_tasks, ensure_toolchain_images_exists, list_running_containers, start_discovery,
+        TaskSet,
+    },
     prelude::*,
 };
 use futures::stream::StreamExt;
@@ -63,13 +66,15 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
     let host = opts.value_of("host").context("No host provided")?;
     let agent_name = opts.value_of("name").context("No name provided")?;
 
-    let mut tasks_hash: Option<_> = None;
-    let mut _agent_loop: Option<_> = None;
-
     let docker = Docker::connect_with_local_defaults()?;
+
     let toolchains = vec!["bazhenov.me/curator/toolchain-example:dev".into()];
+    ensure_toolchain_images_exists(&docker, &toolchains).await?;
+
     let (mut stream, loop_handle) = start_discovery(docker, toolchains);
 
+    let mut tasks_hash: Option<_> = None;
+    let mut _agent_loop: Option<_> = None;
     while let Some(tasks) = stream.next().await {
         let hash = Some(hash_values(&tasks));
         let has_changes = tasks_hash != hash;
@@ -98,6 +103,8 @@ async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>();
     let container_id = opts.value_of("container");
+
+    ensure_toolchain_images_exists(&docker, &toolchains).await?;
 
     let task_set = if let Some(container_id) = container_id {
         discover_tasks(&docker, &toolchains, &[container_id]).await?
