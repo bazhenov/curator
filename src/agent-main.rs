@@ -41,7 +41,10 @@ async fn main() -> Result<()> {
             SubCommand::with_name("run")
                 .about("Agent application for Curator server")
                 .arg_from_usage("-h, --host=<host> 'Curator server host'")
-                .arg_from_usage("-n, --name=<name> 'Agent name'"),
+                .arg_from_usage("-n, --name=<name> 'Agent name'")
+                .arg_from_usage(
+                    "<toolchains> -t, --toolchain=<toolchain>... 'Toolchain image name'",
+                ),
         )
         .subcommand(
             SubCommand::with_name("tasks")
@@ -65,10 +68,15 @@ async fn main() -> Result<()> {
 async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
     let host = opts.value_of("host").context("No host provided")?;
     let agent_name = opts.value_of("name").context("No name provided")?;
+    let toolchains = opts
+        .values_of("toolchains")
+        .context("No toolchains were given")?
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect::<Vec<_>>();
 
     let docker = Docker::connect_with_local_defaults()?;
 
-    let toolchains = vec!["bazhenov.me/curator/toolchain-example:dev".into()];
     ensure_toolchain_images_exists(&docker, &toolchains).await?;
 
     let (mut stream, loop_handle) = start_discovery(docker, toolchains);
