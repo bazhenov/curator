@@ -44,7 +44,8 @@ async fn main() -> Result<()> {
                 .arg_from_usage("-n, --name=<name> 'Agent name'")
                 .arg_from_usage(
                     "<toolchains> -t, --toolchain=<toolchain>... 'Toolchain image name'",
-                ),
+                )
+                .arg_from_usage("[labels] -l, --label=<label>... 'Target container label filter'"),
         )
         .subcommand(
             SubCommand::with_name("tasks")
@@ -52,6 +53,7 @@ async fn main() -> Result<()> {
                 .arg_from_usage(
                     "<toolchains> -t, --toolchain=<toolchain>... 'Toolchain image name'",
                 )
+                .arg_from_usage("[labels] -l, --label=<label>... 'Target container label filter'")
                 .arg_from_usage(
                     "-c, --container=[container] 'Container id or name to run discovery on'",
                 ),
@@ -71,7 +73,11 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
     let toolchains = opts
         .values_of("toolchains")
         .context("No toolchains were given")?
-        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect::<Vec<_>>();
+    let labels = opts
+        .values_of("labels")
+        .context("No labels were given")?
         .map(String::from)
         .collect::<Vec<_>>();
 
@@ -79,7 +85,7 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
 
     ensure_toolchain_images_exists(&docker, &toolchains).await?;
 
-    let (mut stream, loop_handle) = start_discovery(docker, toolchains);
+    let (mut stream, loop_handle) = start_discovery(docker, toolchains, labels);
 
     let mut tasks_hash: Option<_> = None;
     let mut _agent_loop: Option<_> = None;
@@ -108,7 +114,10 @@ async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
     let toolchains = opts
         .values_of("toolchains")
         .context("No toolchains were given")?
-        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>();
+    let labels = opts
+        .values_of("labels")
+        .context("No labels were given")?
         .collect::<Vec<_>>();
     let container_id = opts.value_of("container");
 
@@ -117,7 +126,7 @@ async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
     let task_set = if let Some(container_id) = container_id {
         discover_tasks(&docker, &toolchains, &[container_id]).await?
     } else {
-        let container_ids = list_running_containers(&docker).await?;
+        let container_ids = list_running_containers(&docker, &labels).await?;
         discover_tasks(&docker, &toolchains, &container_ids).await?
     };
     print!("{}", TaskSetDisplay(task_set));

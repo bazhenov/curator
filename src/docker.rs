@@ -173,11 +173,9 @@ impl<'a> Container<'a> {
 }
 
 /// Lists running containers.
-///
-/// Only containers with `io.kubernetes.pod.name` labels are listed.
-pub async fn list_running_containers(docker: &Docker) -> Result<Vec<String>> {
+pub async fn list_running_containers(docker: &Docker, labels: &[&str]) -> Result<Vec<String>> {
     let mut filters = HashMap::new();
-    filters.insert("label", vec!["io.kubernetes.pod.name"]);
+    filters.insert("label", labels.to_vec());
     let options = ListContainersOptions {
         filters,
         ..Default::default()
@@ -347,9 +345,10 @@ async fn only_stdout(batch: Result<LogOutput>) -> Option<IoResult<Bytes>> {
 pub fn start_discovery(
     docker: Docker,
     toolchains: Vec<String>,
+    labels: Vec<String>,
 ) -> (impl Stream<Item = TaskSet>, JoinHandle<Result<()>>) {
     let (tx, rx) = watch::channel(vec![]);
-    let join_handle = tokio::spawn(discovery_loop(docker, tx, toolchains));
+    let join_handle = tokio::spawn(discovery_loop(docker, tx, toolchains, labels));
     (WatchStream::new(rx), join_handle)
 }
 
@@ -357,9 +356,11 @@ async fn discovery_loop(
     docker: Docker,
     tx: watch::Sender<TaskSet>,
     toolchains: Vec<String>,
+    labels: Vec<String>,
 ) -> Result<()> {
     loop {
-        let containers = list_running_containers(&docker).await?;
+        let labels = labels.iter().map(String::as_str).collect::<Vec<_>>();
+        let containers = list_running_containers(&docker, &labels).await?;
         let task_set = discover_tasks(&docker, &toolchains, &containers).await?;
         tx.send(task_set)?;
         sleep(Duration::from_secs(1)).await;
