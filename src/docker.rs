@@ -173,7 +173,9 @@ impl<'a> Container<'a> {
 }
 
 /// Lists running containers.
-pub async fn list_running_containers(docker: &Docker, labels: &[&str]) -> Result<Vec<String>> {
+///
+/// Returns the list of running container ids.
+pub async fn list_running_containers(docker: &Docker, labels: &[&str]) -> Result<HashSet<String>> {
     let mut filters = HashMap::new();
     filters.insert("label", labels.to_vec());
     let options = ListContainersOptions {
@@ -358,21 +360,42 @@ async fn discovery_loop(
     toolchains: Vec<String>,
     labels: Vec<String>,
 ) -> Result<()> {
+    let labels = labels.iter().map(String::as_str).collect::<Vec<_>>();
+
+    let containers: HashSet<String> = HashSet::new();
+    let mut tasks: TaskSet = vec![];
     loop {
-        let labels = labels.iter().map(String::as_str).collect::<Vec<_>>();
-        let containers = list_running_containers(&docker, &labels).await?;
-        let task_set = discover_tasks(&docker, &toolchains, &containers).await?;
-        tx.send(task_set)?;
+        let current_containers = list_running_containers(&docker, &labels).await?;
+        let new_containers = current_containers
+            .difference(&containers)
+            .collect::<Vec<_>>();
+        tasks.retain(|task| current_containers.contains(&task.container_id));
+
+        if !new_containers.is_empty() {
+            let new_tasks = discover_tasks(&docker, &toolchains, &new_containers).await?;
+            tasks.extend(new_tasks);
+        }
+
+        tx.send(tasks.clone())?;
         sleep(Duration::from_secs(1)).await;
     }
 }
 
-/// Build [TaskSet] for a given list of containers and toolchains
-pub async fn discover_tasks<T: AsRef<str>, C: AsRef<str>>(
+/// Build [TaskSet] for a given list of containers and toolchains.
+///
+/// Receive 2 iterables: toolchains and containers. Execute each toolchain discovery script
+/// for each container and builds [TaskSet].
+pub async fn discover_tasks<'a, T, St, C, Sc>(
     docker: &Docker,
-    toolchains: &[T],
-    containers: &[C],
-) -> Result<TaskSet> {
+    toolchains: &'a T,
+    containers: &'a C,
+) -> Result<TaskSet>
+where
+    St: AsRef<str>,
+    Sc: AsRef<str>,
+    &'a T: IntoIterator<Item = St>,
+    &'a C: IntoIterator<Item = Sc>,
+{
     let mut result = vec![];
     for container in containers {
         for toolchain in toolchains {
