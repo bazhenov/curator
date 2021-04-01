@@ -17,7 +17,7 @@ services:
       - backend
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: run --host backend:8080 --name single
+    command: run -h backend:8080 -n single -l io.kubernetes.pod.name -t bazhenov.me/curator/toolchain-example:dev
 
   frontend:
     build:
