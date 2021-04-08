@@ -344,6 +344,10 @@ async fn only_stdout(batch: Result<LogOutput>) -> Option<IoResult<Bytes>> {
         .transpose()
 }
 
+/// Starts discovery loop and returns watch handle
+/// 
+/// Each time watch loop registers change in the list of running containers,
+/// watch channel will be notified with full list of running containers.
 pub fn start_discovery(
     docker: Docker,
     toolchains: Vec<String>,
