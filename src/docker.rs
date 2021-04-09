@@ -345,7 +345,7 @@ async fn only_stdout(batch: Result<LogOutput>) -> Option<IoResult<Bytes>> {
 }
 
 /// Starts discovery loop and returns watch handle
-/// 
+///
 /// Each time watch loop registers change in the list of running containers,
 /// watch channel will be notified with full list of running containers.
 pub fn start_discovery(
@@ -366,20 +366,22 @@ async fn discovery_loop(
 ) -> Result<()> {
     let labels = labels.iter().map(String::as_str).collect::<Vec<_>>();
 
-    let containers: HashSet<String> = HashSet::new();
+    let mut containers = HashSet::new();
     let mut tasks: TaskSet = vec![];
     loop {
-        let current_containers = list_running_containers(&docker, &labels).await?;
-        let new_containers = current_containers
-            .difference(&containers)
-            .collect::<Vec<_>>();
-        tasks.retain(|task| current_containers.contains(&task.container_id));
+        let alive_containers = list_running_containers(&docker, &labels).await?;
+        let new_containers = alive_containers.difference(&containers).collect::<Vec<_>>();
 
+        // Running discovery for "newborn" containers
         if !new_containers.is_empty() {
             let new_tasks = discover_tasks(&docker, &toolchains, &new_containers).await?;
             tasks.extend(new_tasks);
         }
 
+        // Retaining tasks from alive containers only
+        tasks.retain(|task| alive_containers.contains(&task.container_id));
+
+        containers = alive_containers;
         tx.send(tasks.clone())?;
         sleep(Duration::from_secs(1)).await;
     }
