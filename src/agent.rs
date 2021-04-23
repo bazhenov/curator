@@ -9,7 +9,7 @@ use hyper::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::BTreeSet,
     env::temp_dir,
     fs::{remove_file, File},
     io::{Cursor, Seek, SeekFrom, Write},
@@ -47,16 +47,17 @@ enum Errors {
 
 #[derive(Deserialize, Hash, PartialEq, Eq, Clone, Debug, Default)]
 pub struct TaskDef {
-    /// Task id
+    /// Task name
     ///
-    /// Task id is the global identifier used to address task in the system (across all running agents)
-    pub id: String,
+    /// Task name is the identifier used to address task in the container. It should be uniq in the domain of
+    /// a container, but not in the domain of agent or system
+    pub name: String,
 
     /// Command to be executed in toolchain container
     ///
     /// First part is the absolute path to executable and all following are the arguments:
     ///
-    /// ```
+    /// ```text
     /// vec!["/sbin/lsof", "-p", "1"]
     /// ```
     pub command: Vec<String>,
@@ -181,7 +182,7 @@ impl From<Arc<Notify>> for CloseHandle {
 pub struct AgentLoop {
     name: String,
     uri: String,
-    tasks: HashMap<String, TaskDef>,
+    tasks: Vec<TaskDef>,
     close_handle: Arc<Notify>,
     docker: Docker,
 }
@@ -190,7 +191,6 @@ impl AgentLoop {
     pub fn run(host: &str, name: &str, tasks: Vec<TaskDef>) -> Result<CloseHandle> {
         let name = name.into();
 
-        let tasks = tasks.into_iter().map(|i| (i.id.clone(), i)).collect();
         let close_handle = Arc::new(Notify::new());
         let mut agent_loop = Self {
             name,
@@ -209,9 +209,10 @@ impl AgentLoop {
     async fn _run(&mut self) -> Result<()> {
         let tasks = self
             .tasks
-            .values()
+            .iter()
             .map(|t| Task {
-                id: t.id.clone(),
+                name: t.name.clone(),
+                container_id: t.container_id.clone(),
                 description: t.description.clone(),
                 tags: t.tags.clone(),
             })
@@ -301,7 +302,7 @@ impl AgentLoop {
         match name {
             Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {
                 Ok(event) => {
-                    self.spawn_and_track_task(event.task_id, event.execution);
+                    self.spawn_and_track_task(&event);
                 }
                 Err(e) => {
                     warn!("Unable to interpret {} event: {}. {}", s, event, e);
@@ -316,22 +317,30 @@ impl AgentLoop {
         }
     }
 
-    fn spawn_and_track_task(&self, task_id: String, execution_id: Uuid) {
+    fn spawn_and_track_task(&self, e: &agent::RunTask) {
         use TaskProgress::*;
 
-        trace!("Task requested: {}, execution: {}", task_id, execution_id);
+        trace!(
+            "Task requested: {}, execution: {}",
+            e.task_name,
+            e.execution_id
+        );
 
         let (tx, rx) = mpsc::channel(100);
-        tokio::spawn(reporting_task(self.uri.to_owned(), execution_id, rx));
+        tokio::spawn(reporting_task(self.uri.to_owned(), e.execution_id, rx));
 
-        if let Some(task) = self.tasks.get(&task_id) {
+        if let Some(task) = self
+            .tasks
+            .iter()
+            .find(|i| i.name == e.task_name && i.container_id == e.container_id)
+        {
             let task = task.clone();
             let docker = self.docker.clone();
 
-            tokio::spawn(execute_task(docker, task, tx, execution_id));
+            tokio::spawn(execute_task(docker, task, tx, e.execution_id));
         } else {
-            warn!("Task {} not found", &task_id);
-            let reason = format!("Task {} not found", &task_id);
+            warn!("Task {} not found", &e.task_name);
+            let reason = format!("Task {} not found", &e.task_name);
             tx.try_send(FailedToStart(reason)).unwrap();
         }
     }
@@ -517,7 +526,7 @@ mod tests {
     fn check_taskdef_read_write() -> Result<()> {
         assert_json_reads(
             TaskDef {
-                id: "foo".into(),
+                name: "foo".into(),
                 container_id: "e2adfa57360d".into(),
                 toolchain: "toolchain:dev".into(),
                 command: vec!["who".into(), "-a".into()],
@@ -526,7 +535,7 @@ mod tests {
                 ..Default::default()
             },
             json!({
-                "id": "foo",
+                "name": "foo",
                 "container_id": "e2adfa57360d",
                 "toolchain": "toolchain:dev",
                 "command": ["who", "-a"],

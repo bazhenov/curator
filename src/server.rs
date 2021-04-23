@@ -88,8 +88,11 @@ impl Agent {
         )
     }
 
-    fn find_task(&self, task_id: &str) -> Option<&Task> {
-        self.info.tasks.iter().find(|t| t.id == task_id)
+    fn find_task(&self, name: &str, container_id: &str) -> Option<&Task> {
+        self.info
+            .tasks
+            .iter()
+            .find(|t| t.name == name && t.container_id == container_id)
     }
 
     fn send_named_event<T>(&self, name: &str, event: &T) -> Result<()>
@@ -350,13 +353,14 @@ async fn run_task(
     let mut agents = agents.lock().unwrap();
 
     if let Some(agent) = agents.get(&run_task.agent) {
-        if let Some(task) = agent.find_task(&run_task.task_id) {
+        if let Some(task) = agent.find_task(&run_task.task_name, &run_task.container_id) {
             let execution_id = Uuid::new_v4();
             let result = agent.send_named_event(
                 agent::RUN_TASK_EVENT_NAME,
                 &agent::RunTask {
-                    execution: execution_id,
-                    task_id: run_task.task_id.clone(),
+                    execution_id,
+                    container_id: run_task.container_id.clone(),
+                    task_name: run_task.task_name.clone(),
                 },
             );
 

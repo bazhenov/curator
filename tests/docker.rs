@@ -94,7 +94,7 @@ async fn run_toolchain(
     let container_id = get_sample_container(&docker).await?;
 
     let task = TaskDef {
-        id: String::from(""),
+        name: String::from(""),
         command: command.iter().map(|s| String::from(*s)).collect(),
         container_id,
         toolchain: toolchain.into(),

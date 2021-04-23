@@ -374,7 +374,7 @@ async fn discovery_loop(
 
         // Running discovery for "newborn" containers
         if !new_containers.is_empty() {
-            let new_tasks = discover_tasks(&docker, &toolchains, &new_containers).await?;
+            let new_tasks = discover_tasks(&docker, &toolchains, &new_containers, &labels).await?;
             tasks.extend(new_tasks);
         }
 
@@ -395,6 +395,7 @@ pub async fn discover_tasks<'a, T, St, C, Sc>(
     docker: &Docker,
     toolchains: &'a T,
     containers: &'a C,
+    _labels: &[&str],
 ) -> Result<TaskSet>
 where
     St: AsRef<str>,

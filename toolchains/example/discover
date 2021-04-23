@@ -4,10 +4,10 @@ PIDS="$(ps -g 1 -o pid=)"
 for PID in $PIDS
 do
   cat << EOF
-{"id":"lsof.$PID","command":["/task-lsof","$PID"]}
+{"name":"lsof.$PID","command":["/task-lsof","$PID"]}
 EOF
 done
 
 cat << EOF
-{"id":"date","command":["date"]}
+{"name":"date","command":["date"]}
 EOF

@@ -29,8 +29,9 @@ pub mod agent {
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct RunTask {
-        pub task_id: String,
-        pub execution: Uuid,
+        pub task_name: String,
+        pub container_id: String,
+        pub execution_id: Uuid,
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -58,7 +59,8 @@ pub mod client {
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct RunTask {
-        pub task_id: String,
+        pub task_name: String,
+        pub container_id: String,
         pub agent: String,
     }
 
@@ -92,7 +94,8 @@ pub mod client {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Eq, Default)]
 pub struct Task {
-    pub id: String,
+    pub name: String,
+    pub container_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
@@ -170,21 +173,22 @@ mod tests {
     fn check_task() -> Result<()> {
         assert_json_eq(
             Task {
-                id: "my-id".to_string(),
+                name: "my-id".to_string(),
+                container_id: "49d4ebd43a56".to_string(),
                 description: Some("some description".to_string()),
                 ..Default::default()
             },
-            json!({"id": "my-id", "description": "some description"}),
+            json!({"name": "my-id", "container_id": "49d4ebd43a56", "description": "some description"}),
         )?;
 
         assert_json_reads(
             Task {
-                id: "my-id".to_string(),
+                name: "my-id".to_string(),
                 description: Some("some description".to_string()),
                 tags: btreeset!["shell".into(), "unix".into()],
                 ..Default::default()
             },
-            json!({"id": "my-id", "description": "some description", "tags": ["shell", "unix"]}),
+            json!({"name": "my-id", "container_id": "", "description": "some description", "tags": ["shell", "unix"]}),
         )
     }
 
@@ -194,7 +198,7 @@ mod tests {
             agent::Agent {
                 name: "my-app".into(),
                 tasks: vec![Task {
-                    id: "my-task".into(),
+                    name: "my-task".into(),
                     description: Some("some description".to_string()),
                     ..Default::default()
                 }],
@@ -202,7 +206,7 @@ mod tests {
             json!({
                 "name": "my-app",
                 "tasks": [
-                    { "id": "my-task", "description": "some description" }
+                    { "name": "my-task", "container_id": "", "description": "some description" }
                 ]
             }),
         )
@@ -212,12 +216,14 @@ mod tests {
     fn check_run_task() -> Result<()> {
         assert_json_eq(
             agent::RunTask {
-                task_id: "clean".into(),
-                execution: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
+                task_name: "clean".into(),
+                container_id: "49d4ebd43a56".into(),
+                execution_id: Uuid::parse_str("596cf5b4-70ba-11ea-bc55-0242ac130003")?,
             },
             json!({
-                "task_id": "clean",
-                "execution": "596cf5b4-70ba-11ea-bc55-0242ac130003"
+                "task_name": "clean",
+                "container_id": "49d4ebd43a56",
+                "execution_id": "596cf5b4-70ba-11ea-bc55-0242ac130003"
             }),
         )
     }
@@ -226,11 +232,13 @@ mod tests {
     fn check_client_run_task() -> Result<()> {
         assert_json_eq(
             client::RunTask {
-                task_id: "clean".into(),
+                task_name: "clean".into(),
+                container_id: "0f8734960f42".into(),
                 agent: "app".into(),
             },
             json!({
-                "task_id": "clean",
+                "task_name": "clean",
+                "container_id": "0f8734960f42",
                 "agent": "app"
             }),
         )
@@ -277,7 +285,7 @@ mod tests {
                 output: "output".into(),
                 agent: "app".into(),
                 task: Task {
-                    id: "clean".into(),
+                    name: "clean".into(),
                     ..Default::default()
                 },
                 started: Utc.ymd(2017, 11, 3).and_hms(9, 10, 11),
@@ -291,7 +299,8 @@ mod tests {
                 "started": "2017-11-03T09:10:11Z",
                 "finished": null,
                 "task": {
-                    "id": "clean"
+                    "name": "clean",
+                    "container_id": ""
                 },
                 "agent": "app",
                 "artifact_size": 3315,

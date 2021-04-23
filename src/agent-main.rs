@@ -124,10 +124,10 @@ async fn tasks_command(opts: &ArgMatches<'_>) -> Result<()> {
     ensure_toolchain_images_exists(&docker, &toolchains).await?;
 
     let task_set = if let Some(container_id) = container_id {
-        discover_tasks(&docker, &toolchains, &[container_id]).await?
+        discover_tasks(&docker, &toolchains, &[container_id], &labels).await?
     } else {
         let container_ids = list_running_containers(&docker, &labels).await?;
-        discover_tasks(&docker, &toolchains, &container_ids).await?
+        discover_tasks(&docker, &toolchains, &container_ids, &labels).await?
     };
     print!("{}", TaskSetDisplay(task_set));
 
