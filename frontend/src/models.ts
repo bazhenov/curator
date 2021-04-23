@@ -15,7 +15,8 @@ export interface Execution {
 }
 
 export interface Task {
-  readonly id: string
+  readonly name: string
+  readonly container_id: string
   readonly description?: string
   readonly tags?: Array<string>
 }

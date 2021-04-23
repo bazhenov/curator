@@ -19,7 +19,7 @@ export const App: React.SFC<AppProps> = (props) => {
   let [isOmnibarOpen, setOmnibarOpen] = useState(false);
 
   let taskTemplate = (a: Agent, t: Task) =>
-    <li key={t.id}><a href={'#key-' + t.id} onClick={() => curator.runTask(a, t)}>{t.id}</a></li>
+    <li key={t.name}><a href={'#key-' + t.name} onClick={() => curator.runTask(a, t)}>{t.name}</a></li>
 
   let agentTemplate = (agent: Agent) => <li key={agent.name}>
     {agent.name}
@@ -111,7 +111,7 @@ export class Curator {
   runTask(agent: Agent, task: Task) {
     let params = {
       method: "POST",
-      body: JSON.stringify({ task_id: task.id, agent: agent.name }),
+      body: JSON.stringify({ task_id: task.name, agent: agent.name }),
       headers: {
         'Content-Type': 'application/json'
       }

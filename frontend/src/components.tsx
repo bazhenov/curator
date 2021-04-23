@@ -50,8 +50,8 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
       </div>
       <div className="title">
         {props.onSelect
-          ? <a href={"#execution-" + e.id} onClick={() => props.onSelect && props?.onSelect(e.id)}><code>{e.task.id}</code></a>
-          : <code>{e.task.id}</code>}
+          ? <a href={"#execution-" + e.id} onClick={() => props.onSelect && props?.onSelect(e.id)}><code>{e.task.name}</code></a>
+          : <code>{e.task.name}</code>}
       </div>
       <div className="info">
         <Tag>{e.agent}</Tag>
@@ -98,20 +98,20 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
   type AgentTask = [Agent, Task]
 
   const TaskSelect = Omnibar.ofType<AgentTask>()
-  const predicate : ItemPredicate<AgentTask> = (query, agentTask) => {
+  const predicate : ItemPredicate<AgentTask> = (query, [, task]) => {
     for (let part of query.split(" ")) {
       if (part === "")
         continue;
 
-      let idMatch = agentTask[1].id.indexOf(part) >= 0;
-      if ( idMatch )
+      let nameMatch = task.name.indexOf(part) >= 0;
+      if ( nameMatch )
         continue
 
-      let descriptionMatch = (agentTask[1].description?.indexOf(part) || -1) >= 0
+      let descriptionMatch = (task.description?.indexOf(part) || -1) >= 0
       if ( descriptionMatch )
         continue
 
-      let tagsMatch = agentTask[1].tags?.some(t => t.indexOf(part) >= 0)
+      let tagsMatch = task.tags?.some(t => t.indexOf(part) >= 0)
       if ( tagsMatch )
         continue
 
@@ -131,7 +131,7 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
       onClick={handleClick}
       text={
         <>
-          {task.id}
+          {task.name}
           {task.description && 
             <span className="bp3-text-muted">
             <br />
@@ -145,7 +145,7 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
         </>
       }
       labelElement={<Tag>{agent.name}</Tag>}
-      key={task.id + "/" + location}/>
+      key={task.name + "/" + location}/>
   }
 
   let tasks = props.agents.flatMap(a => a.tasks.map(t => [a, t] as AgentTask))

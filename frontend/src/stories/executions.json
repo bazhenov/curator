@@ -4,7 +4,7 @@
     "agent": "my",
     "output": "22:56  up  5:20, 3 users, load averages: 1.26 1.93 2.07",
     "task": {
-      "id": "uptime",
+      "name": "uptime",
       "desription": "Returning uptim and load averages",
       "tags": ["unix", "loadavg", "uptime"]
     },
@@ -16,7 +16,7 @@
     "agent": "my",
     "output": "Sun Apr  5 22:56:06 +10 2020",
     "task": {
-      "id": "date"
+      "name": "date"
     },
     "status": "COMPLETED",
     "started": "2020-04-05T12:56:06.468306Z",
@@ -28,7 +28,7 @@
     "agent": "my",
     "output": "22:56  up  5:19, 3 users, load averages: 1.37 1.96 2.09\nUSER     TTY      FROM              LOGIN@  IDLE WHAT\nbazhenov console  -                17:37    5:18 -\nbazhenov s000     -                20:20       1 -zsh\nbazhenov s001     -                22:50       - tmux -u attach-session -t curator",
     "task": {
-      "id": "w"
+      "name": "w"
     },
     "status": "FAILED",
     "started": "2020-04-05T12:56:13.514054Z",
