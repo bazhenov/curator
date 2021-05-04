@@ -45,6 +45,15 @@ enum Errors {
     UnexpectedStatusCode(http::StatusCode),
 }
 
+
+/// Defintion of a task.
+/// 
+/// `TaskDef` is created by discovery process and describe how given task can be executed. Tasks are executed in a
+/// toolchain container. Therefore discovery container should provide all executables and libraries required for a task.
+/// 
+/// Task `name` and `container_id` should be unique in the system, so no tasks with the same name within single
+/// container are allowed. Note that discovery process must omit `container_id` and `toolchain` attributes in the
+/// defintion of the task. Those are filled by the agent automatically.
 #[derive(Deserialize, Hash, PartialEq, Eq, Clone, Debug, Default)]
 pub struct TaskDef {
     /// Task name
