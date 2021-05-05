@@ -15,6 +15,7 @@ services:
       - RUST_LOG=curator=warn
     depends_on:
       - backend
+      - sample-container
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: run -h backend:8080 -n single -l io.kubernetes.pod.name -t bazhenov.me/curator/toolchain-example:dev
@@ -33,6 +34,12 @@ services:
       - frontend
     ports:
       - "8080:8080"
+  sample-container:
+    image: alpine:3.12
+    command: sh -c "read line"
+    tty: true
+    labels:
+      io.kubernetes.pod.name: alpine
   
   # Container with integrations tests
   it-tests:

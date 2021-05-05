@@ -213,29 +213,32 @@ pub async fn run_discovery(
         toolchain_image,
         &container_id[0..12]
     );
+
+    let target_container = docker.inspect_container(container_id, None).await?;
+    let labels = target_container.config.and_then(|c| c.labels);
+
     let pid_mode = format!("container:{}", container_id);
-    let container = Container::start_with_pid_mode(
+    let toolchain_container = Container::start_with_pid_mode(
         docker,
         &toolchain_image,
         Some(&[DISCOVER_SCRIPT_PATH]),
         Some(&pid_mode),
     );
-    let container = container.await?;
+    let toolchain_container = toolchain_container.await?;
 
-    let stdout_stream = container.read_logs().filter_map(only_stdout);
-
-    let reader = StreamReader::new(stdout_stream);
-    let stdout = FramedRead::new(reader, LinesCodec::new())
+    let stdout = toolchain_container.read_logs().filter_map(only_stdout);
+    let stdout = StreamReader::new(stdout);
+    let stdout = FramedRead::new(stdout, LinesCodec::new())
         .map(|e| e.context("Unable to read stdout from upstream container"));
 
     let task_defs = stdout
         .map(parse_json)
-        .map(|json| build_task_def(json, container_id, toolchain_image))
+        .map(|json| build_task_def(json, container_id, toolchain_image, &labels))
         .collect::<Vec<_>>()
         .await;
 
-    container.wait().await?;
-    container.remove().await?;
+    toolchain_container.wait().await?;
+    toolchain_container.remove().await?;
 
     task_defs.into_iter().collect::<Result<Vec<_>>>()
 }
@@ -321,12 +324,16 @@ fn build_task_def(
     json: Result<serde_json::Value>,
     container_id: &str,
     toolchain: &str,
+    labels: &Option<HashMap<String, String>>,
 ) -> Result<TaskDef> {
     use serde_json::{json, Value};
 
     if let Value::Object(mut payload) = json? {
         payload.insert("container_id".to_owned(), json!(container_id));
         payload.insert("toolchain".to_owned(), json!(toolchain));
+        if let Some(labels) = labels {
+            payload.insert("labels".to_owned(), json!(labels));
+        }
         serde_json::from_value(Value::Object(payload)).context(InvalidTaskDefJson)
     } else {
         bail!(InvalidTaskDefJson)
