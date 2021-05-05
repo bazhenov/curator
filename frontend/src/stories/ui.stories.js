@@ -18,7 +18,7 @@ let agents = [
       {
         name: "jstack",
         description: "Running jstack on given JVM",
-        tags: ["java", "jstack", "my-app-deployment"]
+        labels: {"platform": "java", "app": "my-app-deployment"}
       },
       {
         name: "task2"
@@ -31,7 +31,7 @@ let agents = [
       {
         name: "task1",
         description: "Some task description",
-        tags: ["t1", "t2"]
+        labels: []
       }
     ]
   },

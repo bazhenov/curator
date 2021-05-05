@@ -1,7 +1,7 @@
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeSet,
+    collections::BTreeMap,
     sync::{Arc, Mutex},
 };
 use uuid::Uuid;
@@ -98,8 +98,8 @@ pub struct Task {
     pub container_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
-    pub tags: BTreeSet<String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    pub labels: BTreeMap<String, String>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Copy, Clone)]
@@ -154,7 +154,7 @@ mod tests {
     use super::{agent, client, *};
     use crate::prelude::*;
     use crate::tests::*;
-    use maplit::btreeset;
+    use maplit::btreemap;
     use serde_json::json;
 
     #[test]
@@ -185,10 +185,10 @@ mod tests {
             Task {
                 name: "my-id".to_string(),
                 description: Some("some description".to_string()),
-                tags: btreeset!["shell".into(), "unix".into()],
+                labels: btreemap! {"shell".into() => "unix".into()},
                 ..Default::default()
             },
-            json!({"name": "my-id", "container_id": "", "description": "some description", "tags": ["shell", "unix"]}),
+            json!({"name": "my-id", "container_id": "", "description": "some description", "labels": {"shell": "unix"}}),
         )
     }
 

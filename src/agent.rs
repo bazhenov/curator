@@ -9,7 +9,7 @@ use hyper::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeSet,
+    collections::BTreeMap,
     env::temp_dir,
     fs::{remove_file, File},
     io::{Cursor, Seek, SeekFrom, Write},
@@ -45,12 +45,11 @@ enum Errors {
     UnexpectedStatusCode(http::StatusCode),
 }
 
-
 /// Defintion of a task.
-/// 
+///
 /// `TaskDef` is created by discovery process and describe how given task can be executed. Tasks are executed in a
 /// toolchain container. Therefore discovery container should provide all executables and libraries required for a task.
-/// 
+///
 /// Task `name` and `container_id` should be unique in the system, so no tasks with the same name within single
 /// container are allowed. Note that discovery process must omit `container_id` and `toolchain` attributes in the
 /// defintion of the task. Those are filled by the agent automatically.
@@ -81,8 +80,8 @@ pub struct TaskDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
-    #[serde(skip_serializing_if = "BTreeSet::is_empty", default)]
-    pub tags: BTreeSet<String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    pub labels: BTreeMap<String, String>,
 }
 
 impl SseClient {
@@ -223,7 +222,7 @@ impl AgentLoop {
                 name: t.name.clone(),
                 container_id: t.container_id.clone(),
                 description: t.description.clone(),
-                tags: t.tags.clone(),
+                labels: t.labels.clone(),
             })
             .collect::<Vec<_>>();
         let agent = agent::Agent {
@@ -504,7 +503,7 @@ mod tests {
 
     use super::*;
     use crate::tests::*;
-    use maplit::btreeset;
+    use maplit::btreemap;
     use serde_json::json;
 
     fn init() {
@@ -540,7 +539,7 @@ mod tests {
                 toolchain: "toolchain:dev".into(),
                 command: vec!["who".into(), "-a".into()],
                 description: Some("Calling who command".into()),
-                tags: btreeset! {"who".into(), "unix".into()},
+                labels: btreemap! {"os".into() => "unix".into()},
                 ..Default::default()
             },
             json!({
@@ -548,7 +547,7 @@ mod tests {
                 "container_id": "e2adfa57360d",
                 "toolchain": "toolchain:dev",
                 "command": ["who", "-a"],
-                "tags": ["who", "unix"],
+                "labels": {"os": "unix"},
                 "description": "Calling who command"
             }),
         )

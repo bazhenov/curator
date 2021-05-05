@@ -55,12 +55,18 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
       </div>
       <div className="info">
         <Tag>{e.agent}</Tag>
-        {e.task.tags?.map(t => <Tag minimal={true}>{t}</Tag>)}
+        <TagList tags={e.task.labels}/>
       </div>
       <div className="operations">
       </div>
     </div>)}
   </div>
+}
+
+export const TagList: React.SFC<{tags?: {[index: string]: string}}> = (props) => {
+  return <>
+    {Object.entries(props.tags || {}).map(([k, v]) => <Tag key={k} minimal={true}>{k}: {v}</Tag>)}
+  </>
 }
 
 export const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
@@ -111,7 +117,7 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
       if ( descriptionMatch )
         continue
 
-      let tagsMatch = task.tags?.some(t => t.indexOf(part) >= 0)
+      let tagsMatch = Object.entries(task.labels || {}).some(([k, v]) => v.indexOf(part) >= 0)
       if ( tagsMatch )
         continue
 
@@ -137,10 +143,10 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
             <br />
             <Highlight text={task.description} query={query} />
           </span>}
-          {task.tags && 
+          {task.labels && 
             <span className="task-tags">
               <br />
-              {task.tags.map(t => <Tag minimal={true}>{t}</Tag>)}
+              <TagList tags={task.labels} />
             </span>}
         </>
       }

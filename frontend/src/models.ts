@@ -18,7 +18,7 @@ export interface Task {
   readonly name: string
   readonly container_id: string
   readonly description?: string
-  readonly tags?: Array<string>
+  readonly labels?: {[index: string]: string}
 }
 
 export enum ExecutionStatus {
