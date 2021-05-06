@@ -26,8 +26,8 @@ export const Layout: React.FC<LayoutProps> = (props) => <div className="layout">
 </div>
 
 interface ExecutionListProps {
-  executions: Array<Execution>,
-  onSelect?: (_: String) => void,
+  executions: Execution[],
+  onSelect?: (_: string) => void,
 }
 
 export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
@@ -55,7 +55,7 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
       </div>
       <div className="info">
         <Tag>{e.agent}</Tag>
-        <TagList tags={e.task.labels}/>
+        <TagList labels={e.task.labels}/>
       </div>
       <div className="operations">
       </div>
@@ -63,13 +63,28 @@ export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
   </div>
 }
 
-export const TagList: React.SFC<{tags?: {[index: string]: string}}> = (props) => {
-  return <>
-    {Object.entries(props.tags || {}).map(([k, v]) => <Tag key={k} minimal={true}>{k}: {v}</Tag>)}
-  </>
+export const TagList: React.FC<{labels?: {[index: string]: string}}> = (props) => {
+  const alwaysDisplayLabels = ["io.kubernetes.pod.name"]
+  // making safe copy
+  let labels = {...props.labels || {}}
+
+  const importantLabelsHtml = alwaysDisplayLabels.map(name => [name, labels[name]])
+    .filter(([_, value]) => value !== undefined)
+    .map(([name, value]) => <Tag key={name} minimal={true}>{value}</Tag>)
+  
+  for (let name of alwaysDisplayLabels) {
+    delete labels[name]
+  }
+
+  const otherLabelsHtml = Object.entries(labels)
+    .map(([k, v]) => <Tag key={k} minimal={true}>
+        {v.length > 12 ? <abbr title={v}>{v.substring(0, 12) + "…"}</abbr> : v}
+      </Tag>)
+  
+  return <>{importantLabelsHtml} {otherLabelsHtml}</>
 }
 
-export const ExecutionUI: React.SFC<{execution: Execution}> = (props) => {
+export const ExecutionUI: React.FC<{execution: Execution}> = (props) => {
   let { execution } = props
   return <div className="execution-full">
     <p>ExecutionID: {execution.id}</p>
@@ -146,7 +161,7 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
           {task.labels && 
             <span className="task-tags">
               <br />
-              <TagList tags={task.labels} />
+              <TagList labels={task.labels} />
             </span>}
         </>
       }

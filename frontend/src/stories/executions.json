@@ -6,7 +6,17 @@
     "task": {
       "name": "uptime",
       "desription": "Returning uptim and load averages",
-      "labels": {"os": "unix"}
+      "labels": {
+        "com.docker.compose.config-hash": "710d6d240103616a921007d81ec1c405b4970cbbd28947ed0ebb93d0bf596ffa",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "curator",
+        "com.docker.compose.project.config_files": "docker-compose.yml",
+        "com.docker.compose.project.working_dir": "/opt/curator",
+        "com.docker.compose.service": "sample-container",
+        "com.docker.compose.version": "1.28.2",
+        "io.kubernetes.pod.name": "alpine"
+      }
     },
     "status": "RUNNING",
     "started": "2020-04-05T12:56:20.311287Z"
