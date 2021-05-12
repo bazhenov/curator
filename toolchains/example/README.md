@@ -1,3 +1,6 @@
 Simple toolchain.
 
-List all processes in a container and create tasks for listing open files for a given process
+Discovery two tasks:
+
+ * `lsof` – lists an open files for all processes in a container;
+ * `date` - returns current date as seen by `date` command in a container.

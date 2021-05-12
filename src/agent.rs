@@ -4,10 +4,11 @@ use futures::{future::FutureExt, select};
 use hyper::{
     body::{Bytes, HttpBody as _},
     client::{Client, HttpConnector},
-    header::{ACCEPT, CONTENT_TYPE},
+    header::{ACCEPT, CONTENT_TYPE, CONTENT_ENCODING},
     http, Body, Request, Response,
 };
 use serde::{Deserialize, Serialize};
+use flate2::{write::GzEncoder, Compression};
 use std::{
     collections::BTreeMap,
     env::temp_dir,
@@ -40,6 +41,12 @@ pub struct SseClient {
 enum Errors {
     #[error("Error performing HTTP request to a Curator server")]
     HttpClient(http::Error),
+
+    /// Client error
+    /// 
+    /// Indicates 4xx errors from server. No need to retry.
+    #[error("Request is not valid: HTTP/{}", .0)]
+    ClientError(http::StatusCode),
 
     #[error("Unexpected status code: {}", .0)]
     UnexpectedStatusCode(http::StatusCode),
@@ -88,16 +95,20 @@ impl SseClient {
     pub async fn connect<T: Serialize>(uri: &str, body: T) -> Result<Self> {
         let client = HttpClient::new();
 
-        let json = serde_json::to_string(&body)?;
-        let req = Request::builder()
-            .method("POST")
-            .uri(uri)
+        let mut gzip = GzEncoder::new(Vec::new(), Compression::default());
+        serde_json::to_writer(&mut gzip, &body)?;
+        let json = gzip.finish()?;
+
+        let req = Request::post(uri)
             .header(ACCEPT, "text/event-stream")
             .header(CONTENT_TYPE, "application/json")
+            .header(CONTENT_ENCODING, "gzip")
             .body(Body::from(json))?;
 
         let response = client.request(req).await?;
-        if !response.status().is_success() {
+        if response.status().is_client_error() {
+            bail!(Errors::ClientError(response.status()));
+        } else if !response.status().is_success() {
             bail!(Errors::UnexpectedStatusCode(response.status()));
         }
 
@@ -241,9 +252,14 @@ impl AgentLoop {
                 client = match connection {
                     Ok(client) => Some(client),
                     Err(e) => {
-                        log_errors(&e);
-                        sleep(Duration::from_secs(5)).await;
-                        None
+                        if let Some(Errors::ClientError(_)) = e.downcast_ref::<Errors>() {
+                            // There is no need in retrying in case of client error
+                            bail!(e)
+                        } else {
+                            log_errors(&e);
+                            sleep(Duration::from_secs(5)).await;
+                            None
+                        }
                     }
                 }
             }
@@ -296,8 +312,9 @@ impl AgentLoop {
         let json = serde_json::to_string(&agent)?;
         let report = Request::post(format!("{}/backend/hb", self.uri))
             .header(CONTENT_TYPE, "application/json")
-            .body(Body::from(json));
-        let response = client.request(report?).await?;
+            .body(Body::from(json))
+            .map_err(Errors::HttpClient)?;
+        let response = client.request(report).await?;
         if !response.status().is_success() {
             bail!(Errors::UnexpectedStatusCode(response.status()));
         }

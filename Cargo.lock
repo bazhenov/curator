@@ -619,6 +619,7 @@ dependencies = [
  "clap",
  "ctrlc",
  "env_logger",
+ "flate2",
  "futures",
  "hyper",
  "log",
