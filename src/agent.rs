@@ -1,14 +1,14 @@
 use crate::{docker, prelude::*};
 use bollard::Docker;
+use flate2::{write::GzEncoder, Compression};
 use futures::{future::FutureExt, select};
 use hyper::{
     body::{Bytes, HttpBody as _},
     client::{Client, HttpConnector},
-    header::{ACCEPT, CONTENT_TYPE, CONTENT_ENCODING},
+    header::{ACCEPT, CONTENT_ENCODING, CONTENT_TYPE},
     http, Body, Request, Response,
 };
 use serde::{Deserialize, Serialize};
-use flate2::{write::GzEncoder, Compression};
 use std::{
     collections::BTreeMap,
     env::temp_dir,
@@ -43,7 +43,7 @@ enum Errors {
     HttpClient(http::Error),
 
     /// Client error
-    /// 
+    ///
     /// Indicates 4xx errors from server. No need to retry.
     #[error("Request is not valid: HTTP/{}", .0)]
     ClientError(http::StatusCode),

@@ -157,10 +157,15 @@ impl Curator {
         let app = {
             let agents = agents.clone();
             move || {
+                // We need custom JSON config because `/backend/events` input payloads
+                // can be quite large in size (imagine 1000+ tasks on a host node)
+                let json_config = web::JsonConfig::default().limit(8_000_000);
+
                 App::new()
                     .wrap(Logger::default())
                     .app_data(agents.clone())
                     .app_data(executions.clone())
+                    .app_data(json_config)
                     .route("/backend/events", web::post().to(agent_connected))
                     .route("/backend/hb", web::post().to(agent_heartbeat))
                     .route("/backend/task/run", web::post().to(run_task))
