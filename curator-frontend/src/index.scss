@@ -1,5 +1,4 @@
-@import "~@blueprintjs/core/src/blueprint.scss";
-@import "~@blueprintjs/select/src/blueprint-select.scss";
+@import "~@blueprintjs/core/lib/css/blueprint.css";
 @import "~@blueprintjs/icons/lib/css/blueprint-icons.css";
 
 body {
@@ -55,7 +54,6 @@ code {
     grid-area: time;
     margin: auto 0;
     @extend .bp3-text-muted;
-    @extend .bp3-text-small;
   }
 
   .operations {
