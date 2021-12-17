@@ -102,7 +102,7 @@ async fn run_command(opts: &ArgMatches<'_>) -> Result<()> {
 
             // Need to save loop reference until tasks will be changed, otherwise
             // loop will be closed immediately
-            _agent_loop = Some(AgentLoop::run(&host, agent_name, tasks)?);
+            _agent_loop = Some(AgentLoop::run(host, agent_name, tasks)?);
         }
     }
 

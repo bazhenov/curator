@@ -220,7 +220,7 @@ pub async fn run_discovery(
     let pid_mode = format!("container:{}", container_id);
     let toolchain_container = Container::start_with_pid_mode(
         docker,
-        &toolchain_image,
+        toolchain_image,
         Some(&[DISCOVER_SCRIPT_PATH]),
         Some(&pid_mode),
     );

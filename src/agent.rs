@@ -325,7 +325,7 @@ impl AgentLoop {
         trace!("Incoming message...");
         let (name, event) = event;
         match name {
-            Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(&event) {
+            Some(s) if s == "run-task" => match serde_json::from_str::<agent::RunTask>(event) {
                 Ok(event) => {
                     self.spawn_and_track_task(&event);
                 }
@@ -500,7 +500,7 @@ impl Drop for Artifact {
 
 impl AsRef<Path> for Artifact {
     fn as_ref(&self) -> &Path {
-        &self.0.as_ref()
+        self.0.as_ref()
     }
 }
 
@@ -557,7 +557,6 @@ mod tests {
                 command: vec!["who".into(), "-a".into()],
                 description: Some("Calling who command".into()),
                 labels: btreemap! {"os".into() => "unix".into()},
-                ..Default::default()
             },
             json!({
                 "name": "foo",

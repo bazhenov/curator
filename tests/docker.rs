@@ -32,7 +32,7 @@ async fn list_containers_and_run_discovery(dock: Docker) -> Result<()> {
 
     let task_defs = run_discovery(&dock, &container, TOOLCHAIN).await?;
 
-    assert!(task_defs.len() > 0);
+    assert!(!task_defs.is_empty());
 
     Ok(())
 }
@@ -91,7 +91,7 @@ async fn run_toolchain(
     command: &[&str],
     toolchain: &str,
 ) -> Result<(i32, Cursor<Vec<u8>>, String)> {
-    let container_id = get_sample_container(&docker).await?;
+    let container_id = get_sample_container(docker).await?;
 
     let task = TaskDef {
         name: String::from(""),
@@ -106,7 +106,7 @@ async fn run_toolchain(
     let mut artifacts = Cursor::new(vec![]);
 
     let status_code =
-        docker::run_task(&docker, &task, Some(sender), None, Some(&mut artifacts)).await?;
+        docker::run_task(docker, &task, Some(sender), None, Some(&mut artifacts)).await?;
     artifacts.set_position(0);
 
     Ok((status_code, artifacts, stdout_content.await?))
@@ -120,9 +120,9 @@ async fn run_test_toolchain(
 }
 
 async fn get_sample_container(docker: &Docker) -> Result<String> {
-    let mut containers = list_running_containers(&docker, &vec!["io.kubernetes.pod.name"]).await?;
+    let mut containers = list_running_containers(docker, &["io.kubernetes.pod.name"]).await?;
     let mut drain = containers.drain();
-    Ok(drain.nth(0).unwrap())
+    Ok(drain.next().unwrap())
 }
 
 async fn collect<T: AsRef<[u8]>>(mut receiver: mpsc::Receiver<T>) -> String {

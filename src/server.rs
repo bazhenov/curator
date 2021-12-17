@@ -199,7 +199,7 @@ impl Curator {
     pub fn notify_all(&self, event: &SseEvent) {
         let mut agents = self.agents.lock().unwrap();
         agents.retain(|_, agent| {
-            if let Err(e) = agent.send_event(&event) {
+            if let Err(e) = agent.send_event(event) {
                 error!("{}", e);
                 false
             } else {

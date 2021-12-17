@@ -8,7 +8,7 @@ use std::{fs::OpenOptions, io::Write};
 async fn main() -> Result<()> {
     let docker = Docker::connect_with_unix_defaults()?;
 
-    let container = Container::start(&docker, "alpine:3.12", Some(&vec!["sleep", "5"])).await?;
+    let container = Container::start(&docker, "alpine:3.12", Some(&["sleep", "5"])).await?;
     println!("Container id: {}", container.id);
 
     let options = DownloadFromContainerOptions { path: "/etc" };
@@ -31,7 +31,7 @@ async fn write_stream_to_file<T: AsRef<[u8]>>(
     mut target: impl Write,
 ) -> Result<()> {
     while let Some(batch) = stream.next().await {
-        target.write(batch?.as_ref())?;
+        target.write_all(batch?.as_ref())?;
     }
 
     Ok(())
