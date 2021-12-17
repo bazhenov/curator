@@ -1,5 +1,13 @@
 # syntax = docker/dockerfile:experimental
-FROM node:14.0.0-stretch AS build
+
+FROM nginx:stable AS router
+
+COPY ./docker/nginx-router.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 8080
+ENTRYPOINT  ["nginx", "-g", "daemon off;"]
+
+FROM node:17.1.0-stretch AS build
 
 WORKDIR /root
 COPY package.json ./
@@ -20,9 +28,3 @@ COPY ./docker/nginx-frontend.conf /etc/nginx/conf.d/default.conf
 EXPOSE 8080
 ENTRYPOINT  ["nginx", "-g", "daemon off;"]
 
-FROM nginx:stable AS router
-
-COPY ./docker/nginx-router.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 8080
-ENTRYPOINT  ["nginx", "-g", "daemon off;"]
