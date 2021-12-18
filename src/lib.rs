@@ -18,7 +18,6 @@ pub mod prelude {
 }
 
 pub mod errors {
-
     use anyhow::Error;
 
     pub fn log_errors(e: &Error) {
