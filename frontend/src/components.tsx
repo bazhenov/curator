@@ -7,11 +7,6 @@ import './index.scss'
 import { Execution, ExecutionStatus, Task, Agent, hasArtifact } from './models'
 import moment from 'moment'
 
-export const B = () => <>
-  <p>Hello</p>
-  <Button intent="success" text="button content" />
-</>
-
 interface LayoutProps {
   sidebar: React.ReactNode,
   content: React.ReactNode,
