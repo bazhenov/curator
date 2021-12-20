@@ -32,59 +32,82 @@ interface ExecutionListProps {
 
 export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
   return <div>
-    {props.executions.map(e => <div key={e.id} className="execution">
-      <div className="indicator">
-        {e.status === ExecutionStatus.COMPLETED &&
-          <ProgressBar intent={Intent.SUCCESS} stripes={false}/>}
-        {(e.status === ExecutionStatus.RUNNING || e.status === ExecutionStatus.INITIATED) &&
-          <ProgressBar intent={Intent.SUCCESS}/>}
-        {e.status === ExecutionStatus.FAILED &&
-          <ProgressBar intent={Intent.DANGER} stripes={false}/>}
-        {e.status === ExecutionStatus.REJECTED &&
-          <ProgressBar intent={Intent.DANGER} stripes={false}/>}
-      </div>
-      <div className="time">
-        {e.finished
-          ? <>{moment.duration(moment(e.finished).diff(e.started)).humanize()}</>
-          : <>{moment.duration(moment().diff(e.started)).humanize()}</>}
-      </div>
-      <div className="title">
-        {props.onSelect
-          ? <a href={"#execution-" + e.id} onClick={() => props.onSelect && props?.onSelect(e.id)}><code>{e.task.name}</code></a>
-          : <code>{e.task.name}</code>}
-      </div>
-      <div className="info">
-        <Tag>{e.agent}</Tag>
-        <TagList labels={e.task.labels}/>
-      </div>
-      <div className="operations">
-      </div>
-    </div>)}
+    {props.executions.map(e => <ExecutionItem key={e.id} execution={e} onSelect={props.onSelect} />)}
   </div>
 }
 
-export const TagList: React.FC<{labels?: {[index: string]: string}}> = (props) => {
+type ExecutionProps = {
+  execution: Execution,
+  onSelect?: (_: string) => void,
+}
+
+const ExecutionItem = (props: ExecutionProps) => {
+  let e = props.execution;
+  let [intent, stripes] = intentFromStatus(e.status);
+
+  return <div key={e.id} className="execution">
+    <div className="indicator">
+      <ProgressBar intent={intent} stripes={stripes} />
+    </div>
+    <div className="time">
+      {e.finished
+        ? <>{moment.duration(moment(e.finished).diff(e.started)).humanize()}</>
+        : <>{moment.duration(moment().diff(e.started)).humanize()}</>}
+    </div>
+    <div className="title">
+      {props.onSelect
+        ? <a onClick={() => props.onSelect && props.onSelect(e.id)}><code>{e.task.name}</code></a>
+        : <code>{e.task.name}</code>}
+    </div>
+    <div className="info">
+      <Tag>{e.agent}</Tag>
+      <TagList labels={e.task.labels} />
+    </div>
+    <div className="operations">
+    </div>
+  </div>
+}
+
+type IntentAndStripes = [Intent, boolean];
+function intentFromStatus(status: ExecutionStatus): IntentAndStripes {
+  switch (status) {
+    case ExecutionStatus.RUNNING:
+      return [Intent.SUCCESS, true]
+    case ExecutionStatus.INITIATED:
+      return [Intent.SUCCESS, true]
+
+    case ExecutionStatus.COMPLETED:
+      return [Intent.SUCCESS, false]
+
+    case ExecutionStatus.FAILED:
+      return [Intent.DANGER, false]
+    case ExecutionStatus.REJECTED:
+      return [Intent.DANGER, false]
+  }
+}
+
+export const TagList: React.FC<{ labels?: { [index: string]: string } }> = (props) => {
   const alwaysDisplayLabels = ["io.kubernetes.pod.name"]
   // making safe copy
-  let labels = {...props.labels || {}}
+  let labels = { ...props.labels || {} }
 
   const importantLabelsHtml = alwaysDisplayLabels.map(name => [name, labels[name]])
     .filter(([_, value]) => value !== undefined)
     .map(([name, value]) => <Tag key={name} minimal={true}>{value}</Tag>)
-  
+
   for (let name of alwaysDisplayLabels) {
     delete labels[name]
   }
 
   const otherLabelsHtml = Object.entries(labels)
     .map(([k, v]) => <Tag key={k} minimal={true}>
-        {v.length > 12 ? <abbr title={v}>{v.substring(0, 12) + "…"}</abbr> : v}
-      </Tag>)
-  
+      {v.length > 12 ? <abbr title={v}>{v.substring(0, 12) + "…"}</abbr> : v}
+    </Tag>)
+
   return <>{importantLabelsHtml} {otherLabelsHtml}</>
 }
 
-export const ExecutionUI: React.FC<{execution: Execution}> = (props) => {
+export const ExecutionUI: React.FC<{ execution: Execution }> = (props) => {
   let { execution } = props
   return <div className="execution-full">
     <p>ExecutionID: {execution.id}</p>
@@ -97,11 +120,11 @@ export const ExecutionUI: React.FC<{execution: Execution}> = (props) => {
         {execution.artifact_size
           ? <a href={"/backend/artifacts/" + execution.id + ".tar.gz"} role="button"
             className="bp3-button bp3-icon-database bp3-minimal">
-              Artifacts ({numeral(execution.artifact_size).format("0 ib")})</a>
+            Artifacts ({numeral(execution.artifact_size).format("0 ib")})</a>
           : <a href="#artifact-is-in-progress" role="button"
-          className="bp3-button bp3-icon-database bp3-minimal bp3-disabled">
+            className="bp3-button bp3-icon-database bp3-minimal bp3-disabled">
             Artifacts&nbsp;<Spinner size={Spinner.SIZE_SMALL} /></a>}
-        
+
       </p>}
     <pre>{execution.output}</pre>
   </div>
@@ -119,29 +142,29 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
   type AgentTask = [Agent, Task]
 
   const TaskSelect = Omnibar.ofType<AgentTask>()
-  const predicate : ItemPredicate<AgentTask> = (query, [, task]) => {
+  const predicate: ItemPredicate<AgentTask> = (query, [, task]) => {
     for (let part of query.split(" ")) {
       if (part === "")
         continue;
 
       let nameMatch = task.name.indexOf(part) >= 0;
-      if ( nameMatch )
+      if (nameMatch)
         continue
 
       let descriptionMatch = (task.description?.indexOf(part) || -1) >= 0
-      if ( descriptionMatch )
+      if (descriptionMatch)
         continue
 
       let tagsMatch = Object.entries(task.labels || {}).some(([k, v]) => v.indexOf(part) >= 0)
-      if ( tagsMatch )
+      if (tagsMatch)
         continue
 
       return false
     }
     return true
   }
-    
-  let renderer: ItemRenderer<AgentTask> = (agentTask, {handleClick, modifiers, query}) => {
+
+  let renderer: ItemRenderer<AgentTask> = (agentTask, { handleClick, modifiers, query }) => {
     if (!modifiers.matchesPredicate) {
       return null
     }
@@ -153,12 +176,12 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
       text={
         <>
           {task.name}
-          {task.description && 
+          {task.description &&
             <span className="bp3-text-muted">
-            <br />
-            <Highlight text={task.description} query={query} />
-          </span>}
-          {task.labels && 
+              <br />
+              <Highlight text={task.description} query={query} />
+            </span>}
+          {task.labels &&
             <span className="task-tags">
               <br />
               <TagList labels={task.labels} />
@@ -166,11 +189,11 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
         </>
       }
       labelElement={<Tag>{agent.name}</Tag>}
-      key={task.name + "/" + location}/>
+      key={task.name + "/" + location} />
   }
 
   let tasks = props.agents.flatMap(a => a.tasks.map(t => [a, t] as AgentTask))
-    
+
   //props.forceOpen === undefined ? false : props.forceOpen
   return <TaskSelect
     isOpen={props.isOpen}
@@ -181,13 +204,13 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
     resetOnSelect={true}
     onItemSelect={([agent, task]) => props.onSelect(agent, task)}
     noResults={<MenuItem disabled={true} text="No results." />}
-    
-    itemPredicate={predicate}/>
+
+    itemPredicate={predicate} />
 }
 
-const Highlight: React.FC<{text: string, query: string}> = (props) => {
+const Highlight: React.FC<{ text: string, query: string }> = (props) => {
   return <>
-    {splitForHighlight(props.text, props.query).map(([highlight, text]) => 
+    {splitForHighlight(props.text, props.query).map(([highlight, text]) =>
       highlight ? <b>{text}</b> : text)}
   </>
 }
@@ -205,7 +228,7 @@ type HighlightPiece = [boolean, string]
  * @param haystack text to find needle in
  * @param needle the text we are searning for
  */
-export function splitForHighlight(haystack: string, needle: string) : Array<HighlightPiece> {
+export function splitForHighlight(haystack: string, needle: string): Array<HighlightPiece> {
   let result: Array<HighlightPiece> = [];
   let prevOffset = 0;
   let offset = haystack.indexOf(needle);
