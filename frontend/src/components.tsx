@@ -7,7 +7,7 @@ import './index.scss'
 import { Execution, ExecutionStatus, Task, Agent, hasArtifact } from './models'
 import moment from 'moment'
 
-export const B: React.FC<{}> = () => <>
+export const B = () => <>
   <p>Hello</p>
   <Button intent="success" text="button content" />
 </>
@@ -18,7 +18,7 @@ interface LayoutProps {
   header: React.ReactNode
 }
 
-export const Layout: React.FC<LayoutProps> = (props) => <div className="layout">
+export const Layout = (props: LayoutProps) => <div className="layout">
   <div className="header">{props.header}</div>
   <div className="footer"></div>
   <div className="sidebar">{props.sidebar}</div>
@@ -30,7 +30,7 @@ interface ExecutionListProps {
   onSelect?: (_: string) => void,
 }
 
-export const ExecutionList: React.FC<ExecutionListProps> = (props) => {
+export const ExecutionList = (props: ExecutionListProps) => {
   return <div>
     {props.executions.map(e => <ExecutionItem key={e.id} execution={e} onSelect={props.onSelect} />)}
   </div>
@@ -86,7 +86,10 @@ function intentFromStatus(status: ExecutionStatus): IntentAndStripes {
   }
 }
 
-export const TagList: React.FC<{ labels?: { [index: string]: string } }> = (props) => {
+type TagListProps = {
+  labels?: { [index: string]: string }
+}
+export const TagList = (props: TagListProps) => {
   const alwaysDisplayLabels = ["io.kubernetes.pod.name"]
   // making safe copy
   let labels = { ...props.labels || {} }
@@ -107,7 +110,7 @@ export const TagList: React.FC<{ labels?: { [index: string]: string } }> = (prop
   return <>{importantLabelsHtml} {otherLabelsHtml}</>
 }
 
-export const ExecutionUI: React.FC<{ execution: Execution }> = (props) => {
+export const ExecutionUI = (props: { execution: Execution }) => {
   let { execution } = props
   return <div className="execution-full">
     <p>ExecutionID: {execution.id}</p>
@@ -138,7 +141,7 @@ interface TaskSuggestProps {
   forceQuery?: string,
 }
 
-export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
+export const TaskSuggest = (props: TaskSuggestProps) => {
   type AgentTask = [Agent, Task]
 
   const TaskSelect = Omnibar.ofType<AgentTask>()
@@ -208,7 +211,10 @@ export const TaskSuggest: React.FC<TaskSuggestProps> = (props) => {
     itemPredicate={predicate} />
 }
 
-const Highlight: React.FC<{ text: string, query: string }> = (props) => {
+type HighlightProps = {
+  text: string, query: string
+}
+const Highlight = (props: HighlightProps) => {
   return <>
     {splitForHighlight(props.text, props.query).map(([highlight, text]) =>
       highlight ? <b>{text}</b> : text)}
