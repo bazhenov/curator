@@ -42,21 +42,28 @@ code {
   display: grid;
   height: 60px;
   padding: 0 20px;
-  grid-template-columns: 1fr 150px 100px 1fr;
+  grid-template-columns: 1fr 150px 100px 10em 1fr;
   grid-template-rows: 19fr 20fr;
-  grid-template-areas: "title indicator time operations" "info indicator time operations";
+  grid-template-areas: "title indicator time agent operations" "info indicator time agent operations";
 
+  .agent {
+    grid-area: agent;
+    margin: auto 0;
+    text-align: center;
+  }
+  
   .indicator {
     grid-area: indicator;
     margin: auto 0;
     padding-right: 10px;
   }
+  
   .time {
     grid-area: time;
     margin: auto 0;
     @extend .bp3-text-muted;
   }
-
+  
   .operations {
     grid-area: operations;
     visibility: hidden;
@@ -67,6 +74,7 @@ code {
     grid-area: title;
     margin: auto 0 0 0;
   }
+
   .info {
     grid-area: info;
     

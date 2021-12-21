@@ -40,23 +40,25 @@ const ExecutionItem = (props: ExecutionProps) => {
   let e = props.execution;
   let [intent, stripes] = intentFromStatus(e.status);
 
+  let duration = e.finished
+    ? moment.duration(moment(e.finished).diff(e.started)).humanize()
+    : moment.duration(moment().diff(e.started)).humanize()
+
   return <div key={e.id} className="execution">
     <div className="indicator">
       <ProgressBar intent={intent} stripes={stripes} />
     </div>
-    <div className="time">
-      {e.finished
-        ? <>{moment.duration(moment(e.finished).diff(e.started)).humanize()}</>
-        : <>{moment.duration(moment().diff(e.started)).humanize()}</>}
-    </div>
+    <div className="time">{duration}</div>
     <div className="title">
       {props.onSelect
         ? <a onClick={() => props.onSelect && props.onSelect(e.id)}><code>{e.task.name}</code></a>
         : <code>{e.task.name}</code>}
     </div>
     <div className="info">
-      <Tag>{e.agent}</Tag>
       <TagList labels={e.task.labels} />
+    </div>
+    <div className='agent'>
+      <Tag>{e.agent}</Tag>
     </div>
     <div className="operations">
     </div>
