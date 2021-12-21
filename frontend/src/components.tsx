@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Intent, ProgressBar, Tag, MenuItem, Spinner } from '@blueprintjs/core'
+import { Intent, ProgressBar, Tag, MenuItem, Spinner, SpinnerSize } from '@blueprintjs/core'
 import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select"
 import numeral from "numeral"
 
@@ -129,7 +129,7 @@ export const ExecutionUI = (props: { execution: Execution }) => {
             Artifacts ({numeral(execution.artifact_size).format("0 ib")})</a>
           : <a href="#artifact-is-in-progress" role="button"
             className="bp3-button bp3-icon-database bp3-minimal bp3-disabled">
-            Artifacts&nbsp;<Spinner size={Spinner.SIZE_SMALL} /></a>}
+            Artifacts&nbsp;<Spinner size={SpinnerSize.SMALL} /></a>}
 
       </p>}
     <pre>{execution.output}</pre>
@@ -161,7 +161,7 @@ export const TaskSuggest = (props: TaskSuggestProps) => {
       if (descriptionMatch)
         continue
 
-      let tagsMatch = Object.entries(task.labels || {}).some(([k, v]) => v.indexOf(part) >= 0)
+      let tagsMatch = Object.entries(task.labels || {}).some(([_, v]) => v.indexOf(part) >= 0)
       if (tagsMatch)
         continue
 
