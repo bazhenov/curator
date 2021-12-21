@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Button, Intent, ProgressBar, Tag, MenuItem, Spinner } from '@blueprintjs/core'
 import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select"
 import numeral from "numeral"
@@ -85,24 +85,32 @@ type TagListProps = {
   labels?: { [index: string]: string }
 }
 export const TagList = (props: TagListProps) => {
+  let [fullyOpen, setFullyOpen] = useState(false);
+
   const alwaysDisplayLabels = ["io.kubernetes.pod.name"]
   // making safe copy
   let labels = { ...props.labels || {} }
 
-  const importantLabelsHtml = alwaysDisplayLabels.map(name => [name, labels[name]])
+  const importantLabelsHtml = alwaysDisplayLabels.map(key => [key, labels[key]])
     .filter(([_, value]) => value !== undefined)
-    .map(([name, value]) => <Tag key={name} minimal={true}>{value}</Tag>)
+    .map(([key, value]) => <Tag key={key} minimal={true}>{value}</Tag>)
 
-  for (let name of alwaysDisplayLabels) {
-    delete labels[name]
+  for (let key of alwaysDisplayLabels) {
+    delete labels[key]
   }
 
-  const otherLabelsHtml = Object.entries(labels)
-    .map(([k, v]) => <Tag key={k} minimal={true}>
-      {v.length > 12 ? <abbr title={v}>{v.substring(0, 12) + "…"}</abbr> : v}
-    </Tag>)
-
-  return <>{importantLabelsHtml} {otherLabelsHtml}</>
+  if (fullyOpen) {
+    const otherLabelsHtml = Object.entries(labels)
+      .map(([k, v]) => <Tag key={k} minimal={true}>
+        {v.length > 12 ? <abbr title={v}>{v.substring(0, 12) + "…"}</abbr> : v}
+      </Tag>)
+    return <>{importantLabelsHtml} {otherLabelsHtml}</>
+  } else {
+    let openButton = Object.keys(labels).length > 0
+      ? <Tag key="…" minimal={true} onClick={() => setFullyOpen(true)}>…</Tag>
+      : <></>
+    return <>{importantLabelsHtml} {openButton}</>
+  }
 }
 
 export const ExecutionUI = (props: { execution: Execution }) => {
