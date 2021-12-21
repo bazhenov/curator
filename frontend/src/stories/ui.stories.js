@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Layout, ExecutionList, TaskSuggest, ExecutionUI } from '../components'
 import { executions } from './fixture'
 import { action } from '@storybook/addon-actions';
@@ -18,7 +18,7 @@ let agents = [
       {
         name: "jstack",
         description: "Running jstack on given JVM",
-        labels: {"platform": "java", "app": "my-app-deployment"}
+        labels: { "platform": "java", "app": "my-app-deployment" }
       },
       {
         name: "task2"
@@ -41,11 +41,11 @@ export const layout = () => <Layout
   footer={<b>footer</b>}
   header={"header"}
   sidebar={"sidebar"}
-  content={"content"}/>
+  content={"content"} />
 
 export const executionList = () => <ExecutionList onSelect={action('onSelect')} executions={executions} />
 
-export const Execution = ()  => <ExecutionUI execution={executions[1]} />
+export const Execution = () => <ExecutionUI execution={executions[1]} />
 
 export const taskSuggest = () =>
   <TaskSuggest
@@ -73,4 +73,4 @@ function ManagedTaskSuggest() {
       onSelect={() => setOpen(false)} />
   </>
 }
-    
+
