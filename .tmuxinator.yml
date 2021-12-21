@@ -1,6 +1,0 @@
-name: curator
-windows:
-  - server: RUST_LOG=debug cargo run --bin curator-server
-  - agent: RUST_LOG=debug cargo run --bin curator-agent -- -h localhost:8080 -n test-agent
-  - requests: cd ./requests
-  - npm: cd ./frontend && npm start
