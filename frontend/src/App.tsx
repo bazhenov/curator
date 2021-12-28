@@ -1,30 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import {Agent, Execution, Task} from './models'
+import { useEffect, useState } from 'react';
+import { Agent, Execution, Task } from './models'
 import { ExecutionList, Layout, TaskSuggest, ExecutionUI } from './components';
 import { Navbar, Alignment, Button } from '@blueprintjs/core';
+
+type AgentChangeListener = (_: Array<Agent>) => void
+type ExecutionChangeListener = (_: Array<Execution>) => void
 
 interface AppProps {
   curator: Curator
 }
 
-export const App: React.SFC<AppProps> = (props) => {
+export const App = (props: AppProps) => {
   let { curator } = props
 
   const [agents, setAgents] = useState<Array<Agent>>([]);
   const [executions, setExecutions] = useState<Array<Execution>>([]);
   const [selectedExecutionId, setSelectedExecutionId] = useState<String | null>(null);
-  
+
   useEffect(() => curator.onAgentsChange(setAgents), [curator, setAgents])
   useEffect(() => curator.onExecutionsChange(setExecutions), [curator, setExecutions])
   let [isOmnibarOpen, setOmnibarOpen] = useState(false);
-
-  let taskTemplate = (a: Agent, t: Task) =>
-    <li key={t.name}><a href={'#key-' + t.name} onClick={() => curator.runTask(a, t)}>{t.name}</a></li>
-
-  let agentTemplate = (agent: Agent) => <li key={agent.name}>
-    {agent.name}
-    <ol>{agent.tasks.map(t => taskTemplate(agent, t))}</ol>
-  </li>
 
   let selectedExecution = selectedExecutionId
     ? executions.find(e => e.id === selectedExecutionId)
@@ -33,13 +28,13 @@ export const App: React.SFC<AppProps> = (props) => {
   let agentsUi = <div>
     <h2>Agents</h2>
     <ul>
-      {agents.map(agentTemplate)}
+      {agents.map(a => agentTemplate(a, curator))}
     </ul>
   </div>
 
   let executionUi = <div>
     <h2>Executions</h2>
-    <ExecutionList executions={executions} onSelect={setSelectedExecutionId}/>
+    <ExecutionList executions={executions} onSelect={setSelectedExecutionId} />
     {selectedExecution && <ExecutionUI execution={selectedExecution} />}
   </div>
 
@@ -58,12 +53,20 @@ export const App: React.SFC<AppProps> = (props) => {
       <Button minimal={true} icon="play" text="Run task..." onClick={() => setOmnibarOpen(true)} />
     </Navbar.Group>
   </Navbar>
-  
+
   return <Layout header={header} sidebar={agentsUi} content={executionUi} />
 }
 
-type AgentChangeListener = (_: Array<Agent>) => void
-type ExecutionChangeListener = (_: Array<Execution>) => void
+function taskTemplate(a: Agent, t: Task, curator: Curator) {
+  <li key={t.name}><a href={'#key-' + t.name} onClick={() => curator.runTask(a, t)}>{t.name}</a></li>
+}
+
+function agentTemplate(agent: Agent, curator: Curator) {
+  <li key={agent.name}>
+    {agent.name}
+    <ol>{agent.tasks.map(t => taskTemplate(agent, t, curator))}</ol>
+  </li>
+}
 
 export class Curator {
 
