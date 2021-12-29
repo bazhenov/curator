@@ -1,0 +1,1804 @@
+[
+  {
+    "name": "single",
+    "tasks": [
+      {
+        "name": "lsof.1",
+        "container_id": "da1eb00bdcecb9b9c38f20d2111f5d409d056d3d4f52784345c540e767f79964",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143855047+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.scheduler.alpha.kubernetes.io/critical-pod": "",
+          "controller-revision-hash": "588f99d96",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "calico-node-mnzp6",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "afa7ab56-f148-11e9-86e6-525400851c15",
+          "k8s-app": "calico-node",
+          "pod-template-generation": "4"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "da1eb00bdcecb9b9c38f20d2111f5d409d056d3d4f52784345c540e767f79964",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143855047+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.scheduler.alpha.kubernetes.io/critical-pod": "",
+          "controller-revision-hash": "588f99d96",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "calico-node-mnzp6",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "afa7ab56-f148-11e9-86e6-525400851c15",
+          "k8s-app": "calico-node",
+          "pod-template-generation": "4"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "a6b252a1a4cb5e4a110801703fb518ee2531f6eb812968c8577beebc1d3b1a47",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "f54e3c6b",
+          "annotation.io.kubernetes.container.restartCount": "14",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/2b1faf2c-7808-11eb-909a-525400851c15/fluentd-es/14.log",
+          "io.kubernetes.container.name": "fluentd-es",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fluentd-es-tphcp",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "2b1faf2c-7808-11eb-909a-525400851c15",
+          "io.kubernetes.sandbox.id": "4f69237214628fa7c7361f14159eebb06ff87e0057964a371538b4d1a1632f90"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "a6b252a1a4cb5e4a110801703fb518ee2531f6eb812968c8577beebc1d3b1a47",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "f54e3c6b",
+          "annotation.io.kubernetes.container.restartCount": "14",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/2b1faf2c-7808-11eb-909a-525400851c15/fluentd-es/14.log",
+          "io.kubernetes.container.name": "fluentd-es",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fluentd-es-tphcp",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "2b1faf2c-7808-11eb-909a-525400851c15",
+          "io.kubernetes.sandbox.id": "4f69237214628fa7c7361f14159eebb06ff87e0057964a371538b4d1a1632f90"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.8",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.9",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.10",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.11",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.12",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.13",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.14",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.15",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "8f8b56a7155036d515cee4945fe8cb6a47675a49c809a8e73a4099f2ff447cd6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9c32d74",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74511c9b-6211-11ec-ad7b-525400851c15/frontend/0.log",
+          "io.kubernetes.container.name": "frontend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+          "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "8fac7c5ff0120b997ce532b10e56169a4016775a366fcb79ae7e1b5fe38b5a96",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T16:13:10.425227999+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "app.kubernetes.io/name": "sentry-url-injector",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "sentry-url-injector-787597f96d-g8dqh",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "15775840-58b7-11ec-ad7b-525400851c15",
+          "pod-template-hash": "787597f96d"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "8fac7c5ff0120b997ce532b10e56169a4016775a366fcb79ae7e1b5fe38b5a96",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T16:13:10.425227999+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "app.kubernetes.io/name": "sentry-url-injector",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "sentry-url-injector-787597f96d-g8dqh",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "15775840-58b7-11ec-ad7b-525400851c15",
+          "pod-template-hash": "787597f96d"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "5487ce04b4f5bb691775c9ca4d7d6c225f55031d8548a8fa4f9c029c2b39beaf",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "1548b76a",
+          "annotation.io.kubernetes.container.restartCount": "4",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "0",
+          "io.kubernetes.container.logpath": "/var/log/pods/afa7ab56-f148-11e9-86e6-525400851c15/install-cni/4.log",
+          "io.kubernetes.container.name": "install-cni",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "calico-node-mnzp6",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "afa7ab56-f148-11e9-86e6-525400851c15",
+          "io.kubernetes.sandbox.id": "da1eb00bdcecb9b9c38f20d2111f5d409d056d3d4f52784345c540e767f79964",
+          "maintainer": "Tom Denham <tom@tigera.io>"
+        }
+      },
+      {
+        "name": "lsof.24771",
+        "container_id": "5487ce04b4f5bb691775c9ca4d7d6c225f55031d8548a8fa4f9c029c2b39beaf",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "1548b76a",
+          "annotation.io.kubernetes.container.restartCount": "4",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "0",
+          "io.kubernetes.container.logpath": "/var/log/pods/afa7ab56-f148-11e9-86e6-525400851c15/install-cni/4.log",
+          "io.kubernetes.container.name": "install-cni",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "calico-node-mnzp6",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "afa7ab56-f148-11e9-86e6-525400851c15",
+          "io.kubernetes.sandbox.id": "da1eb00bdcecb9b9c38f20d2111f5d409d056d3d4f52784345c540e767f79964",
+          "maintainer": "Tom Denham <tom@tigera.io>"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "5487ce04b4f5bb691775c9ca4d7d6c225f55031d8548a8fa4f9c029c2b39beaf",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "1548b76a",
+          "annotation.io.kubernetes.container.restartCount": "4",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "0",
+          "io.kubernetes.container.logpath": "/var/log/pods/afa7ab56-f148-11e9-86e6-525400851c15/install-cni/4.log",
+          "io.kubernetes.container.name": "install-cni",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "calico-node-mnzp6",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "afa7ab56-f148-11e9-86e6-525400851c15",
+          "io.kubernetes.sandbox.id": "da1eb00bdcecb9b9c38f20d2111f5d409d056d3d4f52784345c540e767f79964",
+          "maintainer": "Tom Denham <tom@tigera.io>"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "69f3329ac410188c704edf6e2fd4cf0497787d513078c4a813b824a561a1a808",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-21T13:52:44.545987702+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/component": "agent",
+          "app.kubernetes.io/name": "curator",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "curator-agent-d664749b5-4kmt9",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74329d15-6211-11ec-ad7b-525400851c15",
+          "pod-template-hash": "d664749b5"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "69f3329ac410188c704edf6e2fd4cf0497787d513078c4a813b824a561a1a808",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-21T13:52:44.545987702+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/component": "agent",
+          "app.kubernetes.io/name": "curator",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "curator-agent-d664749b5-4kmt9",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74329d15-6211-11ec-ad7b-525400851c15",
+          "pod-template-hash": "d664749b5"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "e0e40af20610ebd6ea7576195c332ab2a55ea6aef3c3afd31c470e7ce1a24b30",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "ba07601c",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8443,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/15775840-58b7-11ec-ad7b-525400851c15/webhook/0.log",
+          "io.kubernetes.container.name": "webhook",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "sentry-url-injector-787597f96d-g8dqh",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "15775840-58b7-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "8fac7c5ff0120b997ce532b10e56169a4016775a366fcb79ae7e1b5fe38b5a96",
+          "maintainer": "Sergei Turchanov <turchanov@farpost.com>"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "e0e40af20610ebd6ea7576195c332ab2a55ea6aef3c3afd31c470e7ce1a24b30",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "ba07601c",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8443,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/15775840-58b7-11ec-ad7b-525400851c15/webhook/0.log",
+          "io.kubernetes.container.name": "webhook",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "sentry-url-injector-787597f96d-g8dqh",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "15775840-58b7-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "8fac7c5ff0120b997ce532b10e56169a4016775a366fcb79ae7e1b5fe38b5a96",
+          "maintainer": "Sergei Turchanov <turchanov@farpost.com>"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "259748b31e0d7bc87025dc67a9909283aa03b147277184ce52ccd5efb696be7f",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "27cb7a6e",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/009499a9-5f09-11ec-ad7b-525400851c15/search-pull-indexer/0.log",
+          "io.kubernetes.container.name": "search-pull-indexer",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "search-pull-indexer-drom-specteh-goods-6cb4485d59-jmgz7",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "009499a9-5f09-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "47d07ee2a34b51982fcaba543e1cdbf8cfe7e77a2e8274db6eee7766eb613587"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "259748b31e0d7bc87025dc67a9909283aa03b147277184ce52ccd5efb696be7f",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "27cb7a6e",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/009499a9-5f09-11ec-ad7b-525400851c15/search-pull-indexer/0.log",
+          "io.kubernetes.container.name": "search-pull-indexer",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "search-pull-indexer-drom-specteh-goods-6cb4485d59-jmgz7",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "009499a9-5f09-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "47d07ee2a34b51982fcaba543e1cdbf8cfe7e77a2e8274db6eee7766eb613587"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "79fa3c5ace4634a0411baaced57c4b96a9341da6f848627da28b45ecadb32f76",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-21T13:52:44.647397473+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/component": "backend",
+          "app.kubernetes.io/name": "curator",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "curator-backend-7c8c8b8bd6-kcvzn",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "7441fe43-6211-11ec-ad7b-525400851c15",
+          "pod-template-hash": "7c8c8b8bd6"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "79fa3c5ace4634a0411baaced57c4b96a9341da6f848627da28b45ecadb32f76",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-21T13:52:44.647397473+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/component": "backend",
+          "app.kubernetes.io/name": "curator",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "curator-backend-7c8c8b8bd6-kcvzn",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "7441fe43-6211-11ec-ad7b-525400851c15",
+          "pod-template-hash": "7c8c8b8bd6"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "d0fa0c6109dc804dd838baa0dbcb604b321850c18cadfcb0a3d1542610b9e083",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "709a53fc",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/769416ef-5c7a-11ec-ad7b-525400851c15/barometer/0.log",
+          "io.kubernetes.container.name": "barometer",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "barometer-frontend-58879cc75c-29rnp",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "769416ef-5c7a-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "1b4e6f78d83b896c6537ce3ffc7a25e4b495f19d605308d3d05ad79af884dc78"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "d0fa0c6109dc804dd838baa0dbcb604b321850c18cadfcb0a3d1542610b9e083",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "709a53fc",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/769416ef-5c7a-11ec-ad7b-525400851c15/barometer/0.log",
+          "io.kubernetes.container.name": "barometer",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "barometer-frontend-58879cc75c-29rnp",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "769416ef-5c7a-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "1b4e6f78d83b896c6537ce3ffc7a25e4b495f19d605308d3d05ad79af884dc78"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "b11512e6a14fee106df826fcbd252c271bba1dc6816126a3677ec05ab2b72a2c",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9e63542f",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/7441fe43-6211-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-backend-7c8c8b8bd6-kcvzn",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "7441fe43-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "79fa3c5ace4634a0411baaced57c4b96a9341da6f848627da28b45ecadb32f76",
+          "org.label-schema.build-date": "20210915",
+          "org.label-schema.license": "GPLv2",
+          "org.label-schema.name": "CentOS Base Image",
+          "org.label-schema.schema-version": "1.0",
+          "org.label-schema.vendor": "CentOS"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "b11512e6a14fee106df826fcbd252c271bba1dc6816126a3677ec05ab2b72a2c",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "9e63542f",
+          "annotation.io.kubernetes.container.ports": "[{\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/7441fe43-6211-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-backend-7c8c8b8bd6-kcvzn",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "7441fe43-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "79fa3c5ace4634a0411baaced57c4b96a9341da6f848627da28b45ecadb32f76",
+          "org.label-schema.build-date": "20210915",
+          "org.label-schema.license": "GPLv2",
+          "org.label-schema.name": "CentOS Base Image",
+          "org.label-schema.schema-version": "1.0",
+          "org.label-schema.vendor": "CentOS"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "ced1163a635a5f5469f4a25c8e4bd0db45b57b4cc892260c45a4c3f889dab791",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.14384149+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "app": "node-exporter",
+          "controller-revision-hash": "76548dbd5d",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "node-exporter-g4dkg",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "0ec3c69b-4492-11e9-9667-525400851c15",
+          "pod-template-generation": "2"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "ced1163a635a5f5469f4a25c8e4bd0db45b57b4cc892260c45a4c3f889dab791",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.14384149+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "app": "node-exporter",
+          "controller-revision-hash": "76548dbd5d",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "node-exporter-g4dkg",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "0ec3c69b-4492-11e9-9667-525400851c15",
+          "pod-template-generation": "2"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "2cf2501196934feb9ae82013d461131d69834d3155cb9f29b2e2729fec9195a6",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143849418+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "159349052",
+          "app": "debug-agent",
+          "controller-revision-hash": "56579d78df",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "debug-agent-w6h5q",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "b38d0fc5-d001-11eb-b270-525400851c15",
+          "pod-template-generation": "9"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "2cf2501196934feb9ae82013d461131d69834d3155cb9f29b2e2729fec9195a6",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143849418+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "159349052",
+          "app": "debug-agent",
+          "controller-revision-hash": "56579d78df",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "debug-agent-w6h5q",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "b38d0fc5-d001-11eb-b270-525400851c15",
+          "pod-template-generation": "9"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "dc878710f1c6620bf072671895c5845b7bc0d11ce5c43e67115037ed5e512d72",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143857254+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "app": "nfd-worker",
+          "controller-revision-hash": "5f7c7f69c4",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "nfd-worker-z7pkp",
+          "io.kubernetes.pod.namespace": "node-feature-discovery",
+          "io.kubernetes.pod.uid": "9500ccd8-f438-11ea-909a-525400851c15",
+          "pod-template-generation": "2"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "dc878710f1c6620bf072671895c5845b7bc0d11ce5c43e67115037ed5e512d72",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143857254+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "app": "nfd-worker",
+          "controller-revision-hash": "5f7c7f69c4",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "nfd-worker-z7pkp",
+          "io.kubernetes.pod.namespace": "node-feature-discovery",
+          "io.kubernetes.pod.uid": "9500ccd8-f438-11ea-909a-525400851c15",
+          "pod-template-generation": "2"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "c71490515a9d1332539018f0a9c533597ce14490fe6fa3bb93a4dd11e03806a5",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143851745+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.scheduler.alpha.kubernetes.io/critical-pod": "",
+          "controller-revision-hash": "5456447b95",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "kube-proxy-x6g29",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "8696cff9-350a-11e9-9667-525400851c15",
+          "k8s-app": "kube-proxy",
+          "pod-template-generation": "8"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "c71490515a9d1332539018f0a9c533597ce14490fe6fa3bb93a4dd11e03806a5",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143851745+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.scheduler.alpha.kubernetes.io/critical-pod": "",
+          "controller-revision-hash": "5456447b95",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "kube-proxy-x6g29",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "8696cff9-350a-11e9-9667-525400851c15",
+          "k8s-app": "kube-proxy",
+          "pod-template-generation": "8"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "ccd4ba5a1f025056f35159f336be56717fa17dbe6ba982e3e3ad93dcadeac01f",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "d48dd5ab",
+          "annotation.io.kubernetes.container.restartCount": "2",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/2b1faf2c-7808-11eb-909a-525400851c15/config-reloader/2.log",
+          "io.kubernetes.container.name": "config-reloader",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fluentd-es-tphcp",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "2b1faf2c-7808-11eb-909a-525400851c15",
+          "io.kubernetes.sandbox.id": "4f69237214628fa7c7361f14159eebb06ff87e0057964a371538b4d1a1632f90",
+          "maintainer": "Sergei Turchanov <turchanov@farpost.com>"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "ccd4ba5a1f025056f35159f336be56717fa17dbe6ba982e3e3ad93dcadeac01f",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "d48dd5ab",
+          "annotation.io.kubernetes.container.restartCount": "2",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/2b1faf2c-7808-11eb-909a-525400851c15/config-reloader/2.log",
+          "io.kubernetes.container.name": "config-reloader",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fluentd-es-tphcp",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "2b1faf2c-7808-11eb-909a-525400851c15",
+          "io.kubernetes.sandbox.id": "4f69237214628fa7c7361f14159eebb06ff87e0057964a371538b4d1a1632f90",
+          "maintainer": "Sergei Turchanov <turchanov@farpost.com>"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "1b4e6f78d83b896c6537ce3ffc7a25e4b495f19d605308d3d05ad79af884dc78",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-14T11:09:18.723759581+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/component": "frontend",
+          "app.kubernetes.io/name": "barometer",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "barometer-frontend-58879cc75c-29rnp",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "769416ef-5c7a-11ec-ad7b-525400851c15",
+          "pod-template-hash": "58879cc75c"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "1b4e6f78d83b896c6537ce3ffc7a25e4b495f19d605308d3d05ad79af884dc78",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-14T11:09:18.723759581+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/component": "frontend",
+          "app.kubernetes.io/name": "barometer",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "barometer-frontend-58879cc75c-29rnp",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "769416ef-5c7a-11ec-ad7b-525400851c15",
+          "pod-template-hash": "58879cc75c"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "56fca28a3aaebb0227a4f362ea6c9ff7c87728911700d581cfc7375f2e87855c",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "daa29e79",
+          "annotation.io.kubernetes.container.restartCount": "5",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/0ec3c69b-4492-11e9-9667-525400851c15/node-exporter/5.log",
+          "io.kubernetes.container.name": "node-exporter",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "node-exporter-g4dkg",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "0ec3c69b-4492-11e9-9667-525400851c15",
+          "io.kubernetes.sandbox.id": "ced1163a635a5f5469f4a25c8e4bd0db45b57b4cc892260c45a4c3f889dab791",
+          "maintainer": "The Prometheus Authors <prometheus-developers@googlegroups.com>"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "56fca28a3aaebb0227a4f362ea6c9ff7c87728911700d581cfc7375f2e87855c",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "daa29e79",
+          "annotation.io.kubernetes.container.restartCount": "5",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/0ec3c69b-4492-11e9-9667-525400851c15/node-exporter/5.log",
+          "io.kubernetes.container.name": "node-exporter",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "node-exporter-g4dkg",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "0ec3c69b-4492-11e9-9667-525400851c15",
+          "io.kubernetes.sandbox.id": "ced1163a635a5f5469f4a25c8e4bd0db45b57b4cc892260c45a4c3f889dab791",
+          "maintainer": "The Prometheus Authors <prometheus-developers@googlegroups.com>"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "4f69237214628fa7c7361f14159eebb06ff87e0057964a371538b4d1a1632f90",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143853429+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.scheduler.alpha.kubernetes.io/critical-pod": "",
+          "annotation.seccomp.security.alpha.kubernetes.io/pod": "docker/default",
+          "controller-revision-hash": "c965c9db9",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "fluentd-es-tphcp",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "2b1faf2c-7808-11eb-909a-525400851c15",
+          "k8s-app": "fluentd-es",
+          "pod-template-generation": "7",
+          "version": "v2.7.0"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "4f69237214628fa7c7361f14159eebb06ff87e0057964a371538b4d1a1632f90",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143853429+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.scheduler.alpha.kubernetes.io/critical-pod": "",
+          "annotation.seccomp.security.alpha.kubernetes.io/pod": "docker/default",
+          "controller-revision-hash": "c965c9db9",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "fluentd-es-tphcp",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "2b1faf2c-7808-11eb-909a-525400851c15",
+          "k8s-app": "fluentd-es",
+          "pod-template-generation": "7",
+          "version": "v2.7.0"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "e36ff801a7ec6e3ab3d1c8dc394564bdddb0bf75db488b45a6965e06a0f1d783",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143858898+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "com.farpost/app": "jvm-prometheus-monitoring",
+          "controller-revision-hash": "575dd64bc7",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "jvm-prometheus-monitoring-hdqp8",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "1da50c46-095a-11ec-903d-525400851c15",
+          "pod-template-generation": "6"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "e36ff801a7ec6e3ab3d1c8dc394564bdddb0bf75db488b45a6965e06a0f1d783",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-09T15:54:52.143858898+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "com.farpost/app": "jvm-prometheus-monitoring",
+          "controller-revision-hash": "575dd64bc7",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "jvm-prometheus-monitoring-hdqp8",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "1da50c46-095a-11ec-903d-525400851c15",
+          "pod-template-generation": "6"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "47d07ee2a34b51982fcaba543e1cdbf8cfe7e77a2e8274db6eee7766eb613587",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-17T17:14:41.08667758+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/name": "search-pull-indexer",
+          "com.farpost.search/zone": "drom-specteh",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "search-pull-indexer-drom-specteh-goods-6cb4485d59-jmgz7",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "009499a9-5f09-11ec-ad7b-525400851c15",
+          "pod-template-hash": "6cb4485d59"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "47d07ee2a34b51982fcaba543e1cdbf8cfe7e77a2e8274db6eee7766eb613587",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-17T17:14:41.08667758+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/name": "search-pull-indexer",
+          "com.farpost.search/zone": "drom-specteh",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "search-pull-indexer-drom-specteh-goods-6cb4485d59-jmgz7",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "009499a9-5f09-11ec-ad7b-525400851c15",
+          "pod-template-hash": "6cb4485d59"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "3b41fc45138033755c81432e72b85c13a3c3355f3509f474b309633a7aba67b2",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "377e5d67",
+          "annotation.io.kubernetes.container.restartCount": "7",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/8696cff9-350a-11e9-9667-525400851c15/kube-proxy/7.log",
+          "io.kubernetes.container.name": "kube-proxy",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "kube-proxy-x6g29",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "8696cff9-350a-11e9-9667-525400851c15",
+          "io.kubernetes.sandbox.id": "c71490515a9d1332539018f0a9c533597ce14490fe6fa3bb93a4dd11e03806a5"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "3b41fc45138033755c81432e72b85c13a3c3355f3509f474b309633a7aba67b2",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "377e5d67",
+          "annotation.io.kubernetes.container.restartCount": "7",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/8696cff9-350a-11e9-9667-525400851c15/kube-proxy/7.log",
+          "io.kubernetes.container.name": "kube-proxy",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "kube-proxy-x6g29",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "8696cff9-350a-11e9-9667-525400851c15",
+          "io.kubernetes.sandbox.id": "c71490515a9d1332539018f0a9c533597ce14490fe6fa3bb93a4dd11e03806a5"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-21T13:52:44.751982686+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/component": "frontend",
+          "app.kubernetes.io/name": "curator",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "pod-template-hash": "8b55cdcf6"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "9b267c693cd3a9125893ed770f64cd337fb677136665780c8422f616d62e958a",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-21T13:52:44.751982686+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/component": "frontend",
+          "app.kubernetes.io/name": "curator",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "curator-frontend-8b55cdcf6-6n4jw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74511c9b-6211-11ec-ad7b-525400851c15",
+          "pod-template-hash": "8b55cdcf6"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "85852ac8e595bfd228039c75b34c8749166c9320ee0dea70234f8685f4f2be51",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "5ca1c20a",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "1",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/1da50c46-095a-11ec-903d-525400851c15/jvm-prometheus-monitoring/1.log",
+          "io.kubernetes.container.name": "jvm-prometheus-monitoring",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "jvm-prometheus-monitoring-hdqp8",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "1da50c46-095a-11ec-903d-525400851c15",
+          "io.kubernetes.sandbox.id": "e36ff801a7ec6e3ab3d1c8dc394564bdddb0bf75db488b45a6965e06a0f1d783",
+          "maintainer": "Sergei Turchanov <turchanov@farpost.com>"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "85852ac8e595bfd228039c75b34c8749166c9320ee0dea70234f8685f4f2be51",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "5ca1c20a",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "1",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/1da50c46-095a-11ec-903d-525400851c15/jvm-prometheus-monitoring/1.log",
+          "io.kubernetes.container.name": "jvm-prometheus-monitoring",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "jvm-prometheus-monitoring-hdqp8",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "1da50c46-095a-11ec-903d-525400851c15",
+          "io.kubernetes.sandbox.id": "e36ff801a7ec6e3ab3d1c8dc394564bdddb0bf75db488b45a6965e06a0f1d783",
+          "maintainer": "Sergei Turchanov <turchanov@farpost.com>"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "8e0d0f1b85f9b21f1e39d7768dc932e8ea7ef60797788ead740dfee432c1fe28",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "6d9afa0b",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"hostPort\":10028,\"containerPort\":10028,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "2",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/b38d0fc5-d001-11eb-b270-525400851c15/debug-agent/2.log",
+          "io.kubernetes.container.name": "debug-agent",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "debug-agent-w6h5q",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "b38d0fc5-d001-11eb-b270-525400851c15",
+          "io.kubernetes.sandbox.id": "2cf2501196934feb9ae82013d461131d69834d3155cb9f29b2e2729fec9195a6"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "8e0d0f1b85f9b21f1e39d7768dc932e8ea7ef60797788ead740dfee432c1fe28",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "6d9afa0b",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"hostPort\":10028,\"containerPort\":10028,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "2",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/b38d0fc5-d001-11eb-b270-525400851c15/debug-agent/2.log",
+          "io.kubernetes.container.name": "debug-agent",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "debug-agent-w6h5q",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "b38d0fc5-d001-11eb-b270-525400851c15",
+          "io.kubernetes.sandbox.id": "2cf2501196934feb9ae82013d461131d69834d3155cb9f29b2e2729fec9195a6"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "86392e9c2c019f34cc11960f307fcba2917136b05b32967358477228f1dae03a",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "f11709e3",
+          "annotation.io.kubernetes.container.restartCount": "4",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "0",
+          "io.kubernetes.container.logpath": "/var/log/pods/afa7ab56-f148-11e9-86e6-525400851c15/calico-node/4.log",
+          "io.kubernetes.container.name": "calico-node",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "calico-node-mnzp6",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "afa7ab56-f148-11e9-86e6-525400851c15",
+          "io.kubernetes.sandbox.id": "da1eb00bdcecb9b9c38f20d2111f5d409d056d3d4f52784345c540e767f79964"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "86392e9c2c019f34cc11960f307fcba2917136b05b32967358477228f1dae03a",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "f11709e3",
+          "annotation.io.kubernetes.container.restartCount": "4",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "0",
+          "io.kubernetes.container.logpath": "/var/log/pods/afa7ab56-f148-11e9-86e6-525400851c15/calico-node/4.log",
+          "io.kubernetes.container.name": "calico-node",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "calico-node-mnzp6",
+          "io.kubernetes.pod.namespace": "kube-system",
+          "io.kubernetes.pod.uid": "afa7ab56-f148-11e9-86e6-525400851c15",
+          "io.kubernetes.sandbox.id": "da1eb00bdcecb9b9c38f20d2111f5d409d056d3d4f52784345c540e767f79964"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "bba38dc67d8b6cdd68d4d5d83c43976aa56876d880856df714eff50533957add",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "e2e73a69",
+          "annotation.io.kubernetes.container.restartCount": "2",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/9500ccd8-f438-11ea-909a-525400851c15/nfd-worker/2.log",
+          "io.kubernetes.container.name": "nfd-worker",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "nfd-worker-z7pkp",
+          "io.kubernetes.pod.namespace": "node-feature-discovery",
+          "io.kubernetes.pod.uid": "9500ccd8-f438-11ea-909a-525400851c15",
+          "io.kubernetes.sandbox.id": "dc878710f1c6620bf072671895c5845b7bc0d11ce5c43e67115037ed5e512d72"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "bba38dc67d8b6cdd68d4d5d83c43976aa56876d880856df714eff50533957add",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "e2e73a69",
+          "annotation.io.kubernetes.container.restartCount": "2",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/9500ccd8-f438-11ea-909a-525400851c15/nfd-worker/2.log",
+          "io.kubernetes.container.name": "nfd-worker",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "nfd-worker-z7pkp",
+          "io.kubernetes.pod.namespace": "node-feature-discovery",
+          "io.kubernetes.pod.uid": "9500ccd8-f438-11ea-909a-525400851c15",
+          "io.kubernetes.sandbox.id": "dc878710f1c6620bf072671895c5845b7bc0d11ce5c43e67115037ed5e512d72"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "64f54ba4497271b663d4a7791f6d6e0fc6770c10dad3a9c994ec410948179c3f",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "c3c50fd3",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"https\",\"hostPort\":9100,\"containerPort\":9100,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "5",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/0ec3c69b-4492-11e9-9667-525400851c15/kube-rbac-proxy/5.log",
+          "io.kubernetes.container.name": "kube-rbac-proxy",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "node-exporter-g4dkg",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "0ec3c69b-4492-11e9-9667-525400851c15",
+          "io.kubernetes.sandbox.id": "ced1163a635a5f5469f4a25c8e4bd0db45b57b4cc892260c45a4c3f889dab791"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "64f54ba4497271b663d4a7791f6d6e0fc6770c10dad3a9c994ec410948179c3f",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "c3c50fd3",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"https\",\"hostPort\":9100,\"containerPort\":9100,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "5",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/0ec3c69b-4492-11e9-9667-525400851c15/kube-rbac-proxy/5.log",
+          "io.kubernetes.container.name": "kube-rbac-proxy",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "node-exporter-g4dkg",
+          "io.kubernetes.pod.namespace": "monitoring",
+          "io.kubernetes.pod.uid": "0ec3c69b-4492-11e9-9667-525400851c15",
+          "io.kubernetes.sandbox.id": "ced1163a635a5f5469f4a25c8e4bd0db45b57b4cc892260c45a4c3f889dab791"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "33861c23291ec674a89e21baf7b4a7d918c943a39accf9dd0238eb19e46132df",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "ac67095f",
+          "annotation.io.kubernetes.container.restartCount": "30",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74329d15-6211-11ec-ad7b-525400851c15/backend/30.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-agent-d664749b5-4kmt9",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74329d15-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "69f3329ac410188c704edf6e2fd4cf0497787d513078c4a813b824a561a1a808",
+          "org.label-schema.build-date": "20210915",
+          "org.label-schema.license": "GPLv2",
+          "org.label-schema.name": "CentOS Base Image",
+          "org.label-schema.schema-version": "1.0",
+          "org.label-schema.vendor": "CentOS"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "33861c23291ec674a89e21baf7b4a7d918c943a39accf9dd0238eb19e46132df",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "ac67095f",
+          "annotation.io.kubernetes.container.restartCount": "30",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/74329d15-6211-11ec-ad7b-525400851c15/backend/30.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "curator-agent-d664749b5-4kmt9",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "74329d15-6211-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "69f3329ac410188c704edf6e2fd4cf0497787d513078c4a813b824a561a1a808",
+          "org.label-schema.build-date": "20210915",
+          "org.label-schema.license": "GPLv2",
+          "org.label-schema.name": "CentOS Base Image",
+          "org.label-schema.schema-version": "1.0",
+          "org.label-schema.vendor": "CentOS"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "08c6e7c6cefbeab1a20efd36b5ac0ae9dfaae3ccb6c91fa523dd3f75f86efe4d",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "8d778bef",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/396fa021-66bd-11ec-ad7b-525400851c15/utility/0.log",
+          "io.kubernetes.container.name": "utility",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "search-sessions-utility-5ff5cf996f-wstj8",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "396fa021-66bd-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "c81fcccaec693d400c696fb842d1d7958f06b28fcd956df81c4ea9d05f54b24d"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "08c6e7c6cefbeab1a20efd36b5ac0ae9dfaae3ccb6c91fa523dd3f75f86efe4d",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "8d778bef",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/396fa021-66bd-11ec-ad7b-525400851c15/utility/0.log",
+          "io.kubernetes.container.name": "utility",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "search-sessions-utility-5ff5cf996f-wstj8",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "396fa021-66bd-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "c81fcccaec693d400c696fb842d1d7958f06b28fcd956df81c4ea9d05f54b24d"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "c81fcccaec693d400c696fb842d1d7958f06b28fcd956df81c4ea9d05f54b24d",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-27T12:32:24.074099113+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/name": "search-sessions",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "search-sessions-utility-5ff5cf996f-wstj8",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "396fa021-66bd-11ec-ad7b-525400851c15",
+          "pod-template-hash": "5ff5cf996f"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "c81fcccaec693d400c696fb842d1d7958f06b28fcd956df81c4ea9d05f54b24d",
+        "labels": {
+          "annotation.kubernetes.io/config.seen": "2021-12-27T12:32:24.074099113+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "app.kubernetes.io/name": "search-sessions",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "search-sessions-utility-5ff5cf996f-wstj8",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "396fa021-66bd-11ec-ad7b-525400851c15",
+          "pod-template-hash": "5ff5cf996f"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "39497e56f73a9d9c062b6715417ec58676aa51c26dfc73df3d2ccc52035b6ec2",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-27T16:54:32.857860032+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "YTpz9",
+          "app.kubernetes.io/instance": "fraud-bazar-water-search-spam",
+          "app.kubernetes.io/name": "backend",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "fraud-bazar-water-search-spam-backend-6f56654b7d-rb8mj",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "d8856c52-66e1-11ec-ad7b-525400851c15",
+          "pod-template-hash": "6f56654b7d"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "39497e56f73a9d9c062b6715417ec58676aa51c26dfc73df3d2ccc52035b6ec2",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-27T16:54:32.857860032+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "YTpz9",
+          "app.kubernetes.io/instance": "fraud-bazar-water-search-spam",
+          "app.kubernetes.io/name": "backend",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "fraud-bazar-water-search-spam-backend-6f56654b7d-rb8mj",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "d8856c52-66e1-11ec-ad7b-525400851c15",
+          "pod-template-hash": "6f56654b7d"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "979d2994ca8c836acac2c2ab4c06450d310362c6fd34cf591aebfda4a9dc8b96",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "66e1e59e",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/d8856c52-66e1-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fraud-bazar-water-search-spam-backend-6f56654b7d-rb8mj",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "d8856c52-66e1-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "39497e56f73a9d9c062b6715417ec58676aa51c26dfc73df3d2ccc52035b6ec2"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "979d2994ca8c836acac2c2ab4c06450d310362c6fd34cf591aebfda4a9dc8b96",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "66e1e59e",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/d8856c52-66e1-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fraud-bazar-water-search-spam-backend-6f56654b7d-rb8mj",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "d8856c52-66e1-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "39497e56f73a9d9c062b6715417ec58676aa51c26dfc73df3d2ccc52035b6ec2"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "312183517df9582711e68a7bb1e430c652d20473cf403643bcd320ec6f6f5828",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-27T16:56:07.13460602+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "lfPk3",
+          "app.kubernetes.io/instance": "fraud-bazar-realty-search-spam",
+          "app.kubernetes.io/name": "backend",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "fraud-bazar-realty-search-spam-backend-65d5bf6ffd-gqxdn",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "10b57dc8-66e2-11ec-ad7b-525400851c15",
+          "pod-template-hash": "65d5bf6ffd"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "312183517df9582711e68a7bb1e430c652d20473cf403643bcd320ec6f6f5828",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-27T16:56:07.13460602+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "lfPk3",
+          "app.kubernetes.io/instance": "fraud-bazar-realty-search-spam",
+          "app.kubernetes.io/name": "backend",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "fraud-bazar-realty-search-spam-backend-65d5bf6ffd-gqxdn",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "10b57dc8-66e2-11ec-ad7b-525400851c15",
+          "pod-template-hash": "65d5bf6ffd"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "cb924cc8bc947a58c3581cd6f617d601134b39d9982f63961babd8c6e9d9bf0c",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "be081492",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/10b57dc8-66e2-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fraud-bazar-realty-search-spam-backend-65d5bf6ffd-gqxdn",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "10b57dc8-66e2-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "312183517df9582711e68a7bb1e430c652d20473cf403643bcd320ec6f6f5828"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "cb924cc8bc947a58c3581cd6f617d601134b39d9982f63961babd8c6e9d9bf0c",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "be081492",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/10b57dc8-66e2-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fraud-bazar-realty-search-spam-backend-65d5bf6ffd-gqxdn",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "10b57dc8-66e2-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "312183517df9582711e68a7bb1e430c652d20473cf403643bcd320ec6f6f5828"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "42d2f80cf62654f480bddb096f93088517b6e1a61162df30c8c4e7b38bd90db3",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-28T15:48:37.971927565+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "xjqn2",
+          "app.kubernetes.io/instance": "phishing-sessions-search-spam",
+          "app.kubernetes.io/name": "backend",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "phishing-sessions-search-spam-backend-589986b9bd-tmz5t",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "cda65d45-67a1-11ec-ad7b-525400851c15",
+          "pod-template-hash": "589986b9bd"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "42d2f80cf62654f480bddb096f93088517b6e1a61162df30c8c4e7b38bd90db3",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-28T15:48:37.971927565+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "xjqn2",
+          "app.kubernetes.io/instance": "phishing-sessions-search-spam",
+          "app.kubernetes.io/name": "backend",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "phishing-sessions-search-spam-backend-589986b9bd-tmz5t",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "cda65d45-67a1-11ec-ad7b-525400851c15",
+          "pod-template-hash": "589986b9bd"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "36e026011c70fa3d106ea16a2b3011cf00a5d51cbea0d0bfbed646ef15d296e6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "cc416a8a",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/cda65d45-67a1-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "phishing-sessions-search-spam-backend-589986b9bd-tmz5t",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "cda65d45-67a1-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "42d2f80cf62654f480bddb096f93088517b6e1a61162df30c8c4e7b38bd90db3"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "36e026011c70fa3d106ea16a2b3011cf00a5d51cbea0d0bfbed646ef15d296e6",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "cc416a8a",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/cda65d45-67a1-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "phishing-sessions-search-spam-backend-589986b9bd-tmz5t",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "cda65d45-67a1-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "42d2f80cf62654f480bddb096f93088517b6e1a61162df30c8c4e7b38bd90db3"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "83928e10ce3ad656140cb3b8e3177ed2078290d7ea48533ce2e6b83eb5237398",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-28T17:25:12.832882818+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "fIRz8",
+          "app.kubernetes.io/instance": "fraud-bazar-auto-search-spam",
+          "app.kubernetes.io/name": "backend",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "fraud-bazar-auto-search-spam-backend-7b986ffd76-xcfwb",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "4ba53f77-67af-11ec-ad7b-525400851c15",
+          "pod-template-hash": "7b986ffd76"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "83928e10ce3ad656140cb3b8e3177ed2078290d7ea48533ce2e6b83eb5237398",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-28T17:25:12.832882818+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "fIRz8",
+          "app.kubernetes.io/instance": "fraud-bazar-auto-search-spam",
+          "app.kubernetes.io/name": "backend",
+          "com.farpost/monitoring": "prometheus",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "fraud-bazar-auto-search-spam-backend-7b986ffd76-xcfwb",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "4ba53f77-67af-11ec-ad7b-525400851c15",
+          "pod-template-hash": "7b986ffd76"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "22474c248afcdf89a5eef2b0cb57119d61b717cebc78a9b9dd440f4c205520eb",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "1c755e2b",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/4ba53f77-67af-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fraud-bazar-auto-search-spam-backend-7b986ffd76-xcfwb",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "4ba53f77-67af-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "83928e10ce3ad656140cb3b8e3177ed2078290d7ea48533ce2e6b83eb5237398"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "22474c248afcdf89a5eef2b0cb57119d61b717cebc78a9b9dd440f4c205520eb",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "1c755e2b",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/4ba53f77-67af-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "fraud-bazar-auto-search-spam-backend-7b986ffd76-xcfwb",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "4ba53f77-67af-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "83928e10ce3ad656140cb3b8e3177ed2078290d7ea48533ce2e6b83eb5237398"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "50725b419ff1188ce405e7dca8f15cd4464c691262de8fccb00d7dd295d63bf1",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-29T12:41:18.098537345+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "DMV7j",
+          "app.kubernetes.io/instance": "problem-fraud-bazar-auto-141",
+          "app.kubernetes.io/name": "backend",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "problem-fraud-bazar-auto-141-backend-6bc955d9b7-hn8tc",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "cc91c9ae-6850-11ec-ad7b-525400851c15",
+          "pod-template-hash": "6bc955d9b7"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "50725b419ff1188ce405e7dca8f15cd4464c691262de8fccb00d7dd295d63bf1",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-29T12:41:18.098537345+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "DMV7j",
+          "app.kubernetes.io/instance": "problem-fraud-bazar-auto-141",
+          "app.kubernetes.io/name": "backend",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "problem-fraud-bazar-auto-141-backend-6bc955d9b7-hn8tc",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "cc91c9ae-6850-11ec-ad7b-525400851c15",
+          "pod-template-hash": "6bc955d9b7"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "b9b6d49d70e482dc745e54377a7f5f5aeb5214dd6895d598fe52beb164b656f4",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "831363fa",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/cc91c9ae-6850-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "problem-fraud-bazar-auto-141-backend-6bc955d9b7-hn8tc",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "cc91c9ae-6850-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "50725b419ff1188ce405e7dca8f15cd4464c691262de8fccb00d7dd295d63bf1",
+          "org.opencontainers.image.authors": "Oracle Linux Product Team <ol-ovm-info_ww@oracle.com>",
+          "org.opencontainers.image.description": "Oracle Linux is an open-source       operating system available under the GNU General Public License (GPLv2) and       is suitable for both general purpose or Oracle workloads.",
+          "org.opencontainers.image.source": "https://github.com/oracle/container-images/tree/dist-amd64/7.9",
+          "org.opencontainers.image.title": "Oracle Linux 7",
+          "org.opencontainers.image.url": "https://github.com/oracle/container-images",
+          "org.opencontainers.image.vendor": "Oracle America, Inc"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "b9b6d49d70e482dc745e54377a7f5f5aeb5214dd6895d598fe52beb164b656f4",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "831363fa",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/cc91c9ae-6850-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "problem-fraud-bazar-auto-141-backend-6bc955d9b7-hn8tc",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "cc91c9ae-6850-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "50725b419ff1188ce405e7dca8f15cd4464c691262de8fccb00d7dd295d63bf1",
+          "org.opencontainers.image.authors": "Oracle Linux Product Team <ol-ovm-info_ww@oracle.com>",
+          "org.opencontainers.image.description": "Oracle Linux is an open-source       operating system available under the GNU General Public License (GPLv2) and       is suitable for both general purpose or Oracle workloads.",
+          "org.opencontainers.image.source": "https://github.com/oracle/container-images/tree/dist-amd64/7.9",
+          "org.opencontainers.image.title": "Oracle Linux 7",
+          "org.opencontainers.image.url": "https://github.com/oracle/container-images",
+          "org.opencontainers.image.vendor": "Oracle America, Inc"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "eb5ad83796488c4a0d61ac39729cb40fc0860100e5c2373eea5a54a7d55f83c4",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-29T12:41:54.603443849+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "T3TIA",
+          "app.kubernetes.io/instance": "problem-fraud-bazar-common-476",
+          "app.kubernetes.io/name": "backend",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "problem-fraud-bazar-common-476-backend-687c45bfd6-b9prw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "e255b372-6850-11ec-ad7b-525400851c15",
+          "pod-template-hash": "687c45bfd6"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "eb5ad83796488c4a0d61ac39729cb40fc0860100e5c2373eea5a54a7d55f83c4",
+        "labels": {
+          "alerts.farpost.com/suppress": "true",
+          "annotation.kubernetes.io/config.seen": "2021-12-29T12:41:54.603443849+10:00",
+          "annotation.kubernetes.io/config.source": "api",
+          "annotation.podpreset.admission.kubernetes.io/podpreset-java-proxy-opt": "236118559",
+          "annotation.rollme": "T3TIA",
+          "app.kubernetes.io/instance": "problem-fraud-bazar-common-476",
+          "app.kubernetes.io/name": "backend",
+          "io.kubernetes.container.name": "POD",
+          "io.kubernetes.docker.type": "podsandbox",
+          "io.kubernetes.pod.name": "problem-fraud-bazar-common-476-backend-687c45bfd6-b9prw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "e255b372-6850-11ec-ad7b-525400851c15",
+          "pod-template-hash": "687c45bfd6"
+        }
+      },
+      {
+        "name": "lsof.1",
+        "container_id": "c6b11079829410ee4354d1d7886ac68b5d7c616cccda65fda52fe5c575cedec3",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "db784457",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/e255b372-6850-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "problem-fraud-bazar-common-476-backend-687c45bfd6-b9prw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "e255b372-6850-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "eb5ad83796488c4a0d61ac39729cb40fc0860100e5c2373eea5a54a7d55f83c4",
+          "org.opencontainers.image.authors": "Oracle Linux Product Team <ol-ovm-info_ww@oracle.com>",
+          "org.opencontainers.image.description": "Oracle Linux is an open-source       operating system available under the GNU General Public License (GPLv2) and       is suitable for both general purpose or Oracle workloads.",
+          "org.opencontainers.image.source": "https://github.com/oracle/container-images/tree/dist-amd64/7.9",
+          "org.opencontainers.image.title": "Oracle Linux 7",
+          "org.opencontainers.image.url": "https://github.com/oracle/container-images",
+          "org.opencontainers.image.vendor": "Oracle America, Inc"
+        }
+      },
+      {
+        "name": "date",
+        "container_id": "c6b11079829410ee4354d1d7886ac68b5d7c616cccda65fda52fe5c575cedec3",
+        "labels": {
+          "annotation.io.kubernetes.container.hash": "db784457",
+          "annotation.io.kubernetes.container.ports": "[{\"name\":\"http\",\"containerPort\":8080,\"protocol\":\"TCP\"}]",
+          "annotation.io.kubernetes.container.restartCount": "0",
+          "annotation.io.kubernetes.container.terminationMessagePath": "/dev/termination-log",
+          "annotation.io.kubernetes.container.terminationMessagePolicy": "File",
+          "annotation.io.kubernetes.pod.terminationGracePeriod": "30",
+          "io.kubernetes.container.logpath": "/var/log/pods/e255b372-6850-11ec-ad7b-525400851c15/backend/0.log",
+          "io.kubernetes.container.name": "backend",
+          "io.kubernetes.docker.type": "container",
+          "io.kubernetes.pod.name": "problem-fraud-bazar-common-476-backend-687c45bfd6-b9prw",
+          "io.kubernetes.pod.namespace": "farpost-baza",
+          "io.kubernetes.pod.uid": "e255b372-6850-11ec-ad7b-525400851c15",
+          "io.kubernetes.sandbox.id": "eb5ad83796488c4a0d61ac39729cb40fc0860100e5c2373eea5a54a7d55f83c4",
+          "org.opencontainers.image.authors": "Oracle Linux Product Team <ol-ovm-info_ww@oracle.com>",
+          "org.opencontainers.image.description": "Oracle Linux is an open-source       operating system available under the GNU General Public License (GPLv2) and       is suitable for both general purpose or Oracle workloads.",
+          "org.opencontainers.image.source": "https://github.com/oracle/container-images/tree/dist-amd64/7.9",
+          "org.opencontainers.image.title": "Oracle Linux 7",
+          "org.opencontainers.image.url": "https://github.com/oracle/container-images",
+          "org.opencontainers.image.vendor": "Oracle America, Inc"
+        }
+      }
+    ]
+  }
+]
