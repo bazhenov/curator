@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Layout, ExecutionList, TaskSuggest, ExecutionUI } from '../components'
-import { executions } from './fixture'
+import { Layout, ExecutionList, TaskSuggest, ExecutionUI, TaskList } from '../components'
+import { executions, agents } from './fixture'
 import { action } from '@storybook/addon-actions';
 
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -11,7 +11,7 @@ export default {
   title: "Curator"
 }
 
-let agents = [
+let shortAgents = [
   {
     name: "app1",
     tasks: [
@@ -49,28 +49,29 @@ export const Execution = () => <ExecutionUI execution={executions[1]} />
 
 export const taskSuggest = () =>
   <TaskSuggest
-    agents={agents}
+    agents={shortAgents}
     isOpen={true}
     forceQuery="ta"
     onSelect={action('onSelect')} />
 
 export const taskSuggestSearchingByTag = () =>
   <TaskSuggest
-    agents={agents}
+    agents={shortAgents}
     isOpen={true}
     forceQuery="ta my-app"
     onSelect={action('onSelect')} />
 
 export const managedTaskSuggest = () => <ManagedTaskSuggest />
 
+export const taskList = () => <TaskList agents={agents} onClick={action('click')} />
+
 function ManagedTaskSuggest() {
   let [isOpen, setOpen] = useState(false);
   return <>
     <Button onClick={() => setOpen(true)}>Open</Button>
     <TaskSuggest
-      agents={agents}
+      agents={shortAgents}
       isOpen={isOpen}
       onSelect={() => setOpen(false)} />
   </>
 }
-

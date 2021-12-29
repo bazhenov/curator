@@ -255,3 +255,39 @@ export function splitForHighlight(haystack: string, needle: string): Array<Highl
     result.push([false, haystack.substring(prevOffset)])
   return result;
 }
+
+function containerNameFromTask(t: Task): string {
+  let labels = t.labels || {}
+  return labels["io.kubernetes.pod.name"] + "/" + labels["io.kubernetes.container.name"]
+}
+
+function agentTasks(a: Agent): [Agent, Task][] {
+  return a.tasks.map(t => [a, t])
+}
+
+interface TaskListProps {
+  agents: Agent[],
+  onClick: (a: Agent, t: Task) => void,
+}
+
+export const TaskList = (props: TaskListProps) => {
+  let tasks = props.agents.flatMap(a => a.tasks);
+  let containerNames = tasks.map(containerNameFromTask);
+  let uniqNames = Array.from(new Set(containerNames));
+  uniqNames.sort();
+
+  let tasksAndAgents = props.agents.flatMap(agentTasks);
+
+  return <ul className="task-list">
+    {uniqNames.map(container => <li key={container}>
+      <code>{container}</code>
+      <ol>
+        {tasksAndAgents
+          .filter(([_, t]) => containerNameFromTask(t) == container)
+          .map(([a, t]) => <li key={t.name}>
+            <a onClick={() => props.onClick(a, t)}>{t.name}</a>
+          </li>)}
+      </ol>
+    </li>)}
+  </ul>
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Agent, Execution, Task } from './models'
-import { ExecutionList, Layout, TaskSuggest, ExecutionUI } from './components';
+import { ExecutionList, Layout, TaskSuggest, ExecutionUI, TaskList } from './components';
 import { Navbar, Alignment, Button } from '@blueprintjs/core';
 
 type AgentChangeListener = (_: Array<Agent>) => void
@@ -27,9 +27,7 @@ export const App = (props: AppProps) => {
 
   let agentsUi = <div>
     <h2>Agents</h2>
-    <ul>
-      {agents.map(a => agentTemplate(a, curator))}
-    </ul>
+    <TaskList agents={agents} onClick={(a, t) => curator.runTask(a, t)} />
   </div>
 
   let executionUi = <div>
@@ -55,17 +53,6 @@ export const App = (props: AppProps) => {
   </Navbar>
 
   return <Layout header={header} sidebar={agentsUi} content={executionUi} />
-}
-
-function taskTemplate(a: Agent, t: Task, curator: Curator) {
-  <li key={t.name}><a href={'#key-' + t.name} onClick={() => curator.runTask(a, t)}>{t.name}</a></li>
-}
-
-function agentTemplate(agent: Agent, curator: Curator) {
-  <li key={agent.name}>
-    {agent.name}
-    <ol>{agent.tasks.map(t => taskTemplate(agent, t, curator))}</ol>
-  </li>
 }
 
 export class Curator {
