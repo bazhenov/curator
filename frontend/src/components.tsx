@@ -117,12 +117,20 @@ export const TagList = (props: TagListProps) => {
 
 export const ExecutionUI = (props: { execution: Execution }) => {
   let { execution } = props
+  let labels = Object.entries(execution.task.labels || {})
   return <div className="execution-full">
     <p>ExecutionID: {execution.id}</p>
     <p>Status: {execution.status}</p>
     <p>Started: {moment(execution.started).format("LLLL")}</p>
     {execution.finished && <p>Finished: {moment(execution.finished).format("LLLL")}</p>}
     <p>Agent: <code>{execution.agent}</code></p>
+    {labels &&
+      <table className='bp3-html-table bp3-html-table-condensed'>
+        {labels.map(([k, v]) => <tr key={k}>
+          <td>{k}</td>
+          <td>{v}</td>
+        </tr>)}
+      </table>}
     {hasArtifact(execution) &&
       <p>
         {execution.artifact_size
