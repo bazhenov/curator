@@ -205,7 +205,7 @@ export const TaskSuggest = (props: TaskSuggestProps) => {
         </>
       }
       labelElement={<Tag>{agent.name}</Tag>}
-      key={task.name + "/" + location} />
+      key={task.name + "/" + location + "/" + task.container_id} />
   }
 
   let tasks = props.agents.flatMap(a => a.tasks.map(t => [a, t] as AgentTask))
