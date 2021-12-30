@@ -33,8 +33,9 @@
       * https://docs.rs/actix-web/3.3.2/actix_web/web/struct.JsonConfig.html#method.limit
       [2021-05-08T02:52:14Z ERROR curator::errors] Unable to connect to Curator server: http://curator-backend
       Caused by: Unexpected status code: 413 Payload Too Large
-  ☐ невозможно пользоваться правым блоком (там тупо куча записей lsof.1, даже непонятно на каком контейнере будет вызван toolchain)
+  ✔ невозможно пользоваться правым блоком (там тупо куча записей lsof.1, даже непонятно на каком контейнере будет вызван toolchain)
   ✔ неверно позиционируется OmniBox поиска
+  ☐ при поиске в OmniBox почему-то не пропадают отфильтрованные варианты, несмотря на то что выбрать их контро не дает.
 
 Разное:
   ✔ все `tokio::spawn()` должны делать логгирование или транслировать `Result` через `.await` @done(21-03-26 16:08)
