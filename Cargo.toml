@@ -16,6 +16,14 @@ path = "src/server-main.rs"
 name = "curator-agent"
 path = "src/agent-main.rs"
 
+[[test]]
+name = "docker"
+test = false
+
+[[test]]
+name = "curator_sse_test"
+test = false
+
 [dependencies]
 actix-server = "1.0"
 actix-files = "0.5"
