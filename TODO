@@ -37,6 +37,7 @@
       * https://docs.rs/actix-web/3.3.2/actix_web/web/struct.JsonConfig.html#method.limit
       [2021-05-08T02:52:14Z ERROR curator::errors] Unable to connect to Curator server: http://curator-backend
       Caused by: Unexpected status code: 413 Payload Too Large
+    [ ] dd.1G task failed. Tasks producing large artifacts never ends
   [x] невозможно пользоваться правым блоком (там тупо куча записей lsof.1, даже непонятно на каком контейнере будет вызван toolchain)
   [x] неверно позиционируется OmniBox поиска
   [x] при поиске в OmniBox почему-то не пропадают отфильтрованные варианты, несмотря на то что выбрать их контро не дает.
