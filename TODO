@@ -23,7 +23,7 @@
   [x] протестировать кеширование контейнеров в discovery loop @done(21-04-09 15:49)
   [ ] jdk-toolchain
     [x] jstack support
-    [ ] jmap -histo support
+    [x] jmap -histo support
     [ ] jmap -dump support
     [ ] JFR support
   [x] уникальный taskId для задач в k8s кластере. Сейчас они перезаписываются @done(21-04-23 20:14)

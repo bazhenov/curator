@@ -8,5 +8,6 @@ for PID in $PIDS
 do
   cat <<EOT
 {"name": "jstack.$PID", "command": ["jstack", "$PID"]}
+{"name": "jmap.histo.$PID", "command": ["jmap", "-histo", "$PID"]}
 EOT
 done
