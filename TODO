@@ -21,11 +21,11 @@
   [x] возможность указывать toolchain'ы в `curator-agent run` @done(21-04-01 17:33)
   [x] discovery-loop должен кешировать результаты по контейнерам @done(21-04-01 18:25)
   [x] протестировать кеширование контейнеров в discovery loop @done(21-04-09 15:49)
-  [ ] jdk-toolchain
+  [x] jdk-toolchain
     [x] jstack support
     [x] jmap -histo support
     [x] jmap -dump support
-    [ ] JFR support
+    [x] JFR support
   [x] уникальный taskId для задач в k8s кластере. Сейчас они перезаписываются @done(21-04-23 20:14)
   [x] показывать идентификатор контейнера в UI @done(21-05-08 12:54)
     [x] заменить TasDef/Task::tags на labels (для обобщения с k8s) @done(21-05-05 14:57)

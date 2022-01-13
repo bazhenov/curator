@@ -4,3 +4,4 @@ VOLUME /run/curator
 
 ADD /discover /
 ADD /jmap-dump /
+ADD /jfr /

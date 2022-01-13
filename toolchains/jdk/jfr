@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+PID=$1
+DURATION=$2
+
+TMP=$(mktemp)
+jcmd $PID JFR.start name=curator
+sleep $DURATION
+
+jcmd $PID JFR.dump name=curator "filename=$TMP"
+jcmd $PID JFR.stop name=curator
+
+mv "/proc/$PID/root$TMP" /run/curator/profile.jfr
