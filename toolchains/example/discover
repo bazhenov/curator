@@ -12,3 +12,22 @@ done
 cat << EOF
 {"name":"date","command":["date"]}
 EOF
+
+cat << EOF
+{"name":"dd.1M","command":["dd", "if=/dev/zero", "of=/run/curator/artifact.bin", "bs=1M", "count=1"]}
+EOF
+cat << EOF
+{"name":"dd.32M","command":["dd", "if=/dev/zero", "of=/run/curator/artifact.bin", "bs=1M", "count=32"]}
+EOF
+cat << EOF
+{"name":"dd.64M","command":["dd", "if=/dev/zero", "of=/run/curator/artifact.bin", "bs=1M", "count=64"]}
+EOF
+cat << EOF
+{"name":"dd.128M","command":["dd", "if=/dev/zero", "of=/run/curator/artifact.bin", "bs=1M", "count=128"]}
+EOF
+cat << EOF
+{"name":"dd.512M","command":["dd", "if=/dev/zero", "of=/run/curator/artifact.bin", "bs=1M", "count=512"]}
+EOF
+cat << EOF
+{"name":"dd.1G","command":["dd", "if=/dev/zero", "of=/run/curator/artifact.bin", "bs=1M", "count=1024"]}
+EOF
