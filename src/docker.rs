@@ -133,6 +133,7 @@ impl<'a> Container<'a> {
     pub fn read_logs(&self) -> impl Stream<Item = Result<LogOutput>> {
         let options = Some(LogsOptions::<String> {
             stdout: true,
+            follow: true,
             ..Default::default()
         });
 
