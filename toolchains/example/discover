@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eo pipefail
 
 PIDS="$(ps -g 1 -o pid=)"
 for PID in $PIDS

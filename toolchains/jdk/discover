@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eo pipefail
+
+# Grep will exit with code: 1 if no matches found.
+# To prevent failing discovery process masking exit code.
+PIDS="$(jps -lv | (grep -v sun.tools.jps.Jps || [[ $? == 1 ]]) | awk '{print $1}')"
+for PID in $PIDS 
+do
+  cat <<EOT
+{"name": "jstack.$PID", "command": ["jstack", "$PID"]}
+EOT
+done
