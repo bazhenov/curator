@@ -43,7 +43,7 @@ pub type TaskSet = Vec<TaskDef>;
 
 /// Workdir for toolchain tasks.
 ///
-/// All toolchain tasks will be executed with this path as a workid and all files
+/// All toolchain tasks will be executed with this path as a workdir and all files
 /// left in this directory will be treated as a task artifacts.
 ///
 /// This path should be created in toolchain container upfront when building toolchain container
