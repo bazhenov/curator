@@ -24,7 +24,7 @@
   [ ] jdk-toolchain
     [x] jstack support
     [x] jmap -histo support
-    [ ] jmap -dump support
+    [x] jmap -dump support
     [ ] JFR support
   [x] уникальный taskId для задач в k8s кластере. Сейчас они перезаписываются @done(21-04-23 20:14)
   [x] показывать идентификатор контейнера в UI @done(21-05-08 12:54)

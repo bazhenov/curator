@@ -9,5 +9,6 @@ do
   cat <<EOT
 {"name": "jstack.$PID", "command": ["jstack", "$PID"]}
 {"name": "jmap.histo.$PID", "command": ["jmap", "-histo", "$PID"]}
+{"name": "jmap.dump.$PID", "command": ["/jmap-dump", "$PID"]}
 EOT
 done
