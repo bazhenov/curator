@@ -43,7 +43,7 @@ pub type TaskSet = Vec<TaskDef>;
 
 /// Workdir for toolchain tasks.
 ///
-/// All toolchain tasks will be executed with this path as a workid and all files
+/// All toolchain tasks will be executed with this path as a workdir and all files
 /// left in this directory will be treated as a task artifacts.
 ///
 /// This path should be created in toolchain container upfront when building toolchain container
@@ -133,6 +133,7 @@ impl<'a> Container<'a> {
     pub fn read_logs(&self) -> impl Stream<Item = Result<LogOutput>> {
         let options = Some(LogsOptions::<String> {
             stdout: true,
+            follow: true,
             ..Default::default()
         });
 
@@ -208,11 +209,6 @@ pub async fn run_discovery(
         !container_id.is_empty(),
         InvalidContainerId(container_id.into())
     );
-    trace!(
-        "Running discovery. Toolchain: {}, container: {}",
-        toolchain_image,
-        &container_id[0..12]
-    );
 
     let target_container = docker.inspect_container(container_id, None).await?;
     let labels = target_container.config.and_then(|c| c.labels);
@@ -240,7 +236,14 @@ pub async fn run_discovery(
     toolchain_container.wait().await?;
     toolchain_container.remove().await?;
 
-    task_defs.into_iter().collect::<Result<Vec<_>>>()
+    let tasks = task_defs.into_iter().collect::<Result<Vec<_>>>()?;
+    trace!(
+        "Toolchain: {}, container: {}. Found {} tasks",
+        toolchain_image,
+        &container_id[0..12],
+        tasks.len()
+    );
+    Ok(tasks)
 }
 
 pub async fn run_task<W: Write>(

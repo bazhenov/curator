@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+PID=$1
+TMP=$(mktemp)
+
+jmap "-dump:live,format=b,gz=1,file=$TMP" $PID 
+
+# Heap dump is written on a target container FS. We need to
+# move it to /run/curator using /proc/root FS link
+mv "/proc/$PID/root$TMP" /run/curator/heap.hprof.gz
