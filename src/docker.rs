@@ -208,11 +208,6 @@ pub async fn run_discovery(
         !container_id.is_empty(),
         InvalidContainerId(container_id.into())
     );
-    trace!(
-        "Running discovery. Toolchain: {}, container: {}",
-        toolchain_image,
-        &container_id[0..12]
-    );
 
     let target_container = docker.inspect_container(container_id, None).await?;
     let labels = target_container.config.and_then(|c| c.labels);
@@ -240,7 +235,14 @@ pub async fn run_discovery(
     toolchain_container.wait().await?;
     toolchain_container.remove().await?;
 
-    task_defs.into_iter().collect::<Result<Vec<_>>>()
+    let tasks = task_defs.into_iter().collect::<Result<Vec<_>>>()?;
+    trace!(
+        "Toolchain: {}, container: {}. Found {} tasks",
+        toolchain_image,
+        &container_id[0..12],
+        tasks.len()
+    );
+    Ok(tasks)
 }
 
 pub async fn run_task<W: Write>(
