@@ -1,4 +1,3 @@
-extern crate ctrlc;
 extern crate curator;
 
 use curator::{prelude::*, server::Curator};

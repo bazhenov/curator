@@ -1,5 +1,4 @@
 extern crate clap;
-extern crate ctrlc;
 extern crate curator;
 
 use bollard::Docker;
@@ -17,7 +16,6 @@ use std::{
     collections::hash_map::DefaultHasher,
     fmt,
     hash::{Hash, Hasher},
-    process::exit,
 };
 use termion::{
     color::{Fg, Yellow},
@@ -27,11 +25,6 @@ use termion::{
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-
-    ctrlc::set_handler(move || {
-        println!("Got Ctrl-C! Shuting down...");
-        exit(1);
-    })?;
 
     let matches = App::new("Curator Agent")
         .version("0.1.0")
