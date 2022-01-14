@@ -45,3 +45,4 @@
 Разное:
   [x] все `tokio::spawn()` должны делать логгирование или транслировать `Result` через `.await` @done(21-03-26 16:08)
   [ ] update actix_web up to 3.3.3. Remove tokio v0.2 after that
+  [ ] setup TeamCity deployment cycle
