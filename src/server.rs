@@ -10,8 +10,12 @@ use std::{
 use actix_files::NamedFile;
 
 use actix_web::{
-    dev::HttpResponseBuilder, error::PayloadError, error::ResponseError, http::header::*,
-    http::StatusCode, middleware::Logger, web, App, HttpResponse, HttpServer, Responder,
+    error::PayloadError,
+    error::ResponseError,
+    http::header::{self, HeaderValue},
+    http::StatusCode,
+    middleware::Logger,
+    web, App, HttpResponse, HttpResponseBuilder, HttpServer, Responder,
 };
 use bytes::Bytes;
 use futures::{
@@ -43,7 +47,7 @@ enum ServerError {
 impl ResponseError for ServerError {
     fn error_response(&self) -> HttpResponse {
         HttpResponseBuilder::new(self.status_code())
-            .set_header(CONTENT_TYPE, "text/html; charset=utf-8")
+            .insert_header(header::ContentType::plaintext())
             .body(format!("{}", self))
     }
 
@@ -144,12 +148,11 @@ const CLEANUP_INTERVAL_SEC: u64 = 2;
 const HEARTBEAT_TIMEOUT_SEC: u64 = 6;
 
 pub struct Curator {
-    server: actix_server::Server,
     agents: Shared<AgentMap>,
 }
 
 impl Curator {
-    pub fn start() -> Result<Self> {
+    pub fn start() -> Result<(actix_server::Server, Self)> {
         let agents: AgentMap = HashMap::new();
         let agents = shared(agents);
         let executions = shared(Executions::default());
@@ -193,7 +196,7 @@ impl Curator {
             tokio::spawn(cleanup_agents(agents));
         }
 
-        Ok(Self { server, agents })
+        Ok((server, Self { agents }))
     }
 
     pub fn notify_all(&self, event: &SseEvent) {
@@ -206,10 +209,6 @@ impl Curator {
                 true
             }
         })
-    }
-
-    pub async fn stop(&self, graceful: bool) {
-        self.server.stop(graceful).await
     }
 }
 
@@ -252,10 +251,10 @@ async fn agent_connected(
     agents.insert(agent.info.name.clone(), agent);
 
     HttpResponse::Ok()
-        .header("Content-Type", "text/event-stream")
-        .header("Cache-Control", "no-cache")
+        .content_type("text/event-stream")
+        .insert_header(("Cache-Control", "no-cache"))
         // X-Accel-Buffering required for disable buffering on a nginx reverse proxy
-        .header("X-Accel-Buffering", "no")
+        .insert_header(("X-Accel-Buffering", "no"))
         .streaming(rx)
 }
 
@@ -288,7 +287,10 @@ async fn attach_artifacts(
     request: web::HttpRequest,
     executions: web::Data<Mutex<Executions>>,
 ) -> ServerResult<HttpResponse> {
-    let content_type = request.headers().get(CONTENT_TYPE).map(HeaderValue::to_str);
+    let content_type = request
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .map(HeaderValue::to_str);
     use ServerError::*;
 
     match content_type {
