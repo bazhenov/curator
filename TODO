@@ -1,4 +1,3 @@
-
 Запустить curator-agent на production для проверки концепции:
   [x] локальная сборка образа с агентом @done(21-03-20 12:58)
   [x] запушить исходники в наш github @done(21-03-20 12:58)
@@ -37,12 +36,15 @@
       * https://docs.rs/actix-web/3.3.2/actix_web/web/struct.JsonConfig.html#method.limit
       [2021-05-08T02:52:14Z ERROR curator::errors] Unable to connect to Curator server: http://curator-backend
       Caused by: Unexpected status code: 413 Payload Too Large
-    [ ] dd.1G task failed. Tasks producing large artifacts never ends
+    [ ] dd.1G task failed. Tasks producing large artifacts never ends on a production cluster
   [x] невозможно пользоваться правым блоком (там тупо куча записей lsof.1, даже непонятно на каком контейнере будет вызван toolchain)
   [x] неверно позиционируется OmniBox поиска
   [x] при поиске в OmniBox почему-то не пропадают отфильтрованные варианты, несмотря на то что выбрать их контро не дает.
 
-Разное:
+UI:
+  [ ] Empty output in execution leads to odd UI. Need to implement empty state for ExecutionUI
+
+Misc:
   [x] все `tokio::spawn()` должны делать логгирование или транслировать `Result` через `.await` @done(21-03-26 16:08)
-  [ ] update actix_web up to 3.3.3. Remove tokio v0.2 after that
+  [x] update actix_web up to 3.3.3. Remove tokio v0.2 after that
   [ ] setup TeamCity deployment cycle
