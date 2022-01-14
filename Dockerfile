@@ -7,12 +7,12 @@ ADD tests ./tests
 ADD Cargo.toml ./Cargo.toml
 ADD Cargo.lock ./Cargo.lock
 
-# Building project including tests
+# Building project, unit and integration tests
 RUN --mount=type=cache,target=./target \
-    --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  cargo build --release --bins && \
   cargo build --release --tests && \
-  cp ./target/release/curator-server /opt && \
-  cp ./target/release/curator-agent /opt
+  cargo build --release --test='*'
 
 # Copying production executables
 RUN --mount=type=cache,target=./target \
