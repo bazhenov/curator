@@ -122,7 +122,7 @@ impl Agent {
 
     /// Updates heartbeat time on an agent
     ///
-    /// Hearbeats required to remove stalled agents becasue SSE doesn't allow to track client disconnection
+    /// Hearbeats required to remove stalled agents because SSE doesn't allow to track client disconnection
     /// without sending messages to client. Moreover even sending messages to client doesn't provide time bounds
     /// for stale agent detection because local TCP stack can buffer outgoing messages for quite a while.
     fn heartbeat_recevied(&mut self) {
