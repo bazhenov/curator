@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Intent, ProgressBar, Tag, MenuItem, Spinner, SpinnerSize } from '@blueprintjs/core'
+import { Intent, ProgressBar, Tag, MenuItem, Spinner, SpinnerSize, NonIdealState } from '@blueprintjs/core'
 import { ItemRenderer, ItemPredicate, Omnibar } from "@blueprintjs/select"
 import numeral from "numeral"
 
@@ -142,7 +142,8 @@ export const ExecutionUI = (props: { execution: Execution }) => {
             Artifacts&nbsp;<Spinner size={SpinnerSize.SMALL} /></a>}
 
       </p>}
-    <pre>{execution.output}</pre>
+    {execution.output && <pre>{execution.output}</pre>}
+    {!execution.output && <NonIdealState icon="filter-remove" title="Empty output" description="Command provided no output on stdout" />}
   </div>
 }
 

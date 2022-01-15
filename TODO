@@ -42,7 +42,7 @@
   [x] при поиске в OmniBox почему-то не пропадают отфильтрованные варианты, несмотря на то что выбрать их контро не дает.
 
 UI:
-  [ ] Empty output in execution leads to odd UI. Need to implement empty state for ExecutionUI
+  [x] Empty output in execution leads to odd UI. Need to implement empty state for ExecutionUI
 
 Misc:
   [x] все `tokio::spawn()` должны делать логгирование или транслировать `Result` через `.await` @done(21-03-26 16:08)

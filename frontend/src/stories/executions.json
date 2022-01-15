@@ -43,5 +43,16 @@
     "status": "FAILED",
     "started": "2020-04-05T12:56:13.514054Z",
     "finished": "2020-04-05T12:56:13.525709Z"
+  },
+  {
+    "id": "2b938fba-0a05-4fd7-8949-dccabf9eb1cd",
+    "agent": "my",
+    "output": "",
+    "task": {
+      "name": "w"
+    },
+    "status": "COMPLETED",
+    "started": "2020-04-05T12:56:13.514054Z",
+    "finished": "2020-04-05T12:56:13.525709Z"
   }
 ]
