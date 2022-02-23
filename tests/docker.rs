@@ -122,7 +122,9 @@ async fn run_test_toolchain(
 async fn get_sample_container(docker: &Docker) -> Result<String> {
     let mut containers = list_running_containers(docker, &["io.kubernetes.pod.name"]).await?;
     let mut drain = containers.drain();
-    Ok(drain.next().unwrap())
+    Ok(drain
+        .next()
+        .expect("No running containers with 'io.kubernetes.pod.name' label"))
 }
 
 async fn collect<T: AsRef<[u8]>>(mut receiver: mpsc::Receiver<T>) -> String {
