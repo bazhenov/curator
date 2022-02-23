@@ -1,15 +1,18 @@
 extern crate curator;
 
 use bollard::Docker;
+use curator::agent::Artifact;
 use curator::prelude::*;
 use curator::{
-    agent::TaskDef,
-    docker::{self, list_running_containers, run_discovery},
+    agent::{self, TaskDef, TaskProgress},
+    docker::{list_running_containers, run_discovery},
 };
 use rstest::*;
-use std::{borrow::Cow, io::Cursor, path::PathBuf};
+use std::fs;
+use std::{borrow::Cow, path::PathBuf};
 use tar::Archive;
 use tokio::sync::mpsc;
+use uuid::Uuid;
 
 /// Those test relies on docker-compose `it-sample-container` service container.
 ///
@@ -55,7 +58,9 @@ async fn run_toolchain_for_artifact(dock: Docker) -> Result<()> {
 
     assert_eq!(status, 0);
 
-    let entries = Archive::new(artifacts)
+    let artifacts = artifacts.expect("Empty artifacts");
+
+    let entries = Archive::new(fs::File::open(artifacts.as_ref())?)
         .entries()?
         .map(|e| e?.path().map(Cow::into_owned))
         .collect::<IoResult<Vec<_>>>()?;
@@ -90,7 +95,9 @@ async fn run_toolchain(
     docker: &Docker,
     command: &[&str],
     toolchain: &str,
-) -> Result<(i32, Cursor<Vec<u8>>, String)> {
+) -> Result<(i32, Option<Artifact>, String)> {
+    use TaskProgress::*;
+
     let container_id = get_sample_container(docker).await?;
 
     let task = TaskDef {
@@ -101,21 +108,38 @@ async fn run_toolchain(
         ..Default::default()
     };
 
-    let (sender, receiver) = mpsc::channel(1);
-    let stdout_content = tokio::spawn(collect(receiver));
-    let mut artifacts = Cursor::new(vec![]);
+    let (progress_sender, mut progress_receiver) = mpsc::channel(1);
 
-    let status_code =
-        docker::run_task(docker, &task, Some(sender), None, Some(&mut artifacts)).await?;
-    artifacts.set_position(0);
+    let join_handle = tokio::spawn(agent::execute_task(
+        docker.clone(),
+        task,
+        progress_sender,
+        Uuid::new_v4(),
+    ));
 
-    Ok((status_code, artifacts, stdout_content.await?))
+    let mut artifacts = None;
+    let mut stdout = String::new();
+    let mut exit_code = None;
+
+    while let Some(progress) = progress_receiver.recv().await {
+        match progress {
+            Stdout(line) => stdout.push_str(line.as_str()),
+            ArtifactsReady(artifact) => artifacts = Some(artifact),
+            Finished(code) => exit_code = Some(code),
+            _ => {}
+        }
+    }
+
+    join_handle.await??;
+    let exit_code = exit_code.expect("No exit code reported");
+
+    Ok((exit_code, artifacts, stdout))
 }
 
 async fn run_test_toolchain(
     docker: &Docker,
     command: &[&str],
-) -> Result<(i32, Cursor<Vec<u8>>, String)> {
+) -> Result<(i32, Option<Artifact>, String)> {
     run_toolchain(docker, command, TOOLCHAIN).await
 }
 
@@ -125,13 +149,4 @@ async fn get_sample_container(docker: &Docker) -> Result<String> {
     Ok(drain
         .next()
         .expect("No running containers with 'io.kubernetes.pod.name' label"))
-}
-
-async fn collect<T: AsRef<[u8]>>(mut receiver: mpsc::Receiver<T>) -> String {
-    let mut result = String::new();
-
-    while let Some(chunk) = receiver.recv().await {
-        result.push_str(&String::from_utf8_lossy(chunk.as_ref()));
-    }
-    result
 }

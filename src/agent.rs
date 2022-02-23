@@ -382,7 +382,7 @@ async fn copy_bytes(mut rx: mpsc::Receiver<Bytes>, tx: mpsc::Sender<TaskProgress
 }
 
 #[logfn(ok = "Trace", err = "Error")]
-async fn execute_task(
+pub async fn execute_task(
     docker: Docker,
     task: TaskDef,
     tx: mpsc::Sender<TaskProgress>,
@@ -484,7 +484,7 @@ async fn attach_artifacts_request(
 }
 
 #[derive(Debug)]
-struct Artifact(PathBuf);
+pub struct Artifact(PathBuf);
 
 impl Drop for Artifact {
     fn drop(&mut self) {
@@ -505,7 +505,7 @@ impl AsRef<Path> for Artifact {
 }
 
 #[derive(Debug)]
-enum TaskProgress {
+pub enum TaskProgress {
     Stdout(String),
     Finished(i32),
     FailedToStart(String),
