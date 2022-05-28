@@ -249,8 +249,8 @@ pub async fn run_discovery(
 pub async fn run_task<W: Write>(
     docker: &Docker,
     task: &TaskDef,
-    stdout: Option<mpsc::Sender<Bytes>>,
-    stderr: Option<mpsc::Sender<Bytes>>,
+    stdout: mpsc::Sender<Bytes>,
+    stderr: mpsc::Sender<Bytes>,
     artifacts: Option<W>,
 ) -> Result<i32> {
     let container_id = &task.container_id;
@@ -293,20 +293,16 @@ fn map_bollard_errors(error: BollardError) -> AnyhowError {
 
 async fn redirect_output(
     mut logs: impl Stream<Item = Result<LogOutput>> + Unpin,
-    stdout: Option<mpsc::Sender<Bytes>>,
-    stderr: Option<mpsc::Sender<Bytes>>,
+    stdout: mpsc::Sender<Bytes>,
+    stderr: mpsc::Sender<Bytes>,
 ) -> Result<()> {
     while let Some(record) = logs.next().await {
         match record? {
             LogOutput::StdOut { message } => {
-                if let Some(stdout) = &stdout {
-                    stdout.send(message).await?;
-                }
+                stdout.send(message).await?;
             }
             LogOutput::StdErr { message } => {
-                if let Some(stderr) = &stderr {
-                    stderr.send(message).await?;
-                }
+                stderr.send(message).await?;
             }
             _ => {}
         }

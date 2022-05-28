@@ -399,8 +399,8 @@ pub async fn execute_task(
     let status = docker::run_task(
         &docker,
         &task,
-        Some(stdout_tx),
-        Some(stderr_tx),
+        stdout_tx,
+        stderr_tx,
         Some(File::create(&artifact_path)?),
     )
     .await?;
