@@ -33,7 +33,7 @@
     [x] заменить TasDef/Task::tags на labels (для обобщения с k8s) @done(21-05-05 14:57)
     [x] писать label'ы k8s в TasDef автоматически @done(21-05-05 16:52)
     [x] добавить вывод имени pod'а в UI @done(21-05-08 12:54)
-  [ ] развернуть новую версию на production
+  [x] развернуть новую версию на production
     [ ] HTTP/413 – настроить backend
       * https://github.com/actix/actix-web/issues/1469
       * https://docs.rs/actix-web/3.3.2/actix_web/web/struct.JsonConfig.html#method.limit
@@ -50,4 +50,3 @@ UI:
 Misc:
   [x] все `tokio::spawn()` должны делать логгирование или транслировать `Result` через `.await` @done(21-03-26 16:08)
   [x] update actix_web up to 3.3.3. Remove tokio v0.2 after that
-  [ ] setup TeamCity deployment cycle
