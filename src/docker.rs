@@ -5,7 +5,10 @@
 //! * listing target container;
 //! * discovery tasks;
 //! * running task for a given container
-use crate::{agent::TaskDef, prelude::*};
+use crate::{
+    agent::{TaskDef, TaskProgress},
+    prelude::*,
+};
 use bollard::{
     container::{
         Config, DownloadFromContainerOptions, ListContainersOptions, LogOutput, LogsOptions,
@@ -253,8 +256,7 @@ pub async fn run_discovery(
 pub async fn run_task<W: Write>(
     docker: &Docker,
     task: &TaskDef,
-    stdout: mpsc::Sender<Bytes>,
-    stderr: mpsc::Sender<Bytes>,
+    output_sender: mpsc::Sender<TaskProgress>,
     artifacts: Option<W>,
 ) -> Result<i32> {
     let container_id = &task.container_id;
@@ -280,8 +282,7 @@ pub async fn run_task<W: Write>(
         container.read_logs(),
         File::create(&stdout_file)?,
         File::create(&stderr_file)?,
-        stdout,
-        stderr,
+        output_sender,
     ));
     let status_code = container.wait().await?;
     redirect_process.await??;
@@ -316,18 +317,21 @@ async fn redirect_output(
     mut logs: impl Stream<Item = Result<LogOutput>> + Unpin,
     mut stdout_file: File,
     mut stderr_file: File,
-    stdout: mpsc::Sender<Bytes>,
-    stderr: mpsc::Sender<Bytes>,
+    output_sender: mpsc::Sender<TaskProgress>,
 ) -> Result<()> {
     while let Some(record) = logs.next().await {
-        match record? {
-            LogOutput::StdOut { message } => {
-                stdout_file.write_all(&message)?;
-                stdout.send(message).await?;
-            }
-            LogOutput::StdErr { message } => {
-                stderr_file.write_all(&message)?;
-                stderr.send(message).await?;
+        let record = record?;
+        
+        match &record {
+            LogOutput::StdOut { message } => stdout_file.write_all(&message)?,
+            LogOutput::StdErr { message } => stderr_file.write_all(&message)?,
+            _ => {}
+        }
+
+        match &record {
+            LogOutput::StdOut { message } | LogOutput::StdErr { message } => {
+                let string = String::from_utf8(message.to_vec())?;
+                output_sender.send(TaskProgress::Stdout(string)).await?;
             }
             _ => {}
         }

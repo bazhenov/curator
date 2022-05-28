@@ -1,7 +1,7 @@
 extern crate curator;
 
 use bollard::Docker;
-use curator::agent::Artifact;
+use curator::agent::Artifacts;
 use curator::prelude::*;
 use curator::{
     agent::{self, TaskDef, TaskProgress},
@@ -95,7 +95,7 @@ async fn run_toolchain(
     docker: &Docker,
     command: &[&str],
     toolchain: &str,
-) -> Result<(i32, Option<Artifact>, String)> {
+) -> Result<(i32, Option<Artifacts>, String)> {
     use TaskProgress::*;
 
     let container_id = get_sample_container(docker).await?;
@@ -139,7 +139,7 @@ async fn run_toolchain(
 async fn run_test_toolchain(
     docker: &Docker,
     command: &[&str],
-) -> Result<(i32, Option<Artifact>, String)> {
+) -> Result<(i32, Option<Artifacts>, String)> {
     run_toolchain(docker, command, TOOLCHAIN).await
 }
 

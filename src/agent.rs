@@ -3,7 +3,7 @@ use bollard::Docker;
 use flate2::{write::GzEncoder, Compression};
 use futures::{future::FutureExt, select};
 use hyper::{
-    body::{Bytes, HttpBody as _},
+    body::HttpBody as _,
     client::{Client, HttpConnector},
     header::{ACCEPT, CONTENT_ENCODING, CONTENT_TYPE},
     http, Body, Request, Response,
@@ -371,16 +371,6 @@ impl AgentLoop {
     }
 }
 
-async fn copy_bytes(mut rx: mpsc::Receiver<Bytes>, tx: mpsc::Sender<TaskProgress>) -> Result<()> {
-    use TaskProgress::*;
-
-    while let Some(msg) = rx.recv().await {
-        let string = String::from_utf8(msg.to_vec())?;
-        tx.send(Stdout(string)).await?;
-    }
-    Ok(())
-}
-
 #[logfn(ok = "Trace", err = "Error")]
 pub async fn execute_task(
     docker: Docker,
@@ -390,24 +380,11 @@ pub async fn execute_task(
 ) -> Result<()> {
     use TaskProgress::*;
 
-    let (stdout_tx, stdout_rx) = mpsc::channel::<Bytes>(1);
-    let (stderr_tx, stderr_rx) = mpsc::channel::<Bytes>(1);
-
-    let stdout_handle = tokio::spawn(copy_bytes(stdout_rx, tx.clone()));
-    let stderr_handle = tokio::spawn(copy_bytes(stderr_rx, tx.clone()));
-    let artifact_path = temp_dir().join(format!("{}.tar", execution_id));
-    let status = docker::run_task(
-        &docker,
-        &task,
-        stdout_tx,
-        stderr_tx,
-        Some(File::create(&artifact_path)?),
-    )
-    .await?;
-    stdout_handle.await??;
-    stderr_handle.await??;
+    let artifacts = temp_dir().join(format!("{}.tar", execution_id));
+    let status =
+        docker::run_task(&docker, &task, tx.clone(), Some(File::create(&artifacts)?)).await?;
     tx.send(Finished(status)).await?;
-    tx.send(ArtifactsReady(Artifact(artifact_path))).await?;
+    tx.send(ArtifactsReady(Artifacts(artifacts))).await?;
 
     Ok(())
 }
@@ -484,9 +461,9 @@ async fn attach_artifacts_request(
 }
 
 #[derive(Debug)]
-pub struct Artifact(PathBuf);
+pub struct Artifacts(PathBuf);
 
-impl Drop for Artifact {
+impl Drop for Artifacts {
     fn drop(&mut self) {
         if let Err(e) = remove_file(&self.0) {
             warn!(
@@ -498,7 +475,7 @@ impl Drop for Artifact {
     }
 }
 
-impl AsRef<Path> for Artifact {
+impl AsRef<Path> for Artifacts {
     fn as_ref(&self) -> &Path {
         self.0.as_ref()
     }
@@ -512,7 +489,7 @@ pub enum TaskProgress {
 
     /// Generated when artifact is ready. Artifact implement `Drop`, so
     /// underlying file will be removed when variable is leaving scope.
-    ArtifactsReady(Artifact),
+    ArtifactsReady(Artifacts),
 }
 
 #[cfg(test)]
