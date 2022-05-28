@@ -20,9 +20,13 @@ use hyper::body::Bytes;
 use std::{
     collections::{hash_map::HashMap, hash_set::HashSet},
     convert::TryFrom,
-    io::Write,
+    fs::File,
+    io::{Read, Write},
+    path::Path,
     time::Duration,
 };
+use tar::{Archive, Builder, Header};
+use tempfile::tempfile;
 use tokio::{
     sync::{mpsc, watch},
     task::JoinHandle,
@@ -267,9 +271,15 @@ pub async fn run_task<W: Write>(
     );
     let container = container.await?;
 
-    let redirect_process = tokio::spawn(redirect_output(container.read_logs(), stdout, stderr));
+    let redirect_process = tokio::spawn(redirect_output(
+        container.read_logs(),
+        tempfile()?,
+        tempfile()?,
+        stdout,
+        stderr,
+    ));
     let status_code = container.wait().await?;
-    redirect_process.await??;
+    let (stdout_file, stderr_file) = redirect_process.await??;
     if let Some(mut artifacts) = artifacts {
         container
             .download(TOOLCHAIN_WORKDIR, &mut artifacts)
@@ -293,21 +303,25 @@ fn map_bollard_errors(error: BollardError) -> AnyhowError {
 
 async fn redirect_output(
     mut logs: impl Stream<Item = Result<LogOutput>> + Unpin,
+    mut stdout_file: File,
+    mut stderr_file: File,
     stdout: mpsc::Sender<Bytes>,
     stderr: mpsc::Sender<Bytes>,
-) -> Result<()> {
+) -> Result<(File, File)> {
     while let Some(record) = logs.next().await {
         match record? {
             LogOutput::StdOut { message } => {
+                stdout_file.write_all(&message)?;
                 stdout.send(message).await?;
             }
             LogOutput::StdErr { message } => {
+                stderr_file.write_all(&message)?;
                 stderr.send(message).await?;
             }
             _ => {}
         }
     }
-    Ok(())
+    Ok((stdout_file, stderr_file))
 }
 
 fn parse_json(line: Result<String>) -> Result<serde_json::Value> {
@@ -466,4 +480,92 @@ pub async fn pull_image(docker: &Docker, from_image: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Creating new tar archive appending given entries
+///
+/// Takes input tar-archive and cloning all it's content to the output one and then appending given entries.
+fn tar_append(
+    input: impl Read,
+    output: impl Write,
+    files: &[(&str, impl AsRef<Path>)],
+) -> Result<()> {
+    let mut input = Archive::new(input);
+    let mut output = Builder::new(output);
+
+    for entry in input.entries()? {
+        let entry = entry?;
+        if let Some(path) = entry.path()?.to_str() {
+            let mut header = Header::new_gnu();
+            header.set_size(entry.size());
+            header.set_path(path)?;
+            header.set_cksum();
+
+            output.append(&header, entry)?;
+        }
+    }
+
+    for (path, file) in files {
+        output.append_path_with_name(file.as_ref(), path)?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use std::io::Cursor;
+
+    use tar::{Builder, Header};
+    use tempfile::tempdir;
+
+    use super::*;
+
+    #[test]
+    fn append_files_to_a_tar_archive() -> Result<()> {
+        let dir = tempdir()?;
+        let baz_file = dir.path().join("baz");
+        write!(File::create(&baz_file)?, "baz content")?;
+
+        let archive = tar_create(&[("foo", "foo contents"), ("foo/bar", "foo/bar contents")])?;
+        assert_eq!(tar_list(&archive)?, ["foo", "foo/bar"]);
+
+        let mut new_archive = vec![];
+        tar_append(
+            Cursor::new(&archive),
+            &mut new_archive,
+            &[("baz", baz_file)],
+        )?;
+
+        assert_eq!(tar_list(&new_archive)?, ["foo", "foo/bar", "baz"]);
+
+        Ok(())
+    }
+
+    type PathAndContents<'a> = (&'a str, &'a str);
+    fn tar_create(entries: &[PathAndContents]) -> Result<Vec<u8>> {
+        let mut archive = Builder::new(Vec::new());
+
+        for (path, contents) in entries {
+            let mut header = Header::new_gnu();
+            header.set_size(contents.len() as u64);
+            header.set_cksum();
+
+            archive.append_data(&mut header, path, contents.as_bytes())?;
+        }
+
+        Ok(archive.into_inner()?)
+    }
+
+    fn tar_list(input: &[u8]) -> Result<Vec<String>> {
+        let mut archive = Archive::new(Cursor::new(input));
+
+        let mut result = vec![];
+        for entry in archive.entries()? {
+            let entry = entry?;
+            if let Some(path) = entry.path()?.to_str() {
+                result.push(path.to_string());
+            }
+        }
+        Ok(result)
+    }
 }

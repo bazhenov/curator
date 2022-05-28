@@ -26,6 +26,7 @@ test = false
 
 [dependencies]
 actix-server = "2.0.0-rc.4"
+tempfile = "3.1.0"
 actix-files = "0.6.0-beta.13"
 actix-web = "4.0.0-beta.19"
 futures = "0.3.12"
@@ -47,11 +48,10 @@ clap = "2.33.0"
 bollard = "0.10"
 log-derive = "0.4.1"
 flate2 = "1.0.20"
+tar = "0.4.33"
 
 [dev-dependencies]
-tempfile = "3.1.0"
 maplit = "1.0.2"
 rstest = "0.6.4"
-tar = "0.4.33"
 termion = "1.5.6"
 actix-rt = "2.6"
