@@ -65,7 +65,7 @@ async fn run_toolchain_for_artifact(dock: Docker) -> Result<()> {
         .map(|e| e?.path().map(Cow::into_owned))
         .collect::<IoResult<Vec<_>>>()?;
 
-    let expected_paths = ["curator/", "curator/test.txt"]
+    let expected_paths = ["curator/", "curator/test.txt", "stdout.txt", "stderr.txt"]
         .iter()
         .map(PathBuf::from)
         .collect::<Vec<_>>();

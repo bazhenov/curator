@@ -25,8 +25,8 @@ use std::{
     path::Path,
     time::Duration,
 };
-use tar::{Archive, Builder, Header};
-use tempfile::tempfile;
+use tar::{Archive, Builder};
+use tempfile::tempdir;
 use tokio::{
     sync::{mpsc, watch},
     task::JoinHandle,
@@ -271,21 +271,32 @@ pub async fn run_task<W: Write>(
     );
     let container = container.await?;
 
+    let dir = tempdir()?;
+    let stdout_file = dir.path().join("stdout.txt");
+    let stderr_file = dir.path().join("stderr.txt");
+    let temp_artifacts_file = dir.path().join("artifacts.tar");
+
     let redirect_process = tokio::spawn(redirect_output(
         container.read_logs(),
-        tempfile()?,
-        tempfile()?,
+        File::create(&stdout_file)?,
+        File::create(&stderr_file)?,
         stdout,
         stderr,
     ));
     let status_code = container.wait().await?;
-    let (stdout_file, stderr_file) = redirect_process.await??;
-    if let Some(mut artifacts) = artifacts {
+    redirect_process.await??;
+    if let Some(artifacts) = artifacts {
         container
-            .download(TOOLCHAIN_WORKDIR, &mut artifacts)
+            .download(TOOLCHAIN_WORKDIR, &mut File::create(&temp_artifacts_file)?)
             .await?;
+        tar_append(
+            File::open(&temp_artifacts_file)?,
+            artifacts,
+            &[("stdout.txt", stdout_file), ("stderr.txt", stderr_file)],
+        )?
     }
     container.remove().await?;
+    dir.close()?;
 
     Ok(i32::try_from(status_code)?)
 }
@@ -307,7 +318,7 @@ async fn redirect_output(
     mut stderr_file: File,
     stdout: mpsc::Sender<Bytes>,
     stderr: mpsc::Sender<Bytes>,
-) -> Result<(File, File)> {
+) -> Result<()> {
     while let Some(record) = logs.next().await {
         match record? {
             LogOutput::StdOut { message } => {
@@ -321,7 +332,7 @@ async fn redirect_output(
             _ => {}
         }
     }
-    Ok((stdout_file, stderr_file))
+    Ok(())
 }
 
 fn parse_json(line: Result<String>) -> Result<serde_json::Value> {
@@ -495,14 +506,8 @@ fn tar_append(
 
     for entry in input.entries()? {
         let entry = entry?;
-        if let Some(path) = entry.path()?.to_str() {
-            let mut header = Header::new_gnu();
-            header.set_size(entry.size());
-            header.set_path(path)?;
-            header.set_cksum();
-
-            output.append(&header, entry)?;
-        }
+        let header = entry.header().clone();
+        output.append(&header, entry)?;
     }
 
     for (path, file) in files {
