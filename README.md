@@ -19,11 +19,11 @@ $ make run
 ## Making toolchain images
 
 ```
-$ make toolchains/[name]
+$ make toolchains/[name] -B
 ```
 
 ## Running toolchain
 
 ```
-$ docker run -it bazhenov.me/curator/toolchain-[name]:dev
+$ docker run -it --pid=container:$CONTAINER_PID -it bazhenov.me/curator/toolchain-[name]:dev /discover
 ```
